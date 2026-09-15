@@ -27,9 +27,6 @@ const Character = (() => {
     dive: 'idle',
   };
 
-  /** Animations that play once and fall back to the previous state. */
-  const ONE_SHOT = { kick: 340 };
-
   /**
    * The src for one rig part, preferring an uploaded image and falling back
    * through the slot chain to the built-in illustrated part.
@@ -132,31 +129,22 @@ const Character = (() => {
     }
 
     let anim = 'idle';
-    let baseAnim = 'idle';   /* what a one-shot returns to */
     let faceLock = null;
-    let oneShotTimer = null;
 
     /**
-     * Switch animation state. One-shot states (kick) revert on their own.
-     * Re-issuing the state that is already playing is a no-op, except for
-     * one-shots, which restart.
+     * Switch animation state. Idempotent: the renderer calls this every frame
+     * with whatever the world state implies, so re-issuing the current state
+     * must not restart the keyframes. Nothing here runs a timer - how long a
+     * kick lasts is a fact about the world, read from the player's kickAt.
      * @param {string} name - a key of ANIM_FACE
      */
     function setAnim(name) {
       if (!ANIM_FACE[name]) name = 'idle';
-      const oneShot = ONE_SHOT[name];
-      if (name === anim && !oneShot) return;
-
-      if (oneShotTimer) { clearTimeout(oneShotTimer); oneShotTimer = null; }
-
+      if (name === anim) return;
       el.classList.remove('ch--' + anim);
-      if (oneShot && name === anim) void el.offsetWidth;  /* restart the keyframes */
       el.classList.add('ch--' + name);
       anim = name;
-      if (!oneShot) baseAnim = name;
       if (!faceLock) _applyFace(ANIM_FACE[name]);
-
-      if (oneShot) oneShotTimer = setTimeout(() => { oneShotTimer = null; setAnim(baseAnim); }, oneShot);
     }
 
     /**
@@ -182,11 +170,8 @@ const Character = (() => {
       el.style.setProperty('--dive-dir', dir < 0 ? -1 : 1);
     }
 
-    /** Detach and clear pending timers. Object URLs belong to Storage. */
-    function destroy() {
-      if (oneShotTimer) clearTimeout(oneShotTimer);
-      el.remove();
-    }
+    /** Detach. The object URLs belong to Storage, which revokes them. */
+    function destroy() { el.remove(); }
 
     return { el, setAnim, setFace, setDiveDir, destroy, getAnim: () => anim };
   }

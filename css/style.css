@@ -244,3 +244,52 @@ img { -webkit-user-drag: none; user-select: none; }
   0%, 100% { background-position-y: 0, 0, 0, 0, 0; }
   50%      { background-position-y: -5px, 3px, -4px, 4px, 0; }
 }
+
+/* ===== Ball ===== */
+.ball {
+  position: absolute; left: 0; top: 0;
+  will-change: transform;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+.ball__shadow {
+  position: absolute; left: 0; top: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  filter: blur(2px);
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* ===== Juice ===== */
+/* A tackled player flashes, so losing the ball reads as an event. */
+.ch--stunned { animation: ch-stun 0.18s steps(2) 2; }
+@keyframes ch-stun { 0%, 100% { filter: none; } 50% { filter: brightness(2.2) saturate(0.2); } }
+
+/* Ball trail: a fading clone dropped every few frames on a hard shot. */
+.ball-trail {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  animation: trail-fade 0.26s linear forwards;
+  pointer-events: none;
+}
+@keyframes trail-fade {
+  from { opacity: 0.5; transform: scale(0.9); }
+  to   { opacity: 0; transform: scale(0.4); }
+}
+
+/* Fireworks: --dx/--dy carry each spark's direction. */
+.spark {
+  position: absolute;
+  width: 7px; height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  animation: spark-fly 0.9s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+  pointer-events: none;
+}
+@keyframes spark-fly {
+  0%   { transform: translate(0, 0) scale(0.4); opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 30px)) scale(0.9); opacity: 0; }
+}
