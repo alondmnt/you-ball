@@ -214,7 +214,7 @@ const Audio = (() => {
   /* ─── Music ─── */
 
   /*
-   * The anthem: a four bar rock loop, synthesised note by note, that follows
+   * The anthem: an eight bar rock loop, synthesised note by note, that follows
    * the ball.
    *
    * Nothing is sampled and nothing is quoted. The debt to the terrace rock
@@ -222,10 +222,12 @@ const Audio = (() => {
    * chorus, and a hook that is a rhythm rather than a tune - not any
    * particular song's notes. The riff below is ours.
    *
-   * Two progressions share one grid, one tempo and one key centre:
+   * Two keys share one grid, one tempo and one key centre, and each has two
+   * sixteen bar parts that alternate. At this tempo a four bar loop would come
+   * round twelve times in one match; this comes round once.
    *
-   *   home   Em Em C  D   - bright, and it climbs
-   *   away   Em Em F  F   - the flat second, all menace
+   *   home  bright, and it climbs      - Em Em C D, then up to the four
+   *   away  the flat second, all menace - Em Em F F, then Am G F Em down onto it
    *
    * and three textures play over whichever is running:
    *
@@ -255,33 +257,132 @@ const Audio = (() => {
   };
 
   const STEPS_PER_BAR = 16;          /* the grid is sixteenths */
-  const BARS = 4;
+  const BARS = 16;                    /* one part: four four-bar phrases with an arc */
   const PHRASE_STEPS = STEPS_PER_BAR * BARS;
 
   /*
    * One bar of bass is eight eighth notes; null is a rest. The wiggle at the
    * end of each bar is what stops a root note pulse from becoming wallpaper.
    */
+  /*
+   * Two keys, two parts each. A part is sixteen bars - four four-bar phrases
+   * with an arc through them - and the form alternates the parts, so nothing
+   * comes round again inside half a minute.
+   *
+   * The guitar plays root and fifth with no third in it, so these roots are
+   * modeless. The mode comes from the bass line and from the notes the hook
+   * picks out, which is why home and away can share roots and still sound
+   * nothing like each other.
+   */
   const PHRASE = {
     home: {
-      chord: ['E3', 'E3', 'C4', 'D4'],
-      bass: [
-        ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
-        ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
-        ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2'],
-        ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-      ],
+      /* The anthem. Em Em C D, said again with a different landing, lifted to
+         the four, then walked home. */
+      a: {
+        chord: ['E3', 'E3', 'C4', 'D4', 'E3', 'E3', 'C4', 'G3',
+                'A3', 'A3', 'C4', 'D4', 'E3', 'E3', 'D4', 'E3'],
+        bass: [
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'A2', 'G2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'C3', 'C3', 'B2', 'A2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'D3', 'E2'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'B2'],
+          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
+        ],
+      },
+      /* The other half of the song: it sits up on the four and finishes on
+         two bars of D pedal, which can only resolve one way. */
+      b: {
+        chord: ['A3', 'A3', 'E3', 'E3', 'C4', 'C4', 'D4', 'D4',
+                'A3', 'A3', 'E3', 'G3', 'C4', 'C4', 'D4', 'D4'],
+        bass: [
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'C3', 'C3', 'B2', 'A2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['C3', 'C3', 'C3', 'C3', 'D3', 'D3', 'C3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'C3', 'C3', 'B2', 'A2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'A2', 'G2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['C3', 'C3', 'C3', 'C3', 'D3', 'D3', 'C3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3'],
+        ],
+      },
     },
     away: {
-      chord: ['E3', 'E3', 'F3', 'F3'],
-      bass: [
-        ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-        ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-        ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2'],
-        ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
-      ],
+      /* The flat second vamps, then Am G F Em walks down onto it. That
+         descent is the oldest menacing gesture in the book. */
+      a: {
+        chord: ['E3', 'E3', 'F3', 'F3', 'A3', 'G3', 'F3', 'E3',
+                'E3', 'E3', 'F3', 'F3', 'C4', 'D4', 'F3', 'E3'],
+        bass: [
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'F2', 'G2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+        ],
+      },
+      /* Away's other half climbs away from the root instead of hanging on it,
+         so the return to that F against E lands harder. */
+      b: {
+        chord: ['C4', 'C4', 'D4', 'D4', 'A3', 'A3', 'F3', 'F3',
+                'C4', 'C4', 'D4', 'D4', 'A3', 'G3', 'F3', 'E3'],
+        bass: [
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'C3', 'C3', 'B2', 'B2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'G2', 'G2', 'F2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'C3', 'C3', 'B2', 'B2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'F2', 'G2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+        ],
+      },
     },
   };
+
+  /*
+   * The song form: which part each pass of the phrase plays. Two sixteen bar
+   * parts alternating means nothing repeats exactly inside 58 seconds, which
+   * is most of a match.
+   */
+  const FORM = ['a', 'b'];
 
   /*
    * The verse plays the same harmony with most of the notes taken out, which
@@ -291,13 +392,27 @@ const Audio = (() => {
   const BASS_SPARSE = [0, 3, 5];
 
   /*
-   * The hook. Bars 1 and 3 only: a lead that runs all four bars wears out
-   * inside one match, and leaving two bars empty is what makes it a hook.
+   * The hook answers at the end of every other bar, never on top of the riff:
+   * a lead that runs the whole way wears out inside one match, and the empty
+   * bars are what make it a hook. Over eight bars it has its own arc - call,
+   * answer, a higher lift, then back down.
    * [step within the bar, note, length in sixteenths]
    */
   const HOOK = {
-    1: [[8, 'B3', 2], [10, 'D4', 2], [12, 'E4', 4]],
-    3: [[8, 'D4', 2], [10, 'B3', 2], [12, 'A3', 4]],
+    /* One answer at the end of each four bar phrase, and the four answers
+       have their own shape: call, reply, a lift, then home. */
+    a: {
+      3: [[8, 'B3', 2], [10, 'D4', 2], [12, 'E4', 4]],
+      7: [[8, 'D4', 2], [10, 'B3', 2], [12, 'A3', 4]],
+      11: [[8, 'D4', 2], [10, 'E4', 2], [12, 'G4', 4]],
+      15: [[8, 'E4', 2], [10, 'D4', 2], [12, 'B3', 4]],
+    },
+    /* The other part answers half as often. Space is what makes it the other
+       part rather than more of the same. */
+    b: {
+      7: [[8, 'E4', 2], [10, 'D4', 2], [12, 'B3', 4]],
+      15: [[8, 'D4', 2], [10, 'E4', 2], [12, 'A3', 4]],
+    },
   };
 
   /* Which sixteenths each drum pattern lands on. */
@@ -311,7 +426,7 @@ const Audio = (() => {
   const STAB = [0, 6, 8, 14];        /* syncopated, so the chorus pushes */
   const CHUG = [0, 2, 4, 6, 8, 10, 12, 14];
   const HOLD = [0, 4, 8, 12];        /* the verse guitar: a held breath, not a texture */
-  const CHANT = [0, 2];              /* which bars get a shout, on the downbeat */
+  const CHANT = [0, 8];              /* a shout on the downbeat of each half */
 
   /** One notch more drive on the hats, for a team that is behind. */
   const HAT_UP = { quarters: 'eighths', eighths: 'sixteenths', sixteenths: 'sixteenths' };
@@ -414,6 +529,8 @@ const Audio = (() => {
   let _mStep = 0;        /* position in the phrase, 0..PHRASE_STEPS-1 */
   let _mState = null;    /* the latest arrangement from arrange() */
   let _mKey = 'home';    /* which progression is running, latched at the beat */
+  let _mPart = FORM[0];  /* which part of the song, latched at the phrase line */
+  let _mPass = 0;        /* how many phrases have gone by, to walk the form */
   let _mLayers = null;   /* which layers play, latched at the beat */
 
   /**
@@ -534,11 +651,16 @@ const Audio = (() => {
     const beat = 60 / m.bpm;
     const sixteenth = beat / 4;
 
-    /* Both latch on the beat. Waiting for the bar line cost up to 1.8s, which
-       reads as the music lagging the game; a chord arriving on beat three is
-       ordinary in a rock arrangement, and both progressions are built on the
-       same grid so the join always works. How often each is *allowed* to
-       change is arrange's business, not the scheduler's. */
+    /* The part is the one thing that may only turn over at a phrase line: it
+       is song structure, not a reaction to the game, and it runs on its own
+       clock. Every part is the same length and sits on the same grid, so a
+       key change mid part keeps its place in the bar. */
+    if (step === 0) { _mPart = FORM[_mPass % FORM.length]; _mPass++; }
+
+    /* Key and layers latch on the beat instead. Waiting for the bar line cost
+       up to 1.8s, which reads as the music lagging the game; a chord arriving
+       on beat three is ordinary in a rock arrangement. How often each is
+       *allowed* to change is arrange's business, not the scheduler's. */
     if (s % 4 === 0) {
       _mKey = (_mState && _mState.key === 1) ? 'away' : 'home';
       _mLayers = (_mState && _mState.layers) || null;
@@ -549,7 +671,7 @@ const Audio = (() => {
     /* Push the offbeat sixteenths late, which is the difference between a
        band and a drum machine. */
     const at = when + ((s % 4 === 2) ? m.swing * beat : 0);
-    const phrase = PHRASE[_mKey];
+    const phrase = PHRASE[_mKey][_mPart];
 
     if (lay.kick && KICK[lay.kick].indexOf(s) >= 0) {
       _note(128, 0, 0.14, 'sine', L.kick, 44, _mBus, at);
@@ -578,8 +700,9 @@ const Audio = (() => {
     if (lay.guitar === 'hold' && HOLD.indexOf(s) >= 0) {
       _guitarVoice(HZ[phrase.chord[bar]], at, sixteenth * 2.6, L.chug * 0.8, false);
     }
-    if (lay.hook && HOOK[bar]) {
-      for (const [step16, note, len] of HOOK[bar]) {
+    const hook = HOOK[_mPart][bar];
+    if (lay.hook && hook) {
+      for (const [step16, note, len] of hook) {
         if (step16 === s) _note(HZ[note], 0, sixteenth * len * 0.92, 'square', L.hook, null, _mBus, at);
       }
     }
@@ -621,6 +744,7 @@ const Audio = (() => {
     _mOn = true;
     _mNext = ctx.currentTime + 0.08;
     _mStep = 0;
+    _mPass = 0;
     if (!_mState) _mState = arrange(null, {}, 0);
     if (ctx.state === 'suspended') ctx.resume();
     _tick();

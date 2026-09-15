@@ -50,9 +50,11 @@ a pool rather than an ocean, because the game is a walled pitch and the ball bou
 
 ## the music
 
-one four-bar rock loop, synthesised note by note like every other sound, that follows the ball.
+a rock song, synthesised note by note like every other sound, that follows the ball.
 
-there are two progressions in the same key and at the same tempo - one bright and climbing for home, one built on a flat second for away - and three textures that play over whichever is running:
+it is written in sixteen-bar parts - four four-bar phrases with an arc through them - and two parts alternate, so nothing comes round again inside about a minute. each team has its own pair: home is bright and climbs, away sits on a flat second and walks down onto it. both are in the same key at the same tempo, so possession can turn over mid-bar and the music just carries on.
+
+three textures play over whichever part is running:
 
 | | what you hear |
 |---|---|

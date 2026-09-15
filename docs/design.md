@@ -91,11 +91,24 @@ a tackle **knocks the dispossessed player clear and stuns them** for `tackleStun
 
 ## music
 
-One four-bar rock loop, synthesised note by note. Nothing is sampled, so it
-costs no download and no decode.
+A rock song, synthesised note by note. Nothing is sampled, so it costs no
+download and no decode.
 
-**Two axes, two speeds.** A *progression* (home: Em Em C D, away: Em Em F F) and
-a *texture* (the layer set: which drum pattern, whether the hook and the chant
+**Length.** A part is sixteen bars - four four-bar phrases with an arc through
+them - and two parts alternate, so an exact repeat is 58 seconds apart. At 132
+BPM a four-bar loop would come round twelve times in a 90 second match, which is
+wallpaper; this comes round once. The part is the one thing that may only change
+on a phrase line, because it is song structure rather than a reaction to the
+game. Eight-bar parts in an AABA form give the same 32 bars before a repeat, so
+the choice between them is about the length of the musical sentence, not about
+repetition.
+
+The guitar plays root and fifth with no third in it, so the chord roots are
+modeless. The mode comes from the bass line and from the notes the hook picks
+out, which is why home and away can share roots and still sound nothing alike.
+
+**Two axes, two speeds.** A *progression* (home: Em Em C D up to the four,
+away: Em Em F F then Am G F Em down onto it) and a *texture* (the layer set: which drum pattern, whether the hook and the chant
 and the drone play, whether the guitar stabs or chugs or holds). They are
 separate because they need different reaction times:
 
@@ -104,8 +117,9 @@ separate because they need different reaction times:
 | texture | the ball, within about half a second | it is what you actually hear change, and rock arrangements drop and add layers anywhere |
 | progression | possession that has lasted a couple of seconds | a chord change every 1.2s establishes nothing |
 
-Both progressions share one key centre, one tempo and one grid, so any join
-works and nothing has to wait for a phrase boundary.
+Both progressions share one key centre, one tempo and one grid, and every part
+is the same length, so any join works and a key change keeps its place in the
+bar. Nothing has to wait for a phrase boundary except the part itself.
 
 **The reaction time is measured, not guessed.** Over eight AI-vs-AI matches a
 possession spell has a median length of ~500ms. That kills the obvious rule:
