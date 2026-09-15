@@ -12,6 +12,22 @@
 const Render = (() => {
   const CW = Assets.CHAR_W, CH = Assets.CHAR_H;
 
+  /*
+   * Base pixel sizes, set on the element once. Everything after is transform
+   * only, so nothing in the per-frame loop can trigger a layout.
+   */
+  const BALL_BASE = CONFIG.ballDrawD;
+  const SHADOW_W = CONFIG.ballDrawD * 0.8;
+  const SHADOW_H = CONFIG.ballDrawD * 0.26;
+  const PIT_BASE = 30;
+
+  /** Write z-index only when it changes; it is a paint, not a free property. */
+  function _setZ(el, z) {
+    if (el._z === z) return;
+    el._z = z;
+    el.style.zIndex = z;
+  }
+
   let _rigs = [];       /* one per player id */
   let _ball = null;     /* { el, shadow } */
   let _teams = null;    /* [{ colour, chars: [record x4] }, …] */
@@ -69,8 +85,12 @@ const Render = (() => {
     el.className = 'ball';
     el.src = ballSrc || Assets.defaultBall();
     el.alt = '';
+    el.style.width = BALL_BASE + 'px';
+    el.style.height = BALL_BASE + 'px';
     const shadow = document.createElement('div');
     shadow.className = 'ball__shadow';
+    shadow.style.width = SHADOW_W + 'px';
+    shadow.style.height = SHADOW_H + 'px';
     layer.appendChild(shadow);
     layer.appendChild(el);
     _ball = { el, shadow };
@@ -87,7 +107,7 @@ const Render = (() => {
     _lastClock = '';
 
     const loose = (CONFIG.fx || {}).loose;
-    if (loose) _buildPit(loose);
+    if (loose) { _buildPit(loose); _pitWatch = []; }
   }
 
   /**
@@ -109,6 +129,7 @@ const Render = (() => {
     _rigs = [];
     for (const b of _pit) b.el.remove();
     _pit = [];
+    _pitWatch = null;
     if (_ball) { _ball.el.remove(); _ball.shadow.remove(); _ball = null; }
     const fx = Pitch.fxLayer();
     if (fx) fx.innerHTML = '';
@@ -149,7 +170,10 @@ const Render = (() => {
   function frame(world, match, controlled, dt) {
     if (!_ball) return;   /* unmounted between a frame being queued and run */
     const L = Pitch.layout();
-    if (_pit.length) _stepPit(world, Math.min(0.05, dt || 1 / 60), L);
+    if (_pit.length) {
+      _watchPitCost(dt || 1 / 60, match.phase === Match.PHASE.PLAY);
+      _stepPit(world, Math.min(0.05, dt || 1 / 60), L);
+    }
     const runFx = _calmly ? null : EMITTERS[(CONFIG.fx || {}).run];
     let runFxLeft = RUN_FX_MAX;   /* capped per frame: eight players kicking up
                                      dust continuously is noise, not atmosphere */
@@ -180,19 +204,25 @@ const Render = (() => {
 
     const b = world.ball;
     const q = Pitch.project(b.x, b.y);
-    const size = CONFIG.ballDrawD * L.zoom * q.scale;
-    _ball.el.style.width = size + 'px';
-    _ball.el.style.height = size + 'px';
+    /*
+     * Depth is a scale in the transform, never a width and height.
+     * Writing width/height every frame forces a layout every frame, which on
+     * an older tablet is the single most expensive thing this loop did.
+     * Elements are built at their base size once and only transformed after.
+     */
+    const k = L.zoom * q.scale;
+    const size = BALL_BASE * k;
     /* A scene can float the ball; in the pool it reads immediately as bobbing. */
     const bob = (CONFIG.fx || {}).ballBob
       ? Math.sin(world.t * 4.2) * CONFIG.fx.ballBob * L.zoom * q.scale : 0;
+    /* Scale is about the element's centre, so place the centre and let it be. */
+    const cy = q.sy - size * 0.42 - bob;
     _ball.el.style.transform =
-      `translate3d(${q.sx - size / 2}px,${q.sy - size * 0.92 - bob}px,0) rotate(${b.x * 0.6}deg)`;
-    _ball.el.style.zIndex = q.z + 1;
-    _ball.shadow.style.width = size * 0.8 + 'px';
-    _ball.shadow.style.height = size * 0.26 + 'px';
-    _ball.shadow.style.transform = `translate3d(${q.sx - size * 0.4}px,${q.sy - size * 0.13}px,0)`;
-    _ball.shadow.style.zIndex = q.z;
+      `translate3d(${q.sx - BALL_BASE / 2}px,${cy - BALL_BASE / 2}px,0) scale(${k}) rotate(${b.x * 0.6}deg)`;
+    _ball.shadow.style.transform =
+      `translate3d(${q.sx - SHADOW_W / 2}px,${q.sy - SHADOW_H / 2}px,0) scale(${k})`;
+    _setZ(_ball.el, q.z + 1);
+    _setZ(_ball.shadow, q.z);
 
     /* A trail on a hard shot - a few fading clones behind the ball. */
     const speed = Math.hypot(b.vx, b.vy);
@@ -271,6 +301,43 @@ const Render = (() => {
 
   let _pit = [];
 
+  /*
+   * Older tablets feel 190 loose balls. Rather than guess a number that suits
+   * every device, watch the first stretch of real play and thin the pit once
+   * if the frame rate is not holding up. One-shot, so it costs nothing after
+   * it has decided, and it can only ever remove balls - a fast device is
+   * never touched.
+   */
+  const PIT_WATCH_FRAMES = 90;
+  const PIT_SLOW_MS = 22;        /* below roughly 45fps */
+  let _pitWatch = null;
+
+  /** Drop every other loose ball. Called at most once per match. */
+  function _thinPit() {
+    const keep = [];
+    for (let i = 0; i < _pit.length; i++) {
+      if (i % 2) _pit[i].el.remove();
+      else keep.push(_pit[i]);
+    }
+    _pit = keep;
+  }
+
+  /**
+   * Sample frame times during play and thin the pit if the device is
+   * struggling. Stops sampling either way once it has enough.
+   * @param {number} dt - seconds since the last frame
+   * @param {boolean} live - only judge during play, not during a celebration
+   */
+  function _watchPitCost(dt, live) {
+    if (!_pitWatch || !live) return;
+    _pitWatch.push(dt * 1000);
+    if (_pitWatch.length < PIT_WATCH_FRAMES) return;
+    const sorted = _pitWatch.slice().sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    _pitWatch = null;
+    if (median > PIT_SLOW_MS) _thinPit();
+  }
+
   /**
    * Scatter loose balls over the pitch in a jittered grid, so they read as a
    * floor rather than a pattern.
@@ -291,6 +358,8 @@ const Render = (() => {
       const el = document.createElement('div');
       el.className = 'pit-ball';
       el.style.background = PIT_COLOURS[i % PIT_COLOURS.length];
+      el.style.width = PIT_BASE + 'px';
+      el.style.height = PIT_BASE + 'px';
       frag.appendChild(el);
       const b = {
         hx, hy, x: hx, y: hy, vx: 0, vy: 0, el,
@@ -301,14 +370,13 @@ const Render = (() => {
     layer.appendChild(frag);
   }
 
-  /** Place one loose ball, with depth. */
+  /** Place one loose ball, with depth. Transform only - see the note above. */
   function _drawPitBall(b, L) {
     const q = Pitch.project(b.x, b.y);
-    const size = PIT_R * 2 * L.zoom * q.scale;
-    b.el.style.width = size + 'px';
-    b.el.style.height = size + 'px';
-    b.el.style.transform = `translate3d(${q.sx - size / 2}px,${q.sy - size / 2}px,0)`;
-    b.el.style.zIndex = q.z;
+    const k = L.zoom * q.scale;
+    b.el.style.transform =
+      `translate3d(${q.sx - PIT_BASE / 2}px,${q.sy - PIT_BASE / 2}px,0) scale(${k})`;
+    _setZ(b.el, q.z);
   }
 
   /**

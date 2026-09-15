@@ -144,7 +144,22 @@ the ball pool's loose balls are the one effect with state. a hundred and thirty 
 
 a moving ball also nudges the ones around it, so a disturbance spreads instead of stopping at whoever caused it. two things had to be got right there. propagating at contact distance did nothing, because at this density the balls sit about 110 units apart and never touch, so the nudge carries over a sloshing radius rather than a collision one. and only a ball actually travelling passes it on: without that threshold the chain never dies, a ball drifting home nudges its neighbours, they nudge back, and the whole pit shimmers forever. measured at every one of 190 balls moving permanently before the threshold went in, and about 53 after.
 
-what makes them affordable is that a ball at rest is skipped entirely, no maths and no DOM write, and only moving balls are propagation sources. the painted floor underneath was muted once they existed, because a floor at full strength competes with real balls and the match ball gets lost.
+what makes them affordable is that a ball at rest is skipped entirely, no maths and no DOM write, and only moving balls are propagation sources.
+
+### never animate a size
+
+depth is a `scale()` in the transform, never a width and a height. writing width/height per frame forces a layout per frame, and the first version of the loose balls did exactly that - along with the match ball and its shadow, which had done it in every scene since they were written. measured with chrome's cpu throttling at 6x, which is the closest stand-in available for an old tablet:
+
+| | before | after |
+|---|---|---|
+| grass | 1.40ms | 0.80ms |
+| ball pool | 3.00ms | 1.40ms |
+
+every element is now built at a base size once and only transformed after, and z-index is written only when it changes.
+
+there is also a one-shot step-down: if the median frame during play is slower than about 45fps, the pit is halved, once. it can only remove balls, so a fast device is never touched.
+
+**a caveat worth keeping.** the report that prompted this was an ipad mini 4 feeling the weight, and that symptom could not be reproduced here - even at 20x cpu throttling the loop holds 60fps, because the javascript is genuinely small. so what an old tablet feels is more likely compositing and painting 190 elements in safari than script time, which cpu throttling does not simulate. the layout fix is measured and real; the step-down is a safety net aimed at a symptom we cannot see. `CONFIG.scenes.ballpit.fx.loose` is the knob if it needs turning down. the painted floor underneath was muted once they existed, because a floor at full strength competes with real balls and the match ball gets lost.
 
 the pool's waterline is worth singling out: a band of pool colour across each character's lower legs did more to say "in the water" than the caustics, the ripples and the surface pattern combined. it is eight lines of CSS.
 
