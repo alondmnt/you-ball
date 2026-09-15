@@ -106,6 +106,52 @@ const CONFIG = {
   camLerp: 0.08,         // how quickly the camera catches the ball (0..1 per tick)
   trailMinSpeed: 900,    // ball trail appears above this speed
 
+  /* ─── Music ─── */
+  /*
+   * The anthem. Tempo, balance and the rules that decide which layers play.
+   * Every value here is safe to turn by ear without touching audio.js: the
+   * scheduler reads them fresh on each beat.
+   */
+  music: {
+    bpm: 132,
+    gain: 0.42,          // the music bus, deliberately under the effects
+    duckGain: 0.05,      // where the bus drops to for a goal celebration
+    duckMs: 240,         // how long the duck and the recovery take
+    /* Taking the ball swings the music at once - this is a fast game and the
+       change is the whole point. What keeps that from strobing is a floor on
+       how often it may happen: a possession spell lasts about half a second,
+       so without minDwell the arrangement would flicker twice a second. The
+       first change is always immediate; only a second one has to wait.
+
+       Losing the ball to nobody is the asymmetric case. The ball is loose
+       during every pass, so the verse only returns once it has stayed loose
+       for looseMs.
+
+       Texture and harmony move at different speeds. Dropping the hook and
+       bringing in the drone is what you actually hear change, and it can
+       happen a beat after the tackle. Moving the chord progression cannot: it
+       needs a bar to mean anything. Splitting the two is what lets the music
+       answer a turnover without losing the plot. */
+    layerDwellBeats: 2,  // how long a texture holds before it may change again
+    minDwellBeats: 6,    // and how long the harmony holds
+    looseMs: 900,        // the ball must be nobody's this long to drop to the verse
+    lookaheadMs: 200,    // how far ahead of the clock notes are queued
+    tickMs: 50,          // how often the scheduler wakes up
+    swing: 0.012,        // late-eighth push, in beats. 0 is dead straight
+    /* Per-layer peak gain. Drop one to zero to mute that layer entirely. */
+    layer: {
+      kick:  0.50,
+      snare: 0.22,
+      hat:   0.045,
+      bass:  0.20,
+      chug:  0.085,
+      stab:  0.13,
+      hook:  0.10,
+      chant: 0.11,
+      drone: 0.06,
+    },
+  },
+
   /* ─── Assets ─── */
   partMaxPx: 256,        // long side of an imported part, in pixels
   paperThreshold: 235,   // pixels brighter than this go transparent in paper mode

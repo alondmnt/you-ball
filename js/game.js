@@ -59,7 +59,16 @@ const Game = (() => {
     /* Any gesture can wake an AudioContext the device suspended. */
     document.addEventListener('pointerdown', () => Audio.resume(), true);
     /* Pause when the tab is hidden, rather than banking up simulation time. */
-    document.addEventListener('visibilitychange', () => { _paused = document.hidden; _acc = 0; });
+    /* The rAF loop stops itself when hidden, but a setTimeout scheduler would
+       happily keep playing to a tab nobody is looking at. Coming back only
+       restarts the anthem if a match is actually up and still running: the
+       splash, the editor and the full time card are all meant to be quiet. */
+    document.addEventListener('visibilitychange', () => {
+      _paused = document.hidden;
+      _acc = 0;
+      if (document.hidden) Audio.stopMusic();
+      else if (_raf && _match && _match.phase !== Match.PHASE.FULLTIME) Audio.startMusic();
+    });
   }
 
   /** Leaving the splash is the gesture that unlocks audio. */
@@ -112,6 +121,7 @@ const Game = (() => {
   /** Back to the splash, with the match torn down. */
   function goHome() {
     _stopLoop();
+    Audio.stopMusic();
     Render.unmount();
     Render.hideFullTime();
     Storage.revokeAll();
@@ -123,6 +133,7 @@ const Game = (() => {
   /** Open the editor. */
   async function openEditor() {
     _stopLoop();
+    Audio.stopMusic();
     Render.unmount();
     Render.hideFullTime();
     Input.setEnabled(false);
@@ -170,6 +181,7 @@ const Game = (() => {
     Pitch.follow(_world.ball.x, true);
     Input.reset();
     Input.setEnabled(false);
+    Audio.startMusic();
     _startLoop();
   }
 
@@ -315,6 +327,27 @@ const Game = (() => {
     Pitch.follow(_world.ball.x);
     Pitch.stepFeel(elapsed);
     Render.frame(_world, _match, _humanIds(), elapsed);
+    _feedMusic(elapsed);
+  }
+
+  /**
+   * Hand the music the two things its arrangement depends on: who is carrying
+   * the ball, and what the match is doing.
+   *
+   * This reads the world once a frame rather than riding the events, because
+   * the interesting states are the ones with no event in them - a loose ball
+   * has nobody to fire a pickup, and a goal celebration does not step physics
+   * at all.
+   *
+   * @param {number} elapsed - real seconds since the previous frame
+   */
+  function _feedMusic(elapsed) {
+    const holder = Physics.carrier(_world);
+    Audio.updateMusic({
+      carrierTeam: holder ? holder.team : null,
+      phase: _match.phase,
+      score: _match.score,
+    }, elapsed);
   }
 
   /** One fixed logic step. */
@@ -394,6 +427,7 @@ const Game = (() => {
           break;
         case 'fulltime':
           Render.banner(null);
+          Audio.stopMusic();   /* the three whistles land better dry */
           Audio.play('fulltime');
           Input.setEnabled(false);
           Render.showFullTime(_match, _teams);
