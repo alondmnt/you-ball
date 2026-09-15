@@ -1,0 +1,171 @@
+/*
+ * The paper-doll rig and every animation state.
+ *
+ * Rule for this file: transforms and opacity only. Nothing here may animate a
+ * property that triggers layout or paint, because eight characters x six parts
+ * are running at once. The root's own transform belongs to the renderer, which
+ * is why all whole-body motion lives on .ch__body instead.
+ */
+
+/* ===== Rig ===== */
+.ch {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100px; height: 140px;   /* Assets.CHAR_W x Assets.CHAR_H */
+  transform-origin: 50% 100%;    /* the feet - the point placed on the pitch */
+  pointer-events: none;
+  will-change: transform;
+}
+.ch__body { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.ch__part {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.ch__shadow {
+  position: absolute;
+  left: 50%; bottom: -4px;
+  width: 54px; height: 14px;
+  margin-left: -27px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28);
+  filter: blur(2px);
+}
+.ch__badge {
+  position: absolute;
+  left: 33px; top: 50px;
+  width: 13px; height: 9px;
+  border-radius: 3px;
+  background: var(--team-colour, #fff);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  z-index: 6;
+}
+
+/* ===== Faces =====
+   All three are in the DOM; the class picks one. Swapping opacity rather than
+   src means a goal never lands on an undecoded image. */
+.ch__face { opacity: 0; }
+.ch--face-idle .ch__face--idle,
+.ch--face-goal .ch__face--goal,
+.ch--face-sad  .ch__face--sad { opacity: 1; }
+
+/* ===== idle - slow breath bob ===== */
+.ch--idle .ch__body { animation: ch-breathe 2.6s ease-in-out infinite; }
+@keyframes ch-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(-2px) scaleY(1.012); }
+}
+
+/* ===== run - legs alternate, arms opposite, slight forward lean ===== */
+.ch--run .ch__leg-l { animation: ch-run-leg 0.42s linear infinite; }
+.ch--run .ch__leg-r { animation: ch-run-leg 0.42s linear infinite -0.21s; }
+.ch--run .ch__arm-l { animation: ch-run-arm 0.42s linear infinite -0.21s; }
+.ch--run .ch__arm-r { animation: ch-run-arm 0.42s linear infinite; }
+.ch--run .ch__body  { animation: ch-run-body 0.21s ease-in-out infinite alternate; }
+@keyframes ch-run-leg {
+  0%   { transform: rotate(35deg); }
+  50%  { transform: rotate(-35deg); }
+  100% { transform: rotate(35deg); }
+}
+@keyframes ch-run-arm {
+  0%   { transform: rotate(-30deg); }
+  50%  { transform: rotate(30deg); }
+  100% { transform: rotate(-30deg); }
+}
+@keyframes ch-run-body {
+  from { transform: translateY(0) rotate(5deg); }
+  to   { transform: translateY(-3px) rotate(7deg); }
+}
+
+/* ===== kick - one leg swings through, the opposite arm counterbalances ===== */
+.ch--kick .ch__leg-r { animation: ch-kick-leg 0.34s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.ch--kick .ch__leg-l { animation: ch-kick-plant 0.34s ease-out; }
+.ch--kick .ch__arm-l { animation: ch-kick-arm 0.34s ease-out; }
+.ch--kick .ch__body  { animation: ch-kick-body 0.34s ease-out; }
+@keyframes ch-kick-leg {
+  0%   { transform: rotate(38deg); }
+  35%  { transform: rotate(-72deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes ch-kick-plant {
+  0%, 100% { transform: rotate(0deg); }
+  35%      { transform: rotate(16deg); }
+}
+@keyframes ch-kick-arm {
+  0%, 100% { transform: rotate(0deg); }
+  35%      { transform: rotate(58deg); }
+}
+@keyframes ch-kick-body {
+  0%, 100% { transform: rotate(0deg); }
+  35%      { transform: rotate(-11deg) translateY(-2px); }
+}
+
+/* ===== celebrate - jump, both arms up, hip wiggle ===== */
+.ch--celebrate .ch__body  { animation: ch-dance-body 0.62s ease-in-out infinite; }
+.ch--celebrate .ch__arm-l { animation: ch-dance-arm-l 0.31s ease-in-out infinite alternate; }
+.ch--celebrate .ch__arm-r { animation: ch-dance-arm-r 0.31s ease-in-out infinite alternate; }
+.ch--celebrate .ch__leg-l { animation: ch-dance-leg-l 0.62s ease-in-out infinite; }
+.ch--celebrate .ch__leg-r { animation: ch-dance-leg-r 0.62s ease-in-out infinite; }
+@keyframes ch-dance-body {
+  0%   { transform: translateY(0) rotate(-7deg); }
+  25%  { transform: translateY(-18px) rotate(0deg); }
+  50%  { transform: translateY(0) rotate(7deg); }
+  75%  { transform: translateY(-11px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(-7deg); }
+}
+/* Arms point down at rotate(0); ~160deg swings each one up and outward. */
+@keyframes ch-dance-arm-l { from { transform: rotate(140deg); } to { transform: rotate(170deg); } }
+@keyframes ch-dance-arm-r { from { transform: rotate(-140deg); } to { transform: rotate(-170deg); } }
+@keyframes ch-dance-leg-l {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(26deg); }
+  75%      { transform: rotate(-14deg); }
+}
+@keyframes ch-dance-leg-r {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-26deg); }
+  75%      { transform: rotate(14deg); }
+}
+
+/* ===== sad - shoulders droop, head tilts, arms hang ===== */
+.ch--sad .ch__body  { animation: ch-sad-body 3.2s ease-in-out infinite; }
+.ch--sad .ch__head  { transform: rotate(-13deg) translateY(5px); }
+.ch--sad .ch__arm-l { transform: rotate(13deg); }
+.ch--sad .ch__arm-r { transform: rotate(-13deg); }
+@keyframes ch-sad-body {
+  0%, 100% { transform: translateY(3px) rotate(0deg); }
+  50%      { transform: translateY(5px) rotate(-2.5deg); }
+}
+
+/* ===== sad-dance - the celebration at half energy, head still drooped ===== */
+.ch--sad-dance .ch__body  { animation: ch-sad-dance-body 0.95s ease-in-out infinite; }
+.ch--sad-dance .ch__arm-l { animation: ch-sad-dance-arm-l 0.48s ease-in-out infinite alternate; }
+.ch--sad-dance .ch__arm-r { animation: ch-sad-dance-arm-r 0.48s ease-in-out infinite alternate; }
+.ch--sad-dance .ch__head  { transform: rotate(-11deg) translateY(4px); }
+@keyframes ch-sad-dance-body {
+  0%   { transform: translateY(2px) rotate(-3deg); }
+  25%  { transform: translateY(-7px) rotate(0deg); }
+  50%  { transform: translateY(2px) rotate(3deg); }
+  75%  { transform: translateY(-4px) rotate(0deg); }
+  100% { transform: translateY(2px) rotate(-3deg); }
+}
+@keyframes ch-sad-dance-arm-l { from { transform: rotate(95deg); } to { transform: rotate(118deg); } }
+@keyframes ch-sad-dance-arm-r { from { transform: rotate(-95deg); } to { transform: rotate(-118deg); } }
+
+/* ===== dive - goalkeeper only, full-body tilt toward the ball side =====
+   --dive-dir is +1 toward the far touchline, -1 toward the near one. */
+.ch--dive .ch__body  { animation: ch-dive 0.42s cubic-bezier(0.25, 0.9, 0.3, 1) forwards; }
+.ch--dive .ch__arm-l { transform: rotate(150deg); }
+.ch--dive .ch__arm-r { transform: rotate(-150deg); }
+@keyframes ch-dive {
+  from { transform: rotate(0deg) translateY(0); }
+  to   { transform: rotate(calc(var(--dive-dir, 1) * -72deg)) translateY(-14px); }
+}
+
+/* Motion sensitivity: keep the game readable, drop the perpetual motion. */
+@media (prefers-reduced-motion: reduce) {
+  .ch--idle .ch__body,
+  .ch--sad .ch__body { animation: none; }
+}
