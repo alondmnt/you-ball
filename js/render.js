@@ -17,6 +17,7 @@ const Render = (() => {
   let _teams = null;    /* [{ colour, chars: [record x4] }, …] */
   let _urls = {};
   let _els = {};        /* cached UI elements */
+  let _faceChar = [];   /* which character speaks for each team in the score bar */
   let _lastScore = [-1, -1];
   let _lastClock = '';
   let _trailAt = 0;
@@ -67,6 +68,7 @@ const Render = (() => {
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
+      _faceChar[t] = _teamFace(teams[t]);
       const face = _els.scoreFace[t];
       if (!face) continue;
       face.style.setProperty('--team-colour', teams[t].colour);
@@ -74,6 +76,19 @@ const Render = (() => {
     }
     _lastScore = [-1, -1];
     _lastClock = '';
+  }
+
+  /**
+   * Which character speaks for a team in the score bar.
+   *
+   * Prefer one the player actually made a face for. Picking a fixed place
+   * meant the kid's own face could be sitting in goal while the bar showed a
+   * built-in head, and the score bar is where the faces do their job.
+   * @param {object} team
+   * @returns {object} a roster record
+   */
+  function _teamFace(team) {
+    return team.chars.find(c => c && c.slots && c.slots.head_idle) || team.chars[1] || team.chars[0];
   }
 
   /** Tear the match DOM down. */
@@ -168,7 +183,7 @@ const Render = (() => {
       const mood = Match.teamMood(match, t);
       if (img && img.dataset.mood !== mood) {
         img.dataset.mood = mood;
-        img.src = Character.faceSrc(_teams[t].chars[1] || _teams[t].chars[0], mood, _teams[t].colour, _urls);
+        img.src = Character.faceSrc(_faceChar[t], mood, _teams[t].colour, _urls);
         face.classList.remove('score__face--pop');
         void face.offsetWidth;
         face.classList.add('score__face--pop');
