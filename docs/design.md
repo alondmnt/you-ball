@@ -134,7 +134,11 @@ three things keep the particle count sane. running effects are throttled per pla
 
 the first version left 74 dust puffs alive at once; it now peaks at 25, and frame time sits at 16.7ms median in every scene. that measurement is a desktop upper bound, not a promise about the tablet.
 
-a tackle is the one moment that fires everywhere: six impact shards from the point of contact in any scene, plus whatever that scene throws up. the tackler lunges and the player who was robbed stumbles for exactly as long as the stun keeps them from steering, so the pose and the rule agree. both are derived from timestamps on the player, the same way a kick is, so nothing runs a timer.
+a tackle is the one moment that fires everywhere: a soft ring and a few sparkles at the point the ball changes hands, plus whatever that scene throws up. the tackler reaches a hand down for the ball and the player who was robbed pirouettes on the spot for exactly as long as the stun keeps them from steering, so the pose and the rule agree. both are derived from timestamps on the player, the same way a kick is, so nothing runs a timer.
+
+it was built harsher first: a shoulder charge, a backwards tumble, impact shards, screen shake, and the sad face. that reads as violence, which lands differently in a game where the players wear real family faces. the face was the worst of it - at sixty-odd steals a match it was appearing about once a second. **the sad face now belongs only to conceding a goal.** the rest was softened the same way: reach not charge, spin not fall, no shake, a swish rather than a thud.
+
+none of the physics changed. the knockback and the stun are load-bearing and measured; only how they read did.
 
 the pool's waterline is worth singling out: a band of pool colour across each character's lower legs did more to say "in the water" than the caustics, the ripples and the surface pattern combined. it is eight lines of CSS.
 
