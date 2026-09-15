@@ -129,6 +129,7 @@ const Render = (() => {
    * @param {Set<number>} [controlled] - player ids a human is driving
    */
   function frame(world, match, controlled) {
+    if (!_ball) return;   /* unmounted between a frame being queued and run */
     const L = Pitch.layout();
 
     for (const p of world.players) {

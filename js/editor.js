@@ -387,6 +387,8 @@ const Editor = (() => {
   /* ─── Adjust: drag to position, pinch or wheel to scale ─── */
 
   function _openAdjust(img, slot, id) {
+    _pointers.clear();
+    _pinchStart = 0; _dragFrom = null;
     const canvas = document.getElementById('adjust-canvas');
     _adj = { img, slot, id, view: Assets.fitView(img, slot), paper: false, canvas };
     const frame = Assets.frameSize(slot);

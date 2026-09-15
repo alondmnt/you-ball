@@ -126,14 +126,15 @@ const Input = (() => {
       s.tapRequest = true;
     }
 
-    s.mx = 0; s.my = 0;
     _pointerId = null; _origin = null; _samples = []; _dragged = false;
+    /* Fall back to whatever keys are still held rather than zeroing outright. */
+    _syncKeyAxes(s);
   }
 
   function _onCancel(e) {
     if (e.pointerId !== _pointerId) return;
-    seats[0].mx = 0; seats[0].my = 0;
     _pointerId = null; _origin = null; _samples = []; _dragged = false;
+    _syncKeyAxes(seats[0]);
   }
 
   /* ─── Keyboard ─── */
@@ -200,7 +201,9 @@ const Input = (() => {
     if (x || y) {
       const len = Math.hypot(x, y);
       s.mx = x / len; s.my = y / len;
-    } else if (!_pointerId) {
+    } else if (_pointerId === null) {
+      /* Nothing held and no finger down. Note pointerId 0 is a valid id, so
+         this has to be an explicit null check. */
       s.mx = 0; s.my = 0;
     }
   }
