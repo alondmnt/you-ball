@@ -100,29 +100,53 @@ const Assets = (() => {
     return 'data:image/svg+xml,' + encodeURIComponent(svg);
   }
 
+  /*
+   * Hair sits above the eyes and stays there.
+   *
+   * The hairline is the chord of the face circle at y = HAIRLINE. Eyes are at
+   * y 24 with radius 2.2, and the raised brows of the GOAL face reach y 16.5,
+   * so anything drawn below about y 20 lands on the face. The first version
+   * cut every style at y 23-24 and a cap's brim at y 20-24, which put the brim
+   * straight across one eye.
+   */
+  const HAIRLINE = 18.5;
+  const HAIR_X0 = 8.2;    /* where that chord meets the face circle */
+  const HAIR_X1 = 35.8;
+
+  /** The filled cap of hair above the hairline, shared by every style. */
+  function _hairCap(colour) {
+    return `<path d="M${HAIR_X0} ${HAIRLINE}A15 15 0 0 1 ${HAIR_X1} ${HAIRLINE}Z" fill="${colour}"/>`;
+  }
+
   /** Hair, cap and freckles for one head variant. */
   function _hair(v) {
     switch (v.style) {
       case 'curly':
-        return `<path d="M7 24A15 15 0 0 1 37 24Z" fill="${v.hair}"/>` +
+        return _hairCap(v.hair) +
           [10, 15.5, 22, 28.5, 34].map((x, i) =>
-            `<circle cx="${x}" cy="${[19, 13.5, 11.5, 13.5, 19][i]}" r="4.4" fill="${v.hair}"/>`).join('');
+            `<circle cx="${x}" cy="${[15, 10, 8, 10, 15][i]}" r="4.4" fill="${v.hair}"/>`).join('');
       case 'spiky':
-        return `<path d="M7 24A15 15 0 0 1 37 24Z" fill="${v.hair}"/>` +
-          `<path d="M9 18l2-7 4 6 4-8 4 8 4-6 2 7z" fill="${v.hair}"/>`;
+        return _hairCap(v.hair) +
+          `<path d="M9 14l2-7 4 6 4-8 4 8 4-6 2 7z" fill="${v.hair}"/>`;
       case 'long':
-        return `<path d="M7 24A15 15 0 0 1 37 24Z" fill="${v.hair}"/>` +
-          `<path d="M7 22q-1 12 1 16h4V22zM37 22q1 12-1 16h-4V22z" fill="${v.hair}"/>`;
+        /* The side panels run down beside the face, well clear of the eyes
+           at x 16 and 28. */
+        return _hairCap(v.hair) +
+          `<path d="M7.6 17q-1.6 13 0.4 17h4V17zM36.4 17q1.6 13-0.4 17h-4V17z" fill="${v.hair}"/>`;
       case 'cap':
-        return `<path d="M7 23A15 15 0 0 1 37 23Z" fill="${v.hair}"/>` +
-          `<rect x="20" y="20" width="20" height="4" rx="2" fill="${v.hair}"/>` +
-          `<circle cx="22" cy="9" r="2" fill="${v.hair}"/>`;
+        /* The brim has to project past the face or it vanishes into the dome,
+           and it is darkened so it separates from it. */
+        return _hairCap(v.hair) +
+          `<rect x="21" y="15.2" width="21" height="4.4" rx="2.2" fill="${v.hair}"/>` +
+          `<rect x="21" y="15.2" width="21" height="4.4" rx="2.2" fill="rgba(0,0,0,0.14)"/>` +
+          `<circle cx="22" cy="5" r="2" fill="${v.hair}"/>`;
       case 'freckles':
-        return `<path d="M8 23A14 14 0 0 1 36 23q-3-5-14-5T8 23Z" fill="${v.hair}"/>` +
+        /* A receded hairline rather than a full cap, so the forehead shows. */
+        return `<path d="M9 ${HAIRLINE}A14 14 0 0 1 35 ${HAIRLINE}q-3-4.5-13-4.5T9 ${HAIRLINE}Z" fill="${v.hair}"/>` +
           [[14, 27], [17, 29], [27, 29], [30, 27]].map(([x, y]) =>
             `<circle cx="${x}" cy="${y}" r="0.9" fill="#b9714f"/>`).join('');
       default:
-        return `<path d="M7 24A15 15 0 0 1 37 24Z" fill="${v.hair}"/>`;
+        return _hairCap(v.hair);
     }
   }
 
