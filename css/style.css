@@ -666,3 +666,34 @@ kbd {
 }
 .scene-ballpit .pm__line, .scene-ballpit .pm__circle, .scene-ballpit .pm__box { border-color: rgba(255, 255, 255, 0.4); }
 .scene-ballpit .pm__halfway { background: rgba(255, 255, 255, 0.4); }
+
+/* ===== Editor stage, per scene =====
+   The preview stands on the surface it will play on, so tapping a scene
+   button explains itself without a word. */
+.ed__stage.scene-grass {
+  background:
+    radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.35) 0%, transparent 60%),
+    linear-gradient(#2f7d4a, #1d5230);
+}
+.ed__stage.scene-moon {
+  background:
+    radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.4) 0%, transparent 60%),
+    radial-gradient(circle at 24% 26%, rgba(0,0,0,0.16) 0 20px, transparent 22px),
+    linear-gradient(#85878f, #5c5e66);
+}
+.ed__stage.scene-pool {
+  background:
+    radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.3) 0%, transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 3px, transparent 3px 13px),
+    linear-gradient(#17a0c9, #0f6f9c);
+}
+.ed__stage.scene-ballpit {
+  background:
+    radial-gradient(ellipse at 50% 92%, rgba(0,0,0,0.3) 0%, transparent 60%),
+    radial-gradient(circle at 16px 16px, #ef476f 0 13px, transparent 14px),
+    radial-gradient(circle at 48px 30px, #ffd166 0 13px, transparent 14px),
+    radial-gradient(circle at 80px 14px, #06d6a0 0 13px, transparent 14px),
+    radial-gradient(circle at 32px 52px, #4cc9f0 0 13px, transparent 14px),
+    linear-gradient(#6a4c8c, #533a70);
+  background-size: 100% 100%, 112px 68px, 112px 68px, 112px 68px, 112px 68px, 100% 100%;
+}

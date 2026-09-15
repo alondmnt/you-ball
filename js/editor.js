@@ -167,6 +167,7 @@ const Editor = (() => {
   /** The live preview: the selected character running on the spot. */
   function _renderStage() {
     const stage = document.getElementById('ed-stage');
+    stage.className = 'ed__stage scene-' + _currentScene();
     stage.innerHTML = '';
     const record = _find(_selected);
     if (!record) return;
@@ -314,6 +315,27 @@ const Editor = (() => {
     ball.addEventListener('click', () => _pickFor('ball', BALL_ID));
     extras.appendChild(ball);
 
+    /* Where you are playing. Four buttons, no words - the stage behind the
+       character changes as soon as you tap one, which is the explanation. */
+    const scenes = [['grass', '🌱'], ['moon', '🌙'], ['pool', '🏊'], ['ballpit', '🔴']];
+    const sceneRow = document.createElement('div');
+    sceneRow.className = 'ed__extras';
+    for (const [key, icon] of scenes) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ed__toggle' + (_currentScene() === key ? ' ed__toggle--on' : '');
+      b.textContent = icon;
+      b.setAttribute('aria-label', key);
+      b.addEventListener('click', () => {
+        _progress.scene = key;
+        Storage.saveProgress(_progress);
+        Audio.play('tap');
+        render();
+      });
+      sceneRow.appendChild(b);
+    }
+    host.appendChild(sceneRow);
+
     /* Difficulty: three faces, no words. */
     const diffs = [['easy', '🙂'], ['normal', '😀'], ['hard', '😈']];
     for (const [key, icon] of diffs) {
@@ -366,6 +388,12 @@ const Editor = (() => {
       warn.textContent = 'pictures cannot be saved from a file:// page — serve the folder over http';
       host.appendChild(warn);
     }
+  }
+
+  /** The scene the save is set to, falling back to the config default. */
+  function _currentScene() {
+    const name = _progress.scene || CONFIG.scene;
+    return CONFIG.scenes[name] ? name : 'grass';
   }
 
   /** The colour a character shows in, taken from whichever team it plays for. */
