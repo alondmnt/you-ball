@@ -1,0 +1,247 @@
+/**
+ * AI - produces the same intents a human produces, for the players a human is
+ * not driving.
+ *
+ * No DOM, no Date.now(), no Math.random: the generator is seeded here so a
+ * match replays identically from the same seed, which is what makes the logic
+ * testable from a plain script.
+ *
+ * Deliberately dumb and tunable. The behaviours are:
+ *   carrier        run at the goal, shoot in range with a clear lane, pass under pressure
+ *   chaser         the field player nearest a loose or enemy ball goes and gets it
+ *   the rest       hold a formation slot that slides with the ball, with a wander
+ *   keeper         track the ball's y on its line, dive at a fast inbound shot
+ *
+ * Difficulty is three multipliers, nothing more: how fast AI players run, how
+ * fast keepers track, and how much aim error a shot carries.
+ */
+const AI = (() => {
+
+  let _seed = 0x9e3779b9;
+
+  /** Reseed the generator. Same seed, same match. */
+  function seed(n) { _seed = (n >>> 0) || 0x9e3779b9; }
+
+  /** mulberry32 - small, fast, good enough for jitter and aim noise. */
+  function _rand() {
+    _seed |= 0; _seed = (_seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /** A random number in [-n, n]. */
+  function _jitter(n) { return (_rand() * 2 - 1) * n; }
+
+  /** The active difficulty multipliers. */
+  function _diff() {
+    return CONFIG.difficulties[CONFIG.difficulty] || CONFIG.difficulties.normal;
+  }
+
+  /**
+   * Set the AI run-speed multiplier on every player a human is not driving.
+   * Call after createWorld and whenever the human roster changes.
+   * @param {object} world
+   * @param {Set<number>|Array<number>} humanIds
+   */
+  function applyDifficulty(world, humanIds) {
+    const humans = humanIds instanceof Set ? humanIds : new Set(humanIds || []);
+    const d = _diff();
+    for (const p of world.players) {
+      p.human = humans.has(p.id);
+      if (p.human) { p.speedMult = 1; continue; }
+      p.speedMult = p.role === 'gk' ? d.gkTrack : d.aiSpeed;
+    }
+  }
+
+  /**
+   * Fill in intents for every AI-controlled player.
+   * @param {object} world
+   * @param {Set<number>} humanIds - ids a human is driving this frame
+   * @param {Array<object>} intents - written in place, one entry per player id
+   */
+  function think(world, humanIds, intents) {
+    const humans = humanIds instanceof Set ? humanIds : new Set(humanIds || []);
+    const chasers = _pickChasers(world, humans);
+
+    for (const p of world.players) {
+      if (humans.has(p.id)) continue;
+      const intent = intents[p.id] || (intents[p.id] = { mx: 0, my: 0, shoot: null, pass: false });
+      intent.mx = 0; intent.my = 0; intent.shoot = null; intent.pass = false;
+
+      if (!p.ai) p.ai = { nextDecideAt: 0, jx: 0, jy: 0 };
+      if (world.t >= p.ai.nextDecideAt) {
+        p.ai.nextDecideAt = world.t + CONFIG.aiReactionMs / 1000;
+        p.ai.jx = _jitter(CONFIG.aiJitter);
+        p.ai.jy = _jitter(CONFIG.aiJitter);
+      }
+
+      if (p.role === 'gk') _keeper(world, p, intent);
+      else if (world.ball.carrier === p.id) _withBall(world, p, intent);
+      else if (chasers[p.team] === p.id) _chase(world, p, intent);
+      else _holdSlot(world, p, intent);
+    }
+  }
+
+  /**
+   * One field player per team goes for the ball: the nearest to it, unless a
+   * teammate already has it, in which case nobody chases and everyone spreads.
+   * @returns {Array<number|null>} chaser id per team
+   */
+  function _pickChasers(world, humans) {
+    const b = world.ball;
+    const holder = Physics.carrier(world);
+    const out = [null, null];
+    for (let team = 0; team < 2; team++) {
+      if (holder && holder.team === team) continue;
+      let best = null, bestD = Infinity;
+      for (const p of world.players) {
+        if (p.team !== team || p.role === 'gk' || humans.has(p.id)) continue;
+        const d = Math.hypot(p.x - b.x, p.y - b.y);
+        if (d < bestD) { bestD = d; best = p.id; }
+      }
+      out[team] = best;
+    }
+    return out;
+  }
+
+  /** Steer toward a world point, easing off over the last ARRIVE units. */
+  function _steer(p, tx, ty, intent) {
+    const ARRIVE = 55;
+    intent.mx = Math.max(-1, Math.min(1, (tx - p.x) / ARRIVE));
+    intent.my = Math.max(-1, Math.min(1, (ty - p.y) / ARRIVE));
+  }
+
+  /* ─── Behaviours ─── */
+
+  /** Carrying: head for goal, shoot in range, pass out of trouble. */
+  function _withBall(world, p, intent) {
+    const b = world.ball;
+    const goalX = Physics.targetGoalX(p.team);
+    const goalY = CONFIG.pitchH / 2;
+    const dist = Math.hypot(goalX - p.x, goalY - p.y);
+
+    /* Pressure first - a pass beats losing it to a tackle. */
+    let nearest = Infinity;
+    for (const q of world.players) {
+      if (q.team === p.team) continue;
+      nearest = Math.min(nearest, Math.hypot(q.x - p.x, q.y - p.y));
+    }
+    if (nearest < CONFIG.pressureDist && Physics.passTarget(world, p)) {
+      intent.pass = true;
+      return;
+    }
+
+    if (dist < CONFIG.shootRange && _laneClear(world, p, goalX, goalY)) {
+      /* Aim away from the keeper's current side, then add difficulty noise. */
+      const gk = world.players.find(q => q.team !== p.team && q.role === 'gk');
+      const half = CONFIG.goalMouth / 2 - CONFIG.ballRadius * 2;
+      const aimY = gk ? goalY - Math.sign(gk.y - goalY || 1) * half * 0.7 : goalY;
+      let dx = goalX - b.x, dy = aimY - b.y;
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len; dy /= len;
+      const noise = _jitter(CONFIG.shootNoise * _diff().shootNoise);
+      const c = Math.cos(noise), s = Math.sin(noise);
+      intent.shoot = {
+        dx: dx * c - dy * s,
+        dy: dx * s + dy * c,
+        power: Math.max(0.55, Math.min(1, dist / CONFIG.shootRange)),
+      };
+      return;
+    }
+
+    _steer(p, goalX, goalY + p.ai.jy * 0.6, intent);
+  }
+
+  /** Not carrying, nearest to the ball: go and get it. */
+  function _chase(world, p, intent) {
+    const b = world.ball;
+    /* Lead a moving ball rather than running at where it was. */
+    const lead = Math.min(0.4, Math.hypot(b.vx, b.vy) / 2200);
+    _steer(p, b.x + b.vx * lead, b.y + b.vy * lead, intent);
+  }
+
+  /** Everyone else: a formation slot that slides with the ball, plus a wander. */
+  function _holdSlot(world, p, intent) {
+    const slot = CONFIG.formation[p.index];
+    const baseX = p.team === 0 ? slot.x : CONFIG.pitchW - slot.x;
+    const pull = (world.ball.x - CONFIG.pitchW / 2) * CONFIG.formationBallPull;
+    const tx = Math.max(140, Math.min(CONFIG.pitchW - 140, baseX + pull + p.ai.jx));
+    const ty = Math.max(80, Math.min(CONFIG.pitchH - 80, slot.y + p.ai.jy));
+    _steer(p, tx, ty, intent);
+  }
+
+  /**
+   * Keeper: sit on the line at the ball's y, come out a little for a close
+   * ball, dive at a fast inbound shot, and punt after collecting one.
+   * How fast it tracks is the difficulty dial.
+   */
+  function _keeper(world, p, intent) {
+    const b = world.ball;
+    const goalX = Physics.ownGoalX(p.team);
+    const centreY = CONFIG.pitchH / 2;
+
+    if (b.carrier === p.id) {
+      /* Collected it - hold a beat, then punt to a teammate. */
+      if (world.t > b.stealLockUntil + 0.3) intent.pass = true;
+      else _steer(p, goalX + Physics.attackDir(p.team) * 60, centreY, intent);
+      return;
+    }
+
+    /* Inbound: the ball is closing on the goal this keeper defends. Works for
+       either end because the sign of (b.x - goalX) flips with the goal. */
+    const inbound = (b.x - goalX) * b.vx < 0;
+    const speed = Math.hypot(b.vx, b.vy);
+    let aimY = b.y;
+
+    if (b.carrier === null && inbound && Math.abs(b.vx) > 1) {
+      /* Predict where the shot crosses the line and go there. */
+      const tt = Math.abs((b.x - goalX) / b.vx);
+      if (tt < 1.6) {
+        aimY = b.y + b.vy * tt;
+        /* The touchlines are walls, so a shot can arrive off a bounce. */
+        const span = CONFIG.pitchH;
+        aimY = Math.abs(((aimY % (2 * span)) + 2 * span) % (2 * span));
+        if (aimY > span) aimY = 2 * span - aimY;
+        if (speed > 520 && tt < 0.55 && Math.abs(aimY - p.y) > 45) {
+          p.diveUntil = world.t + 0.42;
+          p.diveDir = aimY > p.y ? 1 : -1;
+        }
+      }
+    }
+
+    const reach = CONFIG.goalMouth * 0.95;
+    aimY = Math.max(centreY - reach, Math.min(centreY + reach, aimY));
+
+    /* Edge off the line when the ball is close, to cut the angle. */
+    const ballDist = Math.abs(b.x - goalX);
+    const advance = ballDist < 620 ? CONFIG.gkReach * 0.75 : CONFIG.gkReach * 0.25;
+    _steer(p, goalX + Physics.attackDir(p.team) * advance, aimY, intent);
+  }
+
+  /**
+   * Is the path to the target roughly free of opponents?
+   * Samples the first stretch of the shot rather than the whole line - what
+   * matters is getting it away, not threading it past the keeper.
+   */
+  function _laneClear(world, p, tx, ty) {
+    const dx = tx - p.x, dy = ty - p.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const reach = Math.min(len, 420);
+    const ux = dx / len, uy = dy / len;
+    for (const q of world.players) {
+      if (q.team === p.team || q.role === 'gk') continue;
+      const rx = q.x - p.x, ry = q.y - p.y;
+      const along = rx * ux + ry * uy;
+      if (along < 0 || along > reach) continue;
+      const off = Math.abs(rx * uy - ry * ux);
+      if (off < 62) return false;
+    }
+    return true;
+  }
+
+  return { seed, think, applyDifficulty };
+})();
+
+/* Node can require this file for the logic tests; browsers ignore the guard. */
+if (typeof module !== 'undefined' && module.exports) module.exports = AI;
