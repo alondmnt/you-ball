@@ -126,6 +126,16 @@ the overrides are not cosmetic. a kid asks to play on the moon because of what t
 
 the AI values move with them, and that is the part that breaks quietly. its shooting range assumes a ball that travels a certain distance, so a scene that changes the ball's roll has to change the range too, or nobody ever shoots. `test/logic.js` runs six AI-vs-AI matches per scene and fails if a scene stops producing goals.
 
+### effects
+
+each scene names the effects it wants in `CONFIG.fx`; the vocabulary (`dust`, `ripple`, `splash`, plus `ballBob`) lives in `render.js`. a scene chooses, it does not describe. so adding a scene still costs no code, and only a genuinely new kind of effect does.
+
+three things keep the particle count sane. running effects are throttled per player and capped per frame, because eight players kicking up dust continuously is noise rather than atmosphere. bursts scale quadratically with what caused them, so a footstep is a wisp and a full-power kick is a cloud, through the same emitter. and anyone who asked for reduced motion gets none of it.
+
+the first version left 74 dust puffs alive at once; it now peaks at 25, and frame time sits at 16.7ms median in every scene. that measurement is a desktop upper bound, not a promise about the tablet.
+
+the pool's waterline is worth singling out: a band of pool colour across each character's lower legs did more to say "in the water" than the caustics, the ripples and the surface pattern combined. it is eight lines of CSS.
+
 ### what the measurements taught us
 
 the first pool scene slowed players and blunted their acceleration, on the theory that water is heavy. every one of twelve matches finished nil-nil: the pitch stays the same size while everything on it gets slower, so the AI could never work the ball into shooting range before losing it. a one-value-at-a-time sweep showed no single override was fatal; low acceleration and a short steal immunity compounded into permanent churn.
@@ -165,6 +175,7 @@ a standing consequence: **every formation slot sits in its own defensive half**,
 | what | why |
 |---|---|
 | scenes override physics, not just CSS | a moon that only looks different is a let-down; the plan left scenes as cosmetic |
+| scenes emit named effects | dust and ripples need code that knows when to fire, so the promise "a scene is CSS plus a config value" widened deliberately rather than by accident |
 | `sy` and `z` invert y | the plan's formula contradicts its own scale formula and layout diagram |
 | three face images, CSS picks one | a `src` swap can show a blank head on the goal frame |
 | camera moved from per-entity to per-layer | same arithmetic, fewer operations, free crowd parallax |

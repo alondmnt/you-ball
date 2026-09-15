@@ -42,6 +42,8 @@ four places, picked in the editor. they are not just different colours - each on
 | 🏊 pool | water, lane ropes, umbrellas | heavy. a shot dies on its way, so you have to get close to score, and the walls are soggy |
 | 🔴 ball pool | a floor of coloured balls, padded walls | springy and unpredictable. the ball comes off a wall at an angle you did not expect |
 
+on the moon, players kick up dust when they run and throw a cloud of it when they shoot. in the pool they push ripples out with every step, kicks throw droplets, and the ball bobs. the balls in the ball pool do not move yet.
+
 a pool rather than an ocean, because the game is a walled pitch and the ball bounces off the edges. an ocean has no walls.
 
 ## making players
