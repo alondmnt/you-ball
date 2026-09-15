@@ -169,3 +169,24 @@
   .ch--idle .ch__body,
   .ch--sad .ch__body { animation: none; }
 }
+
+/* ===== "this one is you" =====
+   A bobbing chevron over the player the human is driving. Auto-switch moves
+   control around constantly, so without this the kid cannot tell who they are. */
+.ch__marker {
+  position: absolute;
+  left: 50%; top: -14px;
+  width: 0; height: 0;
+  margin-left: -9px;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 12px solid var(--team-colour, #ffd166);
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+  opacity: 0;
+  z-index: 10;
+}
+.ch--mine .ch__marker { opacity: 1; animation: marker-bob 0.9s ease-in-out infinite; }
+@keyframes marker-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}

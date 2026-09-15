@@ -122,6 +122,12 @@ const Character = (() => {
       }
     }
 
+    /* Shown only on the player a human is currently driving. Without it the
+       auto-switch leaves the kid with no idea which one is theirs. */
+    const marker = document.createElement('div');
+    marker.className = 'ch__marker';
+    el.appendChild(marker);
+
     if (opts.badge) {
       const badge = document.createElement('div');
       badge.className = 'ch__badge';

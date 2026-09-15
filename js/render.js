@@ -111,8 +111,9 @@ const Render = (() => {
    * Draw one frame.
    * @param {object} world
    * @param {object} match
+   * @param {Set<number>} [controlled] - player ids a human is driving
    */
-  function frame(world, match) {
+  function frame(world, match, controlled) {
     const L = Pitch.layout();
 
     for (const p of world.players) {
@@ -128,6 +129,7 @@ const Render = (() => {
       rig.setAnim(animFor(p, world, match));
       /* A stunned player flashes, so a tackle reads as something that happened. */
       rig.el.classList.toggle('ch--stunned', p.stunUntil > world.t);
+      rig.el.classList.toggle('ch--mine', !!controlled && controlled.has(p.id));
     }
 
     const b = world.ball;

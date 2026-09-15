@@ -81,10 +81,12 @@ const Editor = (() => {
       slots: {},
     };
     _progress.roster.push(record);
-    /* Fill any empty team slots so a fresh save is playable immediately. */
+    /* Fill an empty team place so a fresh save is playable immediately. Field
+       places first: both keepers are always AI, so a character parked in goal
+       is one the kid never gets to be. */
     for (const team of _progress.teams) {
-      const gap = team.players.indexOf(null);
-      if (gap >= 0) team.players[gap] = id;
+      const gap = [1, 2, 3, 0].find(i => team.players[i] == null);
+      if (gap !== undefined) team.players[gap] = id;
     }
     if (select !== false) _selected = id;
     Storage.saveProgress(_progress);

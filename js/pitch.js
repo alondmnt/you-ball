@@ -118,8 +118,12 @@ const Pitch = (() => {
    * @param {boolean} [snap] - jump rather than ease (kickoff, restart)
    */
   function follow(ballX, snap) {
-    const maxCam = Math.max(0, CONFIG.pitchW - CONFIG.cameraViewW);
-    const target = Math.max(0, Math.min(maxCam, ballX - CONFIG.cameraViewW / 2));
+    /* Overscan by the goal depth at each end: the nets sit behind the goal
+       line, so a camera clamped exactly to the pitch never shows them. */
+    const over = CONFIG.goalDepth * 1.5;
+    const minCam = -over;
+    const maxCam = Math.max(minCam, CONFIG.pitchW - CONFIG.cameraViewW + over);
+    const target = Math.max(minCam, Math.min(maxCam, ballX - CONFIG.cameraViewW / 2));
     _camX = snap ? target : _camX + (target - _camX) * CONFIG.camLerp;
   }
 
