@@ -27,9 +27,16 @@ const ok = (name, cond, extra) => {
 };
 const DT = 1 / 60;
 
-/* Run the whole AI-vs-AI match and collect everything that happened. */
-function simulate(maxSeconds) {
-  AI.seed(12345);
+/**
+ * Run a whole AI-vs-AI match and collect everything that happened.
+ * @param {number} maxSeconds - give up after this much simulated time
+ * @param {string} [scene] - which scene's values to play under
+ * @param {number} [seed] - AI and bounce seed
+ */
+function simulate(maxSeconds, scene, seed) {
+  CONFIG.applyScene(scene || 'grass');
+  AI.seed(seed || 12345);
+  if (Physics.seed) Physics.seed((seed || 12345) ^ 0x5bf03635);
   const world = Physics.createWorld();
   const match = Match.create();
   AI.applyDifficulty(world, []);
@@ -155,9 +162,37 @@ console.log('\n-- clock --');
   ok('clock text formats as m:ss', Match.clockText({ clock: 68 }) === '1:08', Match.clockText({ clock: 68 }));
 }
 
+console.log('\n-- every scene is playable --');
+/*
+ * A scene changes real physics, not just colours, so each one has to be
+ * checked the way grass is. An early pool that slowed players and blunted
+ * their acceleration made the pitch effectively too long: the AI never got
+ * the ball into shooting range and every match finished nil-nil. That is
+ * exactly the failure this catches, and it is invisible from a screenshot.
+ */
+{
+  const RUNS = 6;
+  for (const scene of Object.keys(CONFIG.scenes)) {
+    let goals = 0, nilNil = 0, finished = 0;
+    for (let i = 0; i < RUNS; i++) {
+      const r = simulate(400, scene, 5000 + i * 7919);
+      const total = r.match.score[0] + r.match.score[1];
+      goals += total;
+      if (total === 0) nilNil++;
+      if (r.match.phase === Match.PHASE.FULLTIME) finished++;
+      if (r.outOfBounds) { fail++; console.log(`  FAIL ${scene} let something off the pitch`); }
+    }
+    const perMatch = goals / RUNS;
+    ok(`${scene}: every match finishes`, finished === RUNS, `${finished}/${RUNS}`);
+    ok(`${scene}: goals get scored`, perMatch >= 1.0, perMatch.toFixed(1) + ' per match');
+    ok(`${scene}: not a goalless scene`, nilNil <= 1, nilNil + ' of ' + RUNS + ' nil-nil');
+  }
+  CONFIG.applyScene('grass');
+}
+
 console.log('\n-- determinism --');
 {
-  const a = simulate(400), b = simulate(400);
+  const a = simulate(400, 'grass', 12345), b = simulate(400, 'grass', 12345);
   ok('the same seed replays the same match',
      JSON.stringify(a.match.score) === JSON.stringify(b.match.score) && a.steps === b.steps,
      a.match.score + ' / ' + b.match.score);
