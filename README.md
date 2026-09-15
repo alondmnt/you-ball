@@ -54,6 +54,8 @@ a rock song, synthesised note by note like every other sound, that follows the b
 
 it is written in sixteen-bar parts - four four-bar phrases with an arc through them - and two parts alternate, so nothing comes round again inside about a minute. each team has its own pair: home is bright and climbs, away sits on a flat second and walks down onto it. both are in the same key at the same tempo, so possession can turn over mid-bar and the music just carries on.
 
+each part has its own rhythm, played by the bass and the guitar together. home is a syncopated figure stated twice a bar, steady and symmetrical. away puts five hits against a half-time drum beat so it never quite settles. the drums hold a straight pulse underneath either one. every fourth bar turns - a different figure and a snare fill - so you can hear the seams.
+
 three textures play over whichever part is running:
 
 | | what you hear |

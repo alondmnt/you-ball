@@ -269,109 +269,133 @@ const Audio = (() => {
    * with an arc through them - and the form alternates the parts, so nothing
    * comes round again inside half a minute.
    *
-   * The guitar plays root and fifth with no third in it, so these roots are
-   * modeless. The mode comes from the bass line and from the notes the hook
-   * picks out, which is why home and away can share roots and still sound
-   * nothing like each other.
+   * Each part carries a `cell`: which sixteenths of a bar the riff lands on.
+   * This is the thing that makes it a riff rather than a chord progression
+   * with a pedal under it. The bass and the guitar both play the cell, which
+   * is what a band locking onto a figure sounds like, while the drums hold a
+   * straight pulse so the syncopation has something to push against.
+   *
+   *   home  [0 3 4 6 | 8 11 12 14]  the same half-bar figure twice: stable,
+   *                                 symmetrical, the kind of thing you nod to
+   *   away  [0 3 6 9 12]            five hits evenly spaced by three against a
+   *                                 four-four kick, so it never quite settles
+   *
+   * `turn` replaces the cell on the last bar of each four-bar phrase, so the
+   * joints are audible. `bass` lists one pitch per cell hit, so a bar has as
+   * many notes as the cell has holes left over.
+   *
+   * The guitar plays root and fifth with no third in it, so the chord roots
+   * are modeless. The mode comes from the bass line and from the notes the
+   * hook picks out, which is why home and away can share roots and still
+   * sound nothing like each other.
    */
   const PHRASE = {
     home: {
       /* The anthem. Em Em C D, said again with a different landing, lifted to
          the four, then walked home. */
       a: {
+        cell: [0, 3, 4, 6, 8, 11, 12, 14],
+        turn: [0, 4, 6, 8, 10, 12, 14, 15],
         chord: ['E3', 'E3', 'C4', 'D4', 'E3', 'E3', 'C4', 'G3',
                 'A3', 'A3', 'C4', 'D4', 'E3', 'E3', 'D4', 'E3'],
         bass: [
           ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
-          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'A2', 'G2'],
-          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
-          ['A2', 'A2', 'A2', 'A2', 'C3', 'C3', 'B2', 'A2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2'],
           ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'B2', 'A2'],
           ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'D3', 'E2'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'B2'],
-          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'A2', 'B2', 'C3'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'C3', 'B2', 'A2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'B2', 'A2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
+          ['E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'D3', 'B2'],
         ],
       },
       /* The other half of the song: it sits up on the four and finishes on
-         two bars of D pedal, which can only resolve one way. */
+         two bars of D that can only resolve one way. */
       b: {
+        cell: [0, 3, 4, 6, 8, 11, 12, 14],
+        turn: [0, 4, 6, 8, 10, 12, 14, 15],
         chord: ['A3', 'A3', 'E3', 'E3', 'C4', 'C4', 'D4', 'D4',
                 'A3', 'A3', 'E3', 'G3', 'C4', 'C4', 'D4', 'D4'],
         bass: [
           ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
-          ['A2', 'A2', 'A2', 'A2', 'C3', 'C3', 'B2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'C3', 'B2', 'A2'],
           ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2', 'B2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'A2', 'B2'],
           ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
-          ['C3', 'C3', 'C3', 'C3', 'D3', 'D3', 'C3', 'C3'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3', 'B2'],
           ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'B2', 'A2'],
           ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
-          ['A2', 'A2', 'A2', 'A2', 'C3', 'C3', 'B2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'C3', 'B2', 'A2'],
           ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'G2', 'E2'],
-          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'A2', 'G2'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'A2', 'B2', 'C3'],
           ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
-          ['C3', 'C3', 'C3', 'C3', 'D3', 'D3', 'C3', 'C3'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3', 'B2'],
           ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'D3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'B2', 'D3'],
         ],
       },
     },
     away: {
-      /* The flat second vamps, then Am G F Em walks down onto it. That
-         descent is the oldest menacing gesture in the book. */
+      /* The flat second vamps, then Am G F Em walks down onto it. The third
+         phrase alternates E and F bar by bar rather than repeating the first,
+         which is tighter and leaves nothing to settle into. */
       a: {
+        cell: [0, 3, 6, 9, 12],
+        turn: [0, 4, 8, 12, 15],
         chord: ['E3', 'E3', 'F3', 'F3', 'A3', 'G3', 'F3', 'E3',
-                'E3', 'E3', 'F3', 'F3', 'C4', 'D4', 'F3', 'E3'],
+                'E3', 'F3', 'E3', 'F3', 'C4', 'D4', 'F3', 'E3'],
         bass: [
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
-          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
-          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'F2', 'G2'],
-          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
-          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'F2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'F2', 'E2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2'],
+          ['F2', 'F2', 'E2', 'F2', 'G2'],
+          ['A2', 'A2', 'A2', 'A2', 'G2'],
+          ['G2', 'G2', 'G2', 'G2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2'],
+          ['F2', 'F2', 'F2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2'],
+          ['F2', 'F2', 'E2', 'F2', 'G2'],
+          ['C3', 'C3', 'C3', 'C3', 'B2'],
+          ['D3', 'D3', 'D3', 'C3', 'B2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'F2', 'E2'],
         ],
       },
       /* Away's other half climbs away from the root instead of hanging on it,
          so the return to that F against E lands harder. */
       b: {
+        cell: [0, 3, 6, 9, 12],
+        turn: [0, 4, 8, 12, 15],
         chord: ['C4', 'C4', 'D4', 'D4', 'A3', 'A3', 'F3', 'F3',
                 'C4', 'C4', 'D4', 'D4', 'A3', 'G3', 'F3', 'E3'],
         bass: [
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-          ['D3', 'D3', 'D3', 'D3', 'C3', 'C3', 'B2', 'B2'],
-          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
-          ['A2', 'A2', 'A2', 'A2', 'G2', 'G2', 'F2', 'F2'],
-          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2', 'E2', 'F2', 'F2'],
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'B2', 'C3'],
-          ['C3', 'C3', 'C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
-          ['D3', 'D3', 'D3', 'D3', 'D3', 'D3', 'C3', 'D3'],
-          ['D3', 'D3', 'D3', 'D3', 'C3', 'C3', 'B2', 'B2'],
-          ['A2', 'A2', 'A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
-          ['G2', 'G2', 'G2', 'G2', 'G2', 'G2', 'F2', 'G2'],
-          ['F2', 'F2', 'F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
-          ['E2', 'E2', 'E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['C3', 'C3', 'C3', 'C3', 'B2'],
+          ['C3', 'C3', 'C3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'C3'],
+          ['D3', 'D3', 'C3', 'B2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'G2'],
+          ['A2', 'A2', 'A2', 'G2', 'A2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2'],
+          ['F2', 'F2', 'E2', 'F2', 'G2'],
+          ['C3', 'C3', 'C3', 'C3', 'B2'],
+          ['C3', 'C3', 'C3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'C3'],
+          ['D3', 'D3', 'C3', 'B2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'G2'],
+          ['G2', 'G2', 'G2', 'G2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'F2', 'E2'],
         ],
       },
     },
@@ -385,11 +409,10 @@ const Audio = (() => {
   const FORM = ['a', 'b'];
 
   /*
-   * The verse plays the same harmony with most of the notes taken out, which
-   * is why it can drop in over either key without a join. Which of the eight
-   * eighths in a bar survive:
+   * The verse plays the same riff with most of it taken out - every fourth hit
+   * of the cell - which is why it can drop in over either part without a join.
    */
-  const BASS_SPARSE = [0, 3, 5];
+  const VERSE_EVERY = 4;
 
   /*
    * The hook answers at the end of every other bar, never on top of the riff:
@@ -399,19 +422,21 @@ const Audio = (() => {
    * [step within the bar, note, length in sixteenths]
    */
   const HOOK = {
-    /* One answer at the end of each four bar phrase, and the four answers
-       have their own shape: call, reply, a lift, then home. */
+    /* One answer at the end of each four bar phrase. The four have different
+       rhythms as well as different notes: short-short-long, then long-short-
+       short, then a sixteenth pickup into a held note, then syncopated. Four
+       statements of one rhythm is a pattern, not a hook. */
     a: {
       3: [[8, 'B3', 2], [10, 'D4', 2], [12, 'E4', 4]],
-      7: [[8, 'D4', 2], [10, 'B3', 2], [12, 'A3', 4]],
-      11: [[8, 'D4', 2], [10, 'E4', 2], [12, 'G4', 4]],
-      15: [[8, 'E4', 2], [10, 'D4', 2], [12, 'B3', 4]],
+      7: [[8, 'D4', 4], [12, 'B3', 2], [14, 'A3', 2]],
+      11: [[9, 'D4', 1], [10, 'E4', 1], [11, 'G4', 5]],
+      15: [[8, 'E4', 2], [11, 'D4', 1], [12, 'B3', 4]],
     },
     /* The other part answers half as often. Space is what makes it the other
        part rather than more of the same. */
     b: {
-      7: [[8, 'E4', 2], [10, 'D4', 2], [12, 'B3', 4]],
-      15: [[8, 'D4', 2], [10, 'E4', 2], [12, 'A3', 4]],
+      7: [[8, 'E4', 3], [11, 'D4', 1], [12, 'B3', 4]],
+      15: [[10, 'D4', 1], [11, 'E4', 1], [12, 'A3', 4]],
     },
   };
 
@@ -423,9 +448,7 @@ const Audio = (() => {
     eighths: [0, 2, 4, 6, 8, 10, 12, 14],
     sixteenths: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
   };
-  const STAB = [0, 6, 8, 14];        /* syncopated, so the chorus pushes */
-  const CHUG = [0, 2, 4, 6, 8, 10, 12, 14];
-  const HOLD = [0, 4, 8, 12];        /* the verse guitar: a held breath, not a texture */
+  const FILL = [14, 15];             /* two extra snares into the phrase turn */
   const CHANT = [0, 8];              /* a shout on the downbeat of each half */
 
   /** One notch more drive on the hats, for a team that is behind. */
@@ -672,6 +695,10 @@ const Audio = (() => {
        band and a drum machine. */
     const at = when + ((s % 4 === 2) ? m.swing * beat : 0);
     const phrase = PHRASE[_mKey][_mPart];
+    /* The last bar of every four-bar phrase turns: a different cell and a
+       snare fill, so the seams are audible. */
+    const turning = bar % 4 === 3;
+    const cell = turning ? phrase.turn : phrase.cell;
 
     if (lay.kick && KICK[lay.kick].indexOf(s) >= 0) {
       _note(128, 0, 0.14, 'sine', L.kick, 44, _mBus, at);
@@ -680,25 +707,38 @@ const Audio = (() => {
       _noise(0, 0.13, 1900, L.snare, 'bandpass', 900, _mBus, at);
       _note(196, 0, 0.09, 'triangle', L.snare * 0.5, 150, _mBus, at);
     }
+    /* A fill into every phrase turn, so sixteen bars have joints you can hear
+       rather than one pattern running for half a minute. */
+    if (lay.snare && turning && FILL.indexOf(s) >= 0) {
+      _noise(0, 0.09, 2200, L.snare * (s === 15 ? 1 : 0.7), 'bandpass', 1100, _mBus, at);
+    }
     if (lay.hat && HAT[lay.hat].indexOf(s) >= 0) {
       /* Lean on the downbeat so a run of sixteenths still has a pulse. */
       const v = L.hat * (s % 4 === 0 ? 1 : 0.62);
       _noise(0, 0.028, 7600, v, 'highpass', 6200, _mBus, at);
     }
-    if (lay.bass && s % 2 === 0) {
-      const eighth = s / 2;
-      const plays = lay.bass === 'sparse' ? BASS_SPARSE.indexOf(eighth) >= 0 : true;
-      const note = phrase.bass[bar][eighth];
-      if (plays && note) _bassVoice(HZ[note], at, sixteenth * (lay.bass === 'sparse' ? 3.2 : 1.7), L.bass);
-    }
-    if (lay.guitar === 'stab' && STAB.indexOf(s) >= 0) {
-      _guitarVoice(HZ[phrase.chord[bar]], at, sixteenth * 3.4, L.stab, lay.shine);
-    }
-    if (lay.guitar === 'chug' && CHUG.indexOf(s) >= 0) {
-      _guitarVoice(HZ[phrase.chord[bar]], at, sixteenth * 0.85, L.chug, false);
-    }
-    if (lay.guitar === 'hold' && HOLD.indexOf(s) >= 0) {
-      _guitarVoice(HZ[phrase.chord[bar]], at, sixteenth * 2.6, L.chug * 0.8, false);
+    /* Bass and guitar both play the cell. A band locking onto one figure is
+       what a riff is; the drums keep the straight pulse underneath so the
+       syncopation has something to push against. */
+    const idx = cell.indexOf(s);
+    if (idx >= 0) {
+      const root = HZ[phrase.chord[bar]];
+      const accent = idx % VERSE_EVERY === 0;      /* the hits the riff leans on */
+      const verse = lay.bass === 'sparse';
+      if (lay.bass && (!verse || accent)) {
+        const note = phrase.bass[bar][idx];
+        if (note) _bassVoice(HZ[note], at, sixteenth * (verse ? 3.2 : 1.6), L.bass);
+      }
+      if (lay.guitar === 'stab') {
+        /* The accented hits ring, the rest are clipped - which is a guitarist
+           letting one chord through and muting the others. */
+        _guitarVoice(root, at, sixteenth * (accent ? 3.4 : 1.3),
+                     L.stab * (accent ? 1 : 0.7), lay.shine);
+      } else if (lay.guitar === 'chug') {
+        _guitarVoice(root, at, sixteenth * 0.85, L.chug, false);
+      } else if (lay.guitar === 'hold' && accent) {
+        _guitarVoice(root, at, sixteenth * 2.6, L.chug * 0.8, false);
+      }
     }
     const hook = HOOK[_mPart][bar];
     if (lay.hook && hook) {

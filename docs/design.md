@@ -103,9 +103,35 @@ game. Eight-bar parts in an AABA form give the same 32 bars before a repeat, so
 the choice between them is about the length of the musical sentence, not about
 repetition.
 
+**What makes it a riff rather than a progression.** The first version had the
+bass playing straight eighths, every eighth, for the whole part - no rests
+anywhere, and the same figure in all sixteen bars. The chords moved but the
+rhythm and contour never did, so the ear heard one bar repeating under a
+changing progression rather than a sixteen-bar sentence.
+
+Each part now carries a `cell`: which sixteenths of the bar the riff lands on.
+Bass and guitar both play it, which is what a band locking onto a figure sounds
+like, while the drums hold a straight pulse so the syncopation has something to
+push against.
+
+```
+home   x..xx.x.x..xx.x.   one half-bar figure stated twice: stable, symmetric
+kick   x.....x.x.....x.
+
+away   x..x..x..x..x...   five hits spaced by three, against a half-time kick:
+kick   x.........x.....   a cross-rhythm that never quite settles
+```
+
+That makes the home/away contrast rhythmic as well as modal, which is a much
+stronger cue than mode alone. `turn` swaps the cell on the last bar of each
+four-bar phrase and a snare fill goes with it, so the seams are audible; the
+four hook statements have four different rhythms, because four statements of
+one rhythm is a pattern rather than a hook.
+
 The guitar plays root and fifth with no third in it, so the chord roots are
 modeless. The mode comes from the bass line and from the notes the hook picks
 out, which is why home and away can share roots and still sound nothing alike.
+It also halves the data: a bar is one root plus one pitch per cell hit.
 
 **Two axes, two speeds.** A *progression* (home: Em Em C D up to the four,
 away: Em Em F F then Am G F Em down onto it) and a *texture* (the layer set: which drum pattern, whether the hook and the chant
