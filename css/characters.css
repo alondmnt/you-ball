@@ -58,25 +58,43 @@
   50%      { transform: translateY(-2px) scaleY(1.012); }
 }
 
-/* ===== run - legs alternate, arms opposite, slight forward lean ===== */
+/* ===== run =====
+   Two things here are load bearing, and both were wrong first time.
+
+   The arms are on the opposite delay to the legs. Right arm with right leg is
+   how a tin soldier moves, not a person, and it was measurably what this did:
+   arm-r sat at the same phase as leg-r for the whole cycle.
+
+   The swing is biased forward rather than symmetrical. A limb that travels the
+   same distance either side of vertical carries no information about which way
+   the character is going, and on a front-on paper doll there is nothing else
+   to say: it reads as a shuffle, or as running backwards. Forward reach larger
+   than the trailing push, plus a real lean, is the whole cue. */
 .ch--run .ch__leg-l { animation: ch-run-leg 0.42s linear infinite; }
 .ch--run .ch__leg-r { animation: ch-run-leg 0.42s linear infinite -0.21s; }
-.ch--run .ch__arm-l { animation: ch-run-arm 0.42s linear infinite -0.21s; }
-.ch--run .ch__arm-r { animation: ch-run-arm 0.42s linear infinite; }
+.ch--run .ch__arm-l { animation: ch-run-arm 0.42s linear infinite; }
+.ch--run .ch__arm-r { animation: ch-run-arm 0.42s linear infinite -0.21s; }
 .ch--run .ch__body  { animation: ch-run-body 0.21s ease-in-out infinite alternate; }
+/* Negative swings a hanging limb towards the front, positive towards the back. */
 @keyframes ch-run-leg {
-  0%   { transform: rotate(35deg); }
-  50%  { transform: rotate(-35deg); }
-  100% { transform: rotate(35deg); }
+  0%   { transform: rotate(26deg); }    /* trailing, pushing off */
+  50%  { transform: rotate(-40deg); }   /* reaching ahead */
+  100% { transform: rotate(26deg); }
 }
+/* The arms lean the other way - a runner drives the elbow back - and the arc
+   is deliberately small. These are front-on paper dolls, so a big horizontal
+   swing does not read as forward and back; it just drags the arm across the
+   torso, where one of them disappears behind it and the other sits on the
+   belly. The legs and the lean carry the direction; the arms only have to
+   counter them. */
 @keyframes ch-run-arm {
-  0%   { transform: rotate(-30deg); }
-  50%  { transform: rotate(30deg); }
-  100% { transform: rotate(-30deg); }
+  0%   { transform: rotate(-18deg); }   /* opposite to the leg on that side */
+  50%  { transform: rotate(26deg); }
+  100% { transform: rotate(-18deg); }
 }
 @keyframes ch-run-body {
-  from { transform: translateY(0) rotate(5deg); }
-  to   { transform: translateY(-3px) rotate(7deg); }
+  from { transform: translateY(0) rotate(8deg); }
+  to   { transform: translateY(-3px) rotate(11deg); }
 }
 
 /* ===== kick - one leg swings through, the opposite arm counterbalances ===== */
