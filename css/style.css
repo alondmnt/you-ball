@@ -651,10 +651,54 @@ kbd {
    A pool, not an ocean: this game is a walled pitch, and a pool has walls. */
 .scene-pool { background: linear-gradient(#cfd8dc 0%, #a9b6bd 60%, #8c9aa2 100%); }
 .scene-pool .pm__surface {
+  overflow: hidden;   /* contains the caustics overlay below */
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 3px, transparent 3px 13px),
     repeating-linear-gradient(0deg, rgba(255,255,255,0.14) 0 2px, transparent 2px 46px),
     linear-gradient(#0f77a8 0%, #17a0c9 45%, #2fc0dd 100%);
+}
+/*
+ * Caustics: the light mesh on the bottom of a pool. Drifts on a transform so
+ * it stays on the compositor, and runs `alternate` rather than looping, which
+ * is seamless by construction - three overlapping patterns at different
+ * periods have no common length to loop cleanly over.
+ */
+.scene-pool .pm__surface::after {
+  content: '';
+  position: absolute;
+  inset: -14%;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(64deg, rgba(255,255,255,0.09) 0 3px, transparent 3px 27px),
+    repeating-linear-gradient(-58deg, rgba(255,255,255,0.07) 0 3px, transparent 3px 33px),
+    repeating-linear-gradient(9deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 43px);
+  animation: caustics 15s ease-in-out infinite alternate;
+}
+@keyframes caustics {
+  from { transform: translate3d(-22px, -14px, 0); }
+  to   { transform: translate3d(22px, 14px, 0); }
+}
+/*
+ * The waterline. A band of pool colour across each character's lower legs,
+ * which is the single cheapest thing that says "standing in water" - far more
+ * than any amount of surface detail does.
+ */
+.scene-pool .ch::after {
+  content: '';
+  position: absolute;
+  left: -8px; right: -8px; bottom: -3px;
+  height: 46px;
+  background: linear-gradient(rgba(23,160,201,0) 0%, rgba(23,160,201,0.40) 42%, rgba(47,192,221,0.58) 100%);
+  border-radius: 46% 54% 8% 8% / 22px 18px 4px 4px;
+  z-index: 7;
+  pointer-events: none;
+}
+.scene-pool .ch__shadow { opacity: 0.45; }
+.scene-pool .ball__shadow { opacity: 0.4; }
+
+/* The match ball has to stay findable among a floor of coloured balls. */
+.scene-ballpit .ball {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.95)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
 .scene-pool .crowd {
   background:
@@ -737,3 +781,4 @@ kbd {
     linear-gradient(#6a4c8c, #533a70);
   background-size: 100% 100%, 112px 68px, 112px 68px, 112px 68px, 112px 68px, 100% 100%;
 }
+
