@@ -4,7 +4,7 @@ a soccer game for kids where the players are built from your own pictures. a pho
 
 ## origins
 
-a father-and-child project, in the same line as [car-doctor](../car-doctor) and [boo-boss](../boo-boss). the child's calls so far: everyone dances when a goal goes in (both teams, the conceding side with their sad faces on), grass first, illustrated default heads.
+a father-and-child project, in the same line as [car-doctor](https://github.com/alondmnt/car-doctor) and [boo-boss](https://github.com/alondmnt/boo-boss). the child's calls so far: everyone dances when a goal goes in (both teams, the conceding side with their sad faces on), grass first, illustrated default heads.
 
 ## how to play
 
