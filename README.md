@@ -10,7 +10,7 @@ a father-and-child project, in the same line as [car-doctor](../car-doctor) and 
 
 pick **play** and you are on the pitch. you control one field player at a time - the one with the arrow over their head. control moves on its own: when your team has the ball you are whoever has it, and when they do not you are whoever is nearest it. both goalkeepers are always the computer.
 
-touching the ball takes it, and it then sticks to your foot until you shoot, pass, or someone bumps into you and takes it. bumping into them takes it back. a tackle knocks the loser back a step, so possession actually goes somewhere.
+touching the ball takes it, and it then sticks to your foot until you shoot, pass, or someone bumps into you and takes it. bumping into them takes it back. there is no tackle button - you just run into whoever has the ball. a tackle knocks the loser back a step and leaves them stumbling for a moment, so possession actually goes somewhere.
 
 the pitch is walled on all four sides. the ball never goes out, it just bounces. no throw-ins, no corners, no offside, no fouls.
 

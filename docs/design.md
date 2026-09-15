@@ -134,6 +134,8 @@ three things keep the particle count sane. running effects are throttled per pla
 
 the first version left 74 dust puffs alive at once; it now peaks at 25, and frame time sits at 16.7ms median in every scene. that measurement is a desktop upper bound, not a promise about the tablet.
 
+a tackle is the one moment that fires everywhere: six impact shards from the point of contact in any scene, plus whatever that scene throws up. the tackler lunges and the player who was robbed stumbles for exactly as long as the stun keeps them from steering, so the pose and the rule agree. both are derived from timestamps on the player, the same way a kick is, so nothing runs a timer.
+
 the pool's waterline is worth singling out: a band of pool colour across each character's lower legs did more to say "in the water" than the caustics, the ripples and the surface pattern combined. it is eight lines of CSS.
 
 ### what the measurements taught us
