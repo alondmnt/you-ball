@@ -295,8 +295,27 @@ const Render = (() => {
   }
 
   /**
+   * The moment of contact in a tackle: shards thrown out from the point of
+   * impact. Unlike the scene effects this is not optional - it is the one bit
+   * of feedback that says a tackle just happened, in every scene.
+   * @param {number} x - world x
+   * @param {number} y - world y
+   */
+  function tackleBurst(x, y) {
+    if (_calmly) return;
+    const q = Pitch.project(x, y);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 360 + (Math.random() - 0.5) * 22;
+      _particle('impact', q.sx, q.sy, 15 * q.scale, 3.5 * q.scale, {
+        rot: a + 'deg',
+        dist: (16 + Math.random() * 14) * q.scale + 'px',
+      }, 320);
+    }
+  }
+
+  /**
    * Emit whatever the current scene does for this kind of moment.
-   * @param {string} kind - 'kick' or 'wall'
+   * @param {string} kind - 'kick', 'wall' or 'tackle'
    * @param {number} x - world x
    * @param {number} y - world y
    * @param {number} [strength] - 0..1, scales the burst
@@ -418,7 +437,7 @@ const Render = (() => {
   }
 
   return {
-    mount, unmount, frame, animFor, sceneFx,
+    mount, unmount, frame, animFor, sceneFx, tackleBurst,
     banner, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();

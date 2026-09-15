@@ -355,7 +355,9 @@ const Game = (() => {
           break;
         case 'steal':
           Audio.play('steal');
-          Pitch.shake(CONFIG.shakePx * 0.5);
+          Pitch.shake(CONFIG.shakePx * 0.7);
+          Render.tackleBurst(e.x, e.y);
+          Render.sceneFx('tackle', e.x, e.y, 0.8);
           break;
         case 'pickup':
           Audio.play(e.save ? 'save' : 'pickup');

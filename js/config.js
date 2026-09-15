@@ -124,7 +124,7 @@ const CONFIG = {
    * (dust, ripple, splash); a scene only chooses from it. So a new scene is
    * still CSS plus config, and only a genuinely new *kind* of effect costs a
    * code change.
-   *   kick / wall  - one burst at that spot
+   *   kick / wall / tackle  - one burst at that spot
    *   run          - while a player is moving, throttled
    *   ballBob      - world units the ball rides up and down by
    */
@@ -147,7 +147,7 @@ const CONFIG = {
       pickupDist: 46,
       stealDist: 92,
       looseBallMs: 320,
-      fx: { kick: 'dust', run: 'dust', wall: 'dust' },
+      fx: { kick: 'dust', run: 'dust', wall: 'dust', tackle: 'dust' },
     },
 
     /* Water is the opposite: everything is heavy and nothing carries. You have
@@ -168,7 +168,7 @@ const CONFIG = {
       playerFriction: 0.72,
       carrierSpeedMult: 0.90,
       stealDist: 72,
-      fx: { kick: 'splash', run: 'ripple', wall: 'splash', ballBob: 3 },
+      fx: { kick: 'splash', run: 'ripple', wall: 'splash', tackle: 'splash', ballBob: 3 },
     },
 
     /* Springy and unpredictable. The scatter is what makes it a ball pool
