@@ -782,3 +782,49 @@ kbd {
   background-size: 100% 100%, 112px 68px, 112px 68px, 112px 68px, 112px 68px, 100% 100%;
 }
 
+/* ===== Scene effects =====
+   Named by CONFIG.fx, emitted by render.js. Every one is centred on the point
+   it was spawned at and animates transform and opacity only. */
+.puff, .ripple, .drop {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Moon dust: a soft puff that spreads and settles. */
+.puff {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(228,231,237,0.8) 0%, rgba(188,192,200,0) 70%);
+  animation: puff 0.6s ease-out forwards;
+}
+@keyframes puff {
+  from { transform: translate(-50%, -50%) scale(0.35); opacity: 0.8; }
+  to   { transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(1.9); opacity: 0; }
+}
+
+/* Water: a flattened ring spreading out. Flattened because the pitch is seen
+   from an angle, so a circle on the ground reads as an ellipse. */
+.ripple {
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  animation: ripple 0.9s ease-out forwards;
+}
+@keyframes ripple {
+  from { transform: translate(-50%, -50%) scale(0.25); opacity: 0.75; }
+  to   { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+}
+
+/* Water: droplets thrown up and out. */
+.drop {
+  border-radius: 50%;
+  background: rgba(236, 250, 255, 0.92);
+  animation: drop 0.62s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes drop {
+  from { transform: translate(-50%, -50%) scale(1); opacity: 0.92; }
+  to   { transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(0.3); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .puff, .ripple, .drop { display: none; }
+}

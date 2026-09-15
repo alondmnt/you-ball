@@ -119,6 +119,16 @@ const CONFIG = {
    * the range with it, or nobody scores. test/logic.js checks each scene.
    */
   scene: 'grass',
+  /*
+   * Which effects a scene emits, by name. The vocabulary lives in render.js
+   * (dust, ripple, splash); a scene only chooses from it. So a new scene is
+   * still CSS plus config, and only a genuinely new *kind* of effect costs a
+   * code change.
+   *   kick / wall  - one burst at that spot
+   *   run          - while a player is moving, throttled
+   *   ballBob      - world units the ball rides up and down by
+   */
+  fx: {},
   scenes: {
     /* The baseline. Every value above is already the grass value. */
     grass: {},
@@ -137,6 +147,7 @@ const CONFIG = {
       pickupDist: 46,
       stealDist: 92,
       looseBallMs: 320,
+      fx: { kick: 'dust', run: 'dust', wall: 'dust' },
     },
 
     /* Water is the opposite: everything is heavy and nothing carries. You have
@@ -157,6 +168,7 @@ const CONFIG = {
       playerFriction: 0.72,
       carrierSpeedMult: 0.90,
       stealDist: 72,
+      fx: { kick: 'splash', run: 'ripple', wall: 'splash', ballBob: 3 },
     },
 
     /* Springy and unpredictable. The scatter is what makes it a ball pool

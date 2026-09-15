@@ -341,12 +341,17 @@ const Game = (() => {
       switch (e.type) {
         case 'kick':
           Audio.play('kick', e.power / CONFIG.shootPowerMax);
+          Render.sceneFx('kick', e.x, e.y, e.power / CONFIG.shootPowerMax);
           break;
         case 'pass':
           Audio.play('pass');
           break;
         case 'wall':
-          if (e.speed > 320) { Audio.play('wall'); Pitch.shake(CONFIG.shakePx * Math.min(1, e.speed / 1200)); }
+          if (e.speed > 320) {
+            Audio.play('wall');
+            Pitch.shake(CONFIG.shakePx * Math.min(1, e.speed / 1200));
+            Render.sceneFx('wall', e.x, e.y, Math.min(1, e.speed / 1200));
+          }
           break;
         case 'steal':
           Audio.play('steal');

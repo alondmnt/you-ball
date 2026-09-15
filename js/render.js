@@ -21,6 +21,15 @@ const Render = (() => {
   let _lastScore = [-1, -1];
   let _lastClock = '';
   let _trailAt = 0;
+  const _runFxAt = [];   /* per player, world.t of their last run effect */
+
+  /* Scene effects are decoration; someone who asked for less motion gets none. */
+  const _calmly = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+
+  const RUN_FX_SPEED = 170;   /* world units a second before a player kicks up anything */
+  const RUN_FX_EVERY = 0.30;  /* seconds between one player's run effects */
+  const RUN_FX_MAX = 2;       /* emitters per frame, across everyone */
 
   /**
    * Build the match DOM.
@@ -131,11 +140,24 @@ const Render = (() => {
   function frame(world, match, controlled) {
     if (!_ball) return;   /* unmounted between a frame being queued and run */
     const L = Pitch.layout();
+    const runFx = _calmly ? null : EMITTERS[(CONFIG.fx || {}).run];
+    let runFxLeft = RUN_FX_MAX;   /* capped per frame: eight players kicking up
+                                     dust continuously is noise, not atmosphere */
 
     for (const p of world.players) {
       const rig = _rigs[p.id];
       if (!rig) continue;
       const q = Pitch.project(p.x, p.y);
+
+      if (runFx && runFxLeft > 0) {
+        const speed = Math.hypot(p.vx, p.vy);
+        if (speed > RUN_FX_SPEED && world.t - (_runFxAt[p.id] || -9) > RUN_FX_EVERY) {
+          _runFxAt[p.id] = world.t;
+          /* Scaled down: running should whisper, kicking should shout. */
+          runFx(q.sx, q.sy, q.scale, Math.min(1, speed / CONFIG.playerSpeed) * 0.45);
+          runFxLeft--;
+        }
+      }
       const s = L.charScale * q.scale;
       const flip = p.facing < 0 ? ' scaleX(-1)' : '';
       rig.el.style.transform =
@@ -153,8 +175,11 @@ const Render = (() => {
     const size = CONFIG.ballDrawD * L.zoom * q.scale;
     _ball.el.style.width = size + 'px';
     _ball.el.style.height = size + 'px';
+    /* A scene can float the ball; in the pool it reads immediately as bobbing. */
+    const bob = (CONFIG.fx || {}).ballBob
+      ? Math.sin(world.t * 4.2) * CONFIG.fx.ballBob * L.zoom * q.scale : 0;
     _ball.el.style.transform =
-      `translate3d(${q.sx - size / 2}px,${q.sy - size * 0.92}px,0) rotate(${b.x * 0.6}deg)`;
+      `translate3d(${q.sx - size / 2}px,${q.sy - size * 0.92 - bob}px,0) rotate(${b.x * 0.6}deg)`;
     _ball.el.style.zIndex = q.z + 1;
     _ball.shadow.style.width = size * 0.8 + 'px';
     _ball.shadow.style.height = size * 0.26 + 'px';
@@ -195,6 +220,93 @@ const Render = (() => {
       _lastClock = text;
       if (_els.clock) _els.clock.textContent = text;
     }
+  }
+
+  /* ─── Scene effects ─── */
+
+  /*
+   * The vocabulary a scene can draw on. Scenes name these in CONFIG.fx; they
+   * do not describe them. Adding a scene costs no code here, adding a new kind
+   * of effect does.
+   *
+   * Everything lands in the fx layer, which pans with the world, so emitters
+   * work in world-layer pixels and need no camera arithmetic.
+   */
+  const EMITTERS = {
+    /** Moon dust: soft puffs that spread and settle. */
+    dust(sx, sy, scale, strength) {
+      /* Quadratic, so a footstep stays a wisp while a full-power kick throws a
+         real cloud. Both go through the same emitter. */
+      const n = 1 + Math.round(strength * strength * 4);
+      for (let i = 0; i < n; i++) {
+        const size = (12 + Math.random() * 18) * scale * (0.6 + strength);
+        _particle('puff', sx, sy, size, size, {
+          dx: (Math.random() - 0.5) * 34 * scale + 'px',
+          dy: (-6 - Math.random() * 16) * scale + 'px',
+        }, 620);
+      }
+    },
+
+    /** Water: a flattened ring spreading out from the feet. */
+    ripple(sx, sy, scale, strength) {
+      const w = (34 + strength * 26) * scale;
+      _particle('ripple', sx, sy, w, w * 0.4, null, 900);
+    },
+
+    /** Water: droplets thrown up and out. */
+    splash(sx, sy, scale, strength) {
+      _particle('ripple', sx, sy, 44 * scale, 44 * scale * 0.4, null, 900);
+      const n = 5 + Math.round(strength * 4);
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI + (i / n) * Math.PI * 2;
+        const d = (16 + Math.random() * 26) * scale * (0.5 + strength);
+        const size = (3 + Math.random() * 4) * scale;
+        _particle('drop', sx, sy, size, size, {
+          dx: Math.cos(a) * d + 'px',
+          dy: (Math.sin(a) * d * 0.45 - 10 * scale) + 'px',
+        }, 620);
+      }
+    },
+  };
+
+  /**
+   * Spawn one effect element in the fx layer.
+   * @param {string} cls - CSS class, which carries the animation
+   * @param {number} sx - world-layer x, the element is centred on it
+   * @param {number} sy - world-layer y
+   * @param {number} w - width in px
+   * @param {number} h - height in px
+   * @param {Object<string, string>|null} vars - CSS custom properties (--dx, --dy)
+   * @param {number} life - ms before removal, must outlast the animation
+   */
+  function _particle(cls, sx, sy, w, h, vars, life) {
+    const fx = Pitch.fxLayer();
+    if (!fx) return;
+    const el = document.createElement('div');
+    el.className = cls;
+    el.style.left = sx + 'px';
+    el.style.top = sy + 'px';
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    if (vars) for (const [k, v] of Object.entries(vars)) el.style.setProperty('--' + k, v);
+    fx.appendChild(el);
+    setTimeout(() => el.remove(), life);
+  }
+
+  /**
+   * Emit whatever the current scene does for this kind of moment.
+   * @param {string} kind - 'kick' or 'wall'
+   * @param {number} x - world x
+   * @param {number} y - world y
+   * @param {number} [strength] - 0..1, scales the burst
+   */
+  function sceneFx(kind, x, y, strength) {
+    if (_calmly) return;
+    const name = (CONFIG.fx || {})[kind];
+    const emit = EMITTERS[name];
+    if (!emit) return;
+    const q = Pitch.project(x, y);
+    emit(q.sx, q.sy, q.scale, strength == null ? 1 : Math.max(0, Math.min(1, strength)));
   }
 
   /* ─── Effects ─── */
@@ -305,7 +417,7 @@ const Render = (() => {
   }
 
   return {
-    mount, unmount, frame, animFor,
+    mount, unmount, frame, animFor, sceneFx,
     banner, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();
