@@ -7,18 +7,22 @@
  * node vm with nothing but Math and console. That is the whole point of the
  * seam: if a change here needs a browser to test, the seam has been broken.
  *
+ * audio.js is not DOM free, but its arrangement rule is: Audio.arrange decides
+ * what the music plays from possession and the score alone, with no context
+ * and no clock, which is the only part of the music a test can judge.
+ *
  * These are the checks a rendering bug cannot hide - a goal scores, the clock
  * expires, steal immunity holds, and the same seed replays the same match.
  */
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const ROOT = path.join(__dirname, '..', 'js');
 const ctx = vm.createContext({ Math, console, module: undefined });
-for (const f of ['config.js', 'physics.js', 'ai.js', 'match.js']) {
+for (const f of ['config.js', 'physics.js', 'ai.js', 'match.js', 'audio.js']) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 }
 /* Top-level const in a vm context lives in the lexical scope, not on the
    sandbox object, so pull the namespaces out by evaluating them there. */
-const { CONFIG, Physics, AI, Match } = vm.runInContext('({CONFIG, Physics, AI, Match})', ctx);
+const { CONFIG, Physics, AI, Match, Audio } = vm.runInContext('({CONFIG, Physics, AI, Match, Audio})', ctx);
 
 let pass = 0, fail = 0;
 const ok = (name, cond, extra) => {
@@ -260,6 +264,85 @@ console.log('\n-- determinism --');
   ok('the same seed replays the same match',
      JSON.stringify(a.match.score) === JSON.stringify(b.match.score) && a.steps === b.steps,
      a.match.score + ' / ' + b.match.score);
+}
+
+
+console.log('\n-- the music follows the ball --');
+{
+  /**
+   * Hold one situation and return where the arrangement lands.
+   * @param {object|null} start - state to carry in, or null to begin fresh
+   * @param {object} input - {carrierTeam, phase, score}
+   * @param {number} seconds - how long the situation lasts
+   */
+  const hold = (start, input, seconds) => {
+    let st = Audio.arrange(start, input, 0);
+    for (let i = 0; i < Math.round(seconds * 60); i++) st = Audio.arrange(st, input, 1 / 60);
+    return st;
+  };
+  const play = (team, score) => ({ carrierTeam: team, phase: 'play', score: score || [0, 0] });
+  const BEAT = 60 / CONFIG.music.bpm;
+  const LAYER_DWELL = CONFIG.music.layerDwellBeats * BEAT;
+  const KEY_DWELL = CONFIG.music.minDwellBeats * BEAT;
+
+  const fresh = Audio.arrange(null, play(null), 0);
+  ok('a loose ball plays the verse',
+     fresh.theme === 'loose' && !fresh.layers.hook && !fresh.layers.snare);
+
+  /* The point of the whole rule: taking the ball is heard straight away. */
+  const grabbed = Audio.arrange(fresh, play(0), 1 / 60);
+  ok('taking the ball swings the texture on the next frame', grabbed.theme === 'home');
+
+  const nicked = Audio.arrange(grabbed, play(1), 1 / 60);
+  ok('but it cannot swing again inside the dwell', nicked.theme === 'home');
+
+  const pressed = hold(grabbed, play(1), LAYER_DWELL * 1.2);
+  ok('once the dwell is up it follows the ball again', pressed.theme === 'away');
+
+  /* The ball is loose during every pass, so the verse has to be patient. */
+  const passing = hold(grabbed, play(null), CONFIG.music.looseMs / 1000 * 0.5);
+  ok('a ball loose mid pass does not drop the music to the verse', passing.theme === 'home');
+  const settled = hold(grabbed, play(null), CONFIG.music.looseMs / 1000 + LAYER_DWELL);
+  ok('a ball loose for longer does', settled.theme === 'loose');
+
+  /* Harmony is the slow half. */
+  const homeSet = hold(null, play(0), KEY_DWELL * 2);
+  const quickSteal = hold(homeSet, play(1), LAYER_DWELL * 1.5);
+  ok('a quick turnover changes the texture but not yet the key',
+     quickSteal.theme === 'away' && quickSteal.key === 0);
+  const heldSteal = hold(homeSet, play(1), KEY_DWELL * 1.5);
+  ok('possession that sticks moves the key too', heldSteal.key === 1);
+
+  ok('the verse never takes the key with it',
+     hold(heldSteal, play(null), 10).key === 1);
+
+  ok('the two teams get different textures',
+     homeSet.layers.hook && !heldSteal.layers.hook &&
+     !homeSet.layers.drone && heldSteal.layers.drone &&
+     homeSet.layers.guitar !== heldSteal.layers.guitar);
+
+  /* The scoreline colours whoever is carrying, either way round. */
+  const homeAhead = hold(null, play(0, [2, 0]), LAYER_DWELL * 2);
+  const homeBehind = hold(null, play(0, [0, 2]), LAYER_DWELL * 2);
+  const level = hold(null, play(0, [1, 1]), LAYER_DWELL * 2);
+  ok('a team in front sounds triumphant', homeAhead.layers.shine);
+  ok('a team behind sounds hurried',
+     !homeBehind.layers.shine && homeBehind.layers.hat === 'sixteenths');
+  ok('a level game gets neither',
+     !level.layers.shine && level.layers.hat === homeSet.layers.hat);
+
+  const awayAhead = hold(null, play(1, [0, 2]), LAYER_DWELL * 2);
+  ok('and it reads from the carrying team, not from home',
+     awayAhead.theme === 'away' && awayAhead.layers.shine);
+
+  /* A goal owns the room. */
+  ok('the music stays up during play', !homeSet.duck);
+  const scored = Audio.arrange(homeSet, { carrierTeam: 0, phase: 'slowmo', score: [1, 0] }, 1 / 60);
+  ok('a goal ducks it', scored.duck);
+  const dancing = Audio.arrange(scored, { carrierTeam: 0, phase: 'goal', score: [1, 0] }, 1 / 60);
+  ok('and it stays down through the celebration', dancing.duck);
+  const restart = Audio.arrange(dancing, { carrierTeam: null, phase: 'kickoff', score: [1, 0] }, 1 / 60);
+  ok('it comes back under the kick off banner', !restart.duck);
 }
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
