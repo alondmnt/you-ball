@@ -15,6 +15,44 @@
  */
 const Physics = (() => {
 
+  /*
+   * A seeded generator, so a bounce that scatters is still deterministic and
+   * the logic tests still replay. It is deliberately a separate stream from
+   * the one in ai.js: sharing would make every AI decision shift the moment a
+   * scene switched the scatter on.
+   */
+  let _seed = 0x51ed270b;
+
+  /** Reseed the bounce generator. Same seed, same bounces. */
+  function seed(n) { _seed = (n >>> 0) || 0x51ed270b; }
+
+  /** mulberry32. */
+  function _rand() {
+    _seed |= 0; _seed = (_seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /**
+   * Rotate a bounce by a random angle, for scenes where the ball should not
+   * come off a wall predictably. A ball pool is not a billiard table.
+   *
+   * The caller re-asserts the outward direction afterwards, because a glancing
+   * hit plus a big scatter could otherwise turn the ball back into the wall.
+   *
+   * @param {object} b - the ball, rotated in place
+   */
+  function _scatterBounce(b) {
+    const k = CONFIG.bounceScatter || 0;
+    if (!k) return;
+    const a = (_rand() * 2 - 1) * k;
+    const c = Math.cos(a), s = Math.sin(a);
+    const vx = b.vx * c - b.vy * s;
+    const vy = b.vx * s + b.vy * c;
+    b.vx = vx; b.vy = vy;
+  }
+
   /** Which way a team attacks along x. Team 0 defends the x = 0 goal. */
   function attackDir(team) { return team === 0 ? 1 : -1; }
 
@@ -309,6 +347,8 @@ const Physics = (() => {
         } else {
           b.x = R;
           b.vx = -b.vx * CONFIG.wallBounce;
+          _scatterBounce(b);
+          if (b.vx < 0) b.vx = -b.vx;
           events.push({ type: 'wall', speed: Math.abs(b.vx), x: b.x, y: b.y });
         }
       } else if (b.x >= CONFIG.pitchW - R) {
@@ -319,6 +359,8 @@ const Physics = (() => {
         } else {
           b.x = CONFIG.pitchW - R;
           b.vx = -b.vx * CONFIG.wallBounce;
+          _scatterBounce(b);
+          if (b.vx > 0) b.vx = -b.vx;
           events.push({ type: 'wall', speed: Math.abs(b.vx), x: b.x, y: b.y });
         }
       }
@@ -328,10 +370,14 @@ const Physics = (() => {
     if (b.y <= R) {
       b.y = R;
       b.vy = -b.vy * CONFIG.wallBounce;
+      _scatterBounce(b);
+      if (b.vy < 0) b.vy = -b.vy;
       events.push({ type: 'wall', speed: Math.abs(b.vy), x: b.x, y: b.y });
     } else if (b.y >= CONFIG.pitchH - R) {
       b.y = CONFIG.pitchH - R;
       b.vy = -b.vy * CONFIG.wallBounce;
+      _scatterBounce(b);
+      if (b.vy > 0) b.vy = -b.vy;
       events.push({ type: 'wall', speed: Math.abs(b.vy), x: b.x, y: b.y });
     }
   }
@@ -397,7 +443,7 @@ const Physics = (() => {
   }
 
   return {
-    createWorld, kickoff, step,
+    seed, createWorld, kickoff, step,
     attackDir, ownGoalX, targetGoalX, inGoalMouth,
     byId, carrier, passTarget,
   };

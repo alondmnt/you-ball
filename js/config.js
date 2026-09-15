@@ -51,6 +51,8 @@ const CONFIG = {
   puntPower: 900,
   ballFriction: 0.985,   // per 60Hz tick
   wallBounce: 0.7,
+  bounceScatter: 0,      // radians of random deflection off a wall. 0 is a
+                         // clean reflection; the ball pool scene turns it up
   stealImmunityMs: 500,  // a fresh carrier cannot be robbed for this long
   looseBallMs: 180,      // after a shot/pass, nobody can pick the ball up
   carrierSpeedMult: 0.93,// carrying the ball slows you slightly, so a chase is
