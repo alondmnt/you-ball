@@ -89,6 +89,73 @@ a tackle **knocks the dispossessed player clear and stuns them** for `tackleStun
 
 `carrierSpeedMult` (0.93) keeps a chase from being hopeless. the separation radius has to stay under `stealDist`, or contact could never happen at all.
 
+## music
+
+One four-bar rock loop, synthesised note by note. Nothing is sampled, so it
+costs no download and no decode.
+
+**Two axes, two speeds.** A *progression* (home: Em Em C D, away: Em Em F F) and
+a *texture* (the layer set: which drum pattern, whether the hook and the chant
+and the drone play, whether the guitar stabs or chugs or holds). They are
+separate because they need different reaction times:
+
+| | follows | why |
+|---|---|---|
+| texture | the ball, within about half a second | it is what you actually hear change, and rock arrangements drop and add layers anywhere |
+| progression | possession that has lasted a couple of seconds | a chord change every 1.2s establishes nothing |
+
+Both progressions share one key centre, one tempo and one grid, so any join
+works and nothing has to wait for a phrase boundary.
+
+**The reaction time is measured, not guessed.** Over eight AI-vs-AI matches a
+possession spell has a median length of ~500ms. That kills the obvious rule:
+"the same team has held it for N" either never fires (N > 700ms: the away
+theme appeared once a minute) or fires constantly (N < 600ms: 35 times a
+minute). Two attempts went in before the measurement - a plain hold timer, then
+a momentum bias that charged while a team kept the ball - and both were late
+for exactly this reason.
+
+What works is a floor on the *rate* of change rather than on how long
+possession has to be held. Taking the ball registers at once; a second change
+has to wait out `layerDwellBeats`. Losing the ball to nobody is the asymmetric
+case and waits `looseMs`, because the ball is loose during every pass.
+
+Measured, at 2 beats of dwell: the music answers a turnover in a median of
+604ms, with the texture changing about 40 times a minute. The trade-off is one
+config value, and it is close to linear:
+
+| texture dwell | heard latency (median) | texture changes / min |
+|---|---|---|
+| 1 beat | 327ms | 53 |
+| 2 beats | 604ms | 41 |
+| 3 beats | 975ms | 33 |
+| 4 beats | 1327ms | 28 |
+
+**The scheduler** is the standard Web Audio lookahead: a 50ms `setTimeout`
+queues the next 200ms of notes at sample-accurate times. boo-boss schedules its
+whole 64-beat loop in one go, which is less code but would leave a possession
+change inaudible for twenty seconds - the exact thing this feature exists to
+do. The timer reschedules even while the context is suspended, so it recovers
+by itself when a tablet wakes, and it restarts on a phrase line rather than
+replaying the minute it missed.
+
+Every voice of one step shares a single reading of `ctx.currentTime`. Letting
+each voice read the clock itself measured 10.8ms of spread within a beat, which
+smears the attack; sharing one reading leaves exactly the 5.5ms of deliberate
+swing and nothing else.
+
+**Cost**: 2.15ms of script per second at 6x CPU throttle, measured on an idle
+splash screen so nothing else is in the sample. Against the renderer's load it
+is below the noise floor. The music has its own gain bus with a limiter on it,
+because eight layers landing on one downbeat sum past full scale; the effects
+stay off that bus so they always cut through.
+
+**The arrangement rule is pure.** `Audio.arrange(prev, input, dt)` takes
+possession, match phase and the score, and returns the texture, the key and
+whether to duck. No context, no clock, no randomness - the same seam as
+physics/ai/match, which is why the hysteresis, the goal duck and the scoreline
+layers are all tested in `test/logic.js` rather than judged by ear.
+
 ## AI
 
 four behaviours, picked per player per step: keeper, carrier, chaser (one field player per team, the nearest to the ball), and everyone else holding a formation slot that slides with the ball.
@@ -191,6 +258,7 @@ a standing consequence: **every formation slot sits in its own defensive half**,
 | `ai.js` | CONFIG, Physics | the DOM, who is human |
 | `input.js` | CONFIG, Pitch | players, teams, possession |
 | `match.js` | CONFIG, Physics | the DOM |
+| `audio.js` | CONFIG | the world, the score bar, who is human |
 | `render.js` | everything above | input, the loop |
 | `editor.js` | Assets, Storage, Character | the match |
 | `game.js` | everything | - |
@@ -213,9 +281,11 @@ a standing consequence: **every formation slot sits in its own defensive half**,
 | AI settles before passing, passes forward only | without it the AI passes on every touch and never shoots |
 | a marker over the controlled player | auto-switch moves control constantly; the kid needs to see who they are |
 | `test/logic.js` | cashes the plan's claim that the logic is testable in a plain script |
+| music the plan never asked for | the plan listed effects only; both sibling games have a loop and this felt bare without one |
+| the music reacts to possession | asked for during the build: the arrangement is the feature, not the loop |
 
 ## not built
 
-stage 5 is partly done: the scenes above exist, weather does not. still open: weather, power shots and items, export/import a character or team as a file. an ocean scene is the natural home for weather, because a current that pushes the ball only makes sense somewhere without edges.
+stage 5 is partly done: the scenes above exist and the music does, weather does not. still open: weather, power shots and items, export/import a character or team as a file. an ocean scene is the natural home for weather, because a current that pushes the ball only makes sense somewhere without edges.
 
 also outstanding from the plan's own risk list: the drag-and-flick controls are still a proposal that has not met the child's hands. dead zones (`dragDeadZonePx`), flick thresholds (`flickMaxMs`, `flickMinPx`) and the joystick radius are the dials. the fallback, if it does not survive contact, is an on-screen joystick and one big shoot button.

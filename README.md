@@ -48,6 +48,24 @@ on the moon, players kick up dust when they run and throw a cloud of it when the
 
 a pool rather than an ocean, because the game is a walled pitch and the ball bounces off the edges. an ocean has no walls.
 
+## the music
+
+one four-bar rock loop, synthesised note by note like every other sound, that follows the ball.
+
+there are two progressions in the same key and at the same tempo - one bright and climbing for home, one built on a flat second for away - and three textures that play over whichever is running:
+
+| | what you hear |
+|---|---|
+| your team has it | full kit, power chord stabs, the hook, a crowd shout |
+| the other team has it | half time drums, a chugging guitar, a drone, no hook |
+| nobody has it | the same harmony with most of the notes taken out. this is the verse, and it is what makes the rest land |
+
+the scoreline colours whoever is carrying: a team in front gains an octave on the chords, a team behind gets double time hats. a goal ducks the music so the fanfare and the crowd have the room, and it comes back up under the KICK OFF banner.
+
+texture and harmony move at different speeds on purpose. losing the ball changes the drums and drops the hook within about half a second, because that is the bit you actually hear. the chord progression waits for possession that has lasted a couple of seconds, because a progression needs a bar or two to say anything.
+
+it is inspired by the loud-quiet-loud of terrace rock, but the riff is ours - nothing is sampled and nothing is quoted.
+
 ## making players
 
 the pencil opens the editor.
@@ -89,6 +107,8 @@ save data lives in localStorage under `youBall_progress`; pictures live in Index
 ## tuning
 
 `js/config.js` is every number in one place - speeds, match length, goals to win, how hard the computer is, colours, how big the zoom punch is, the size images are stored at. plain values, safe to edit.
+
+the music is in there too, under `music`: tempo, the balance of every layer (set one to zero to mute it), and how fast the arrangement answers the game. `layerDwellBeats` is the one to turn if it feels twitchy or sluggish - at 2 beats the music answers a tackle in about 600ms and changes texture around 40 times a minute; at 4 it is 1.3s and 28 times a minute.
 
 the scenes live there too, as a short list of overrides each. a new scene is a block of CSS and a handful of numbers, not a code change. if you change a scene's numbers, run the tests below: they check that each scene still produces goals, which is the thing that quietly breaks.
 
