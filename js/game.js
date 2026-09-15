@@ -354,8 +354,9 @@ const Game = (() => {
           }
           break;
         case 'steal':
+          /* No screen shake. Shake says collision, and a steal is not one -
+             it is kept for hard wall hits and goals. */
           Audio.play('steal');
-          Pitch.shake(CONFIG.shakePx * 0.7);
           Render.tackleBurst(e.x, e.y);
           Render.sceneFx('tackle', e.x, e.y, 0.8);
           break;

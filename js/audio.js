@@ -107,10 +107,10 @@ const Audio = (() => {
       _noise(0, 0.04, 1400, 0.05);
     },
 
-    /** A tackle - scrape and thud. */
+    /** A tackle - the swish of the ball being nicked, not a body check. */
     steal() {
-      _noise(0, 0.11, 900, 0.09, 'bandpass', 260);
-      _note(110, 0.01, 0.09, 'square', 0.06, 70);
+      _noise(0, 0.09, 1500, 0.05, 'bandpass', 3400);
+      _note(520, 0.03, 0.08, 'sine', 0.07, 780);
     },
 
     /** Collecting a loose ball - a soft tick. */

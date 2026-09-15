@@ -295,21 +295,24 @@ const Render = (() => {
   }
 
   /**
-   * The moment of contact in a tackle: shards thrown out from the point of
-   * impact. Unlike the scene effects this is not optional - it is the one bit
-   * of feedback that says a tackle just happened, in every scene.
+   * The moment a tackle takes the ball: a soft ring and a few sparkles arcing
+   * up. Unlike the scene effects this is not optional - it is the one bit of
+   * feedback that says a tackle happened, in every scene. It is deliberately
+   * not an impact burst; nothing here should read as a collision.
    * @param {number} x - world x
    * @param {number} y - world y
    */
   function tackleBurst(x, y) {
     if (_calmly) return;
     const q = Pitch.project(x, y);
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * 360 + (Math.random() - 0.5) * 22;
-      _particle('impact', q.sx, q.sy, 15 * q.scale, 3.5 * q.scale, {
-        rot: a + 'deg',
-        dist: (16 + Math.random() * 14) * q.scale + 'px',
-      }, 320);
+    _particle('pop', q.sx, q.sy, 30 * q.scale, 30 * q.scale * 0.55, null, 440);
+    for (let i = 0; i < 3; i++) {
+      const a = -Math.PI * 0.78 + (i / 2) * Math.PI * 0.56;
+      const d = (14 + Math.random() * 11) * q.scale;
+      _particle('twinkle', q.sx, q.sy, 6 * q.scale, 6 * q.scale, {
+        dx: Math.cos(a) * d + 'px',
+        dy: (Math.sin(a) * d - 9 * q.scale) + 'px',
+      }, 540);
     }
   }
 

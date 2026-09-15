@@ -26,9 +26,11 @@ const Character = (() => {
     'sad-dance': 'sad',
     dive: 'idle',
     tackle: 'idle',
-    /* Being robbed is worth a face. It lasts as long as the stun, which the
-       steal immunity keeps well apart from the next one, so it cannot strobe. */
-    stumble: 'sad',
+    /* Deliberately not the sad face. Steals happen sixty-odd times a match, so
+       spending the sad face on every one of them both cheapens it and leaves
+       whoever just lost the ball looking miserable all game. Sad is for
+       conceding a goal, which is the beat that earns it. */
+    stumble: 'idle',
   };
 
   /**
