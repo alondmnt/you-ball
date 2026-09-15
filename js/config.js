@@ -43,6 +43,21 @@ const CONFIG = {
   playerSpeed: 380,      // world units per second
   playerAccel: 2600,     // how fast a player reaches top speed
   playerFriction: 0.86,  // per-frame velocity decay when not pressing a direction
+  /* How fast you have to be going sideways before you turn round. This was
+     effectively 3% of top speed, so a player running up the pitch with any
+     sideways drift flipped constantly - and because the ball is held at
+     facing * carryOffset, every flip teleported it across their body. */
+  facingFlipSpeed: 110,
+  /* How quickly the ball crosses when you do turn, as a fraction closed per
+     second. A turn is real, but it should sweep rather than jump. */
+  carryTurnRate: 14,
+  /* Two thresholds for the run animation, not one. With a single threshold a
+     player decelerating through it flips between run and idle frame by frame,
+     and because every change restarts the CSS animation from its first
+     keyframe, the legs snap back each time. Measured at one frame per state
+     at worst - which is exactly what "jittery, but not lagging" looks like. */
+  runEnterSpeed: 90,
+  runExitSpeed: 22,
   aiSpeedMult: 0.85,
   gkTrackSpeed: 300,
   gkDiveSpeed: 720,

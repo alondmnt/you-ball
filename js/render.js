@@ -140,9 +140,11 @@ const Render = (() => {
    * @param {object} p
    * @param {object} world
    * @param {object} match
+   * @param {string} [prev] - what this player is playing now, for the run
+   *   threshold's hysteresis. Without it the state flaps frame by frame.
    * @returns {string} a Character animation name
    */
-  function animFor(p, world, match) {
+  function animFor(p, world, match, prev) {
     if (match.phase === Match.PHASE.GOAL) {
       /* Everybody dances. The conceding team dances too, just sadly. */
       return match.scorer === p.team ? 'celebrate' : 'sad-dance';
@@ -156,8 +158,11 @@ const Render = (() => {
     if (world.t - p.tackleAt < 0.30) return 'tackle';
     if (p.role === 'gk' && p.diveUntil > world.t) return 'dive';
     if (world.t - p.kickAt < 0.34) return 'kick';
-    if (Math.hypot(p.vx, p.vy) > 45) return 'run';
-    return 'idle';
+    /* Easier to keep running than to start: one threshold makes a player
+       coasting to a stop stutter between the two. */
+    const speed = Math.hypot(p.vx, p.vy);
+    const bar = prev === 'run' ? CONFIG.runExitSpeed : CONFIG.runEnterSpeed;
+    return speed > bar ? 'run' : 'idle';
   }
 
   /**
@@ -198,7 +203,7 @@ const Render = (() => {
         `translate3d(${q.sx - CW / 2}px,${q.sy - CH}px,0) scale(${s})${flip}`;
       rig.el.style.zIndex = q.z;
       if (p.role === 'gk') rig.setDiveDir(p.diveDir);
-      rig.setAnim(animFor(p, world, match));
+      rig.setAnim(animFor(p, world, match, rig.getAnim()));
       rig.el.classList.toggle('ch--mine', !!controlled && controlled.has(p.id));
     }
 

@@ -84,6 +84,7 @@ const Physics = (() => {
           y: slot.y,
           vx: 0, vy: 0,
           facing: attackDir(team),
+          carrySide: attackDir(team),
           kickAt: -99,        /* world.t of the last kick, for the kick pose */
           tackleAt: -99,      /* world.t of the last tackle they made */
           stunUntil: -99,     /* just been tackled - cannot steer */
@@ -124,6 +125,7 @@ const Physics = (() => {
       p.y = slot.y;
       p.vx = 0; p.vy = 0;
       p.facing = attackDir(p.team);
+      p.carrySide = p.facing;
       p.kickAt = -99;
       p.tackleAt = -99;
       p.stunUntil = -99;
@@ -272,7 +274,12 @@ const Physics = (() => {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      if (Math.abs(p.vx) > 12) p.facing = p.vx > 0 ? 1 : -1;
+      if (Math.abs(p.vx) > CONFIG.facingFlipSpeed) p.facing = p.vx > 0 ? 1 : -1;
+      /* The side the ball is carried on trails the facing rather than
+         matching it, so a turn sweeps the ball across instead of snapping it
+         the full width of the player in one frame. Nothing reads this but the
+         ball's drawn position: steals measure player to player. */
+      p.carrySide += (p.facing - p.carrySide) * Math.min(1, CONFIG.carryTurnRate * dt);
 
       /* Everyone stays on the pitch. */
       p.x = Math.max(R, Math.min(CONFIG.pitchW - R, p.x));
@@ -321,8 +328,8 @@ const Physics = (() => {
     const p = carrier(world);
 
     if (p) {
-      /* Glued to the carrier's foot, in the direction they are facing. */
-      b.x = p.x + p.facing * CONFIG.carryOffset;
+      /* Glued to the carrier's foot, on the side they are turning towards. */
+      b.x = p.x + p.carrySide * CONFIG.carryOffset;
       b.y = p.y;
       b.vx = p.vx; b.vy = p.vy;
       b.x = Math.max(R, Math.min(CONFIG.pitchW - R, b.x));
