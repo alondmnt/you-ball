@@ -39,7 +39,18 @@ const AI = (() => {
   }
 
   /**
-   * Set the AI run-speed multiplier on every player a human is not driving.
+   * Apply the difficulty to the side a human is playing against.
+   *
+   * It used to slow every AI player on the pitch, which meant turning the
+   * difficulty down handicapped your own teammates and your own keeper by
+   * exactly as much as the opposition. Measured over 24 matches a side, easy
+   * came out as the *worst* setting to play on - a keeper at 65% tracking
+   * conceded more than the slower opponents saved you.
+   *
+   * Difficulty now describes the opposition and nothing else. Your own side
+   * always plays at full. With no human on the pitch at all, as in the logic
+   * tests, both sides get it, so AI-vs-AI balance is unchanged.
+   *
    * Call after createWorld and whenever the human roster changes.
    * @param {object} world
    * @param {Set<number>|Array<number>} humanIds
@@ -47,10 +58,19 @@ const AI = (() => {
   function applyDifficulty(world, humanIds) {
     const humans = humanIds instanceof Set ? humanIds : new Set(humanIds || []);
     const d = _diff();
+
+    const humanTeams = new Set();
+    for (const id of humans) {
+      const p = world.players[id];
+      if (p) humanTeams.add(p.team);
+    }
+
     for (const p of world.players) {
       p.human = humans.has(p.id);
-      if (p.human) { p.speedMult = 1; continue; }
-      p.speedMult = p.role === 'gk' ? d.gkTrack : d.aiSpeed;
+      const opposed = !humanTeams.has(p.team);
+      p.speedMult = (p.human || !opposed) ? 1 : (p.role === 'gk' ? d.gkTrack : d.aiSpeed);
+      /* Aim error is part of the difficulty too, so it follows the same rule. */
+      p.aimNoise = CONFIG.shootNoise * (opposed ? d.shootNoise : 1);
     }
   }
 
@@ -146,7 +166,7 @@ const AI = (() => {
       let dx = goalX - b.x, dy = aimY - b.y;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
-      const noise = _jitter(CONFIG.shootNoise * _diff().shootNoise);
+      const noise = _jitter(p.aimNoise == null ? CONFIG.shootNoise : p.aimNoise);
       const c = Math.cos(noise), s = Math.sin(noise);
       intent.shoot = {
         dx: dx * c - dy * s,

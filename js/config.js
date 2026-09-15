@@ -81,11 +81,21 @@ const CONFIG = {
   gkReach: 190,          // how far a keeper will stray from its line
 
   /* ─── Difficulty presets (multiply the values above) ─── */
+  /*
+   * Difficulty describes the OPPOSITION only - see AI.applyDifficulty. Your
+   * own teammates and keeper always play at full.
+   *
+   * These three numbers are how fast the other side runs, how fast their
+   * keeper tracks a shot, and how much aim error their shots carry. Simulation
+   * can tell us the dial moves monotonically; it cannot tell us where a real
+   * child lands, because a slower AI is still a good player and a kid is not.
+   * So these are set to be forgiving, and the last word is a real match.
+   */
   difficulty: 'normal',
   difficulties: {
-    easy:   { aiSpeed: 0.72, gkTrack: 0.65, shootNoise: 2.0 },
-    normal: { aiSpeed: 1.00, gkTrack: 1.00, shootNoise: 1.0 },
-    hard:   { aiSpeed: 1.18, gkTrack: 1.35, shootNoise: 0.4 },
+    easy:   { aiSpeed: 0.75, gkTrack: 0.70, shootNoise: 1.9 },
+    normal: { aiSpeed: 0.90, gkTrack: 0.88, shootNoise: 1.25 },
+    hard:   { aiSpeed: 1.08, gkTrack: 1.15, shootNoise: 0.65 },
   },
 
   /* ─── Feel ─── */

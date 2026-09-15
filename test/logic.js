@@ -172,6 +172,16 @@ console.log('\n-- every scene is playable --');
  */
 {
   const RUNS = 6;
+  /*
+   * Pin difficulty neutral. It is an independent dial, and a multiplier
+   * applied to both sides at once is not a configuration anyone plays - with
+   * a human on the pitch it only ever touches the opposition. Leaving it in
+   * made a scene check fail when the normal preset was softened, which says
+   * nothing about the scene.
+   */
+  const wasDifficulty = CONFIG.difficulty;
+  CONFIG.difficulties.__even = { aiSpeed: 1, gkTrack: 1, shootNoise: 1 };
+  CONFIG.difficulty = '__even';
   for (const scene of Object.keys(CONFIG.scenes)) {
     let goals = 0, nilNil = 0, finished = 0;
     for (let i = 0; i < RUNS; i++) {
@@ -188,6 +198,51 @@ console.log('\n-- every scene is playable --');
     ok(`${scene}: not a goalless scene`, nilNil <= 1, nilNil + ' of ' + RUNS + ' nil-nil');
   }
   CONFIG.applyScene('grass');
+  CONFIG.difficulty = wasDifficulty;
+  delete CONFIG.difficulties.__even;
+}
+
+console.log('\n-- difficulty --');
+/*
+ * Difficulty used to slow every AI player on the pitch, so turning it down
+ * handicapped your own teammates and keeper as much as the opposition. These
+ * check the rule directly rather than by scoreline.
+ */
+{
+  const w = Physics.createWorld();
+  CONFIG.difficulty = 'easy';
+  AI.applyDifficulty(w, new Set([1]));          /* a human on team 0 */
+  const ours = w.players.filter(p => p.team === 0);
+  const theirs = w.players.filter(p => p.team === 1);
+  ok('your own side is never handicapped by the difficulty',
+     ours.every(p => p.speedMult === 1),
+     ours.map(p => p.speedMult).join(','));
+  ok('the opposition is', theirs.every(p => p.speedMult < 1),
+     theirs.map(p => p.speedMult).join(','));
+  ok('and their aim is loosened, yours is not',
+     ours.every(p => p.aimNoise === CONFIG.shootNoise) && theirs.every(p => p.aimNoise > CONFIG.shootNoise));
+
+  CONFIG.difficulty = 'hard';
+  AI.applyDifficulty(w, new Set([1]));
+  ok('hard speeds the opposition up instead',
+     w.players.filter(p => p.team === 1 && p.role !== 'gk').every(p => p.speedMult > 1));
+  ok('your side is still untouched on hard',
+     w.players.filter(p => p.team === 0).every(p => p.speedMult === 1));
+
+  /* Two humans, one per side: nobody gets the multiplier. */
+  AI.applyDifficulty(w, new Set([1, 5]));
+  ok('two players means an even match', w.players.every(p => p.speedMult === 1));
+
+  /* No human at all, as in the scene checks above: both sides get it. */
+  AI.applyDifficulty(w, new Set());
+  ok('with nobody human both sides get it', w.players.every(p => p.speedMult !== 1));
+
+  const tiers = ['easy', 'normal', 'hard'].map(t => { CONFIG.difficulty = t; return CONFIG.difficulties[t]; });
+  ok('the dial only ever goes one way',
+     tiers[0].aiSpeed < tiers[1].aiSpeed && tiers[1].aiSpeed < tiers[2].aiSpeed &&
+     tiers[0].gkTrack < tiers[1].gkTrack && tiers[1].gkTrack < tiers[2].gkTrack &&
+     tiers[0].shootNoise > tiers[1].shootNoise && tiers[1].shootNoise > tiers[2].shootNoise);
+  CONFIG.difficulty = 'normal';
 }
 
 console.log('\n-- determinism --');
