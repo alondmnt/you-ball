@@ -126,6 +126,18 @@
         </div>
       </div>
     </div>
+    <!-- Team place picker: tap a place, tap a face. No hidden selection. -->
+    <div id="picker" class="overlay overlay--hidden">
+      <div class="picker__card">
+        <div class="picker__head">
+          <span id="picker-kit" class="picker__kit"></span>
+          <span id="picker-role" class="picker__role"></span>
+          <button id="picker-close" class="picker__close" type="button" aria-label="Close">&#10005;</button>
+        </div>
+        <div id="picker-grid" class="picker__grid"></div>
+      </div>
+    </div>
+
     <input id="file-input" type="file" accept="image/*" hidden>
   </div>
 

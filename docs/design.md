@@ -108,6 +108,16 @@ blobs become object URLs at match start and are revoked on teardown, so a charac
 
 `Assets.SLOTS` is the single table both the editor and the rig read, so an imported image cannot be a different aspect from the frame it lands in. the fallback chain (`head_goal` → `head_idle`, `arm_l` → `arm`) means one upload can furnish several slots.
 
+## the editor
+
+three areas, and they do different jobs. the top strip is the **roster**, a pool of characters that exist independently of any team. the middle is the character you are editing, with its slots and a live preview. the bottom two rows are the **teams**, four places each.
+
+tapping a team place opens a picker of roster faces, drawn in that team's kit. that replaced an earlier model where a place silently took whichever roster card was selected, which is a mode with nothing on screen to announce it. the picker also offers **nobody** (the place falls back to a built-in player) and **new** (make a character and assign them in one go).
+
+exactly one assignment happens automatically: a brand new save gets one character in the home team's first field place, which is the player the human drives at kickoff, so making a face and pressing play shows it. the earlier version dropped every new character into a free place in *both* teams, which made the two rows mirror each other and the editor read as though it edited both sides at once.
+
+nothing needs assigning for a match to run. `_buildTeams` in `game.js` fills any empty place with a generated built-in character.
+
 ## the seams, by file
 
 | file | knows about | does not know about |

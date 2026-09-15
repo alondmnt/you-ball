@@ -40,7 +40,7 @@ the pencil opens the editor.
 3. drag to move it and pinch or scroll to size it, then tap the tick
 4. **✏️ paper** turns the white page behind a crayon drawing transparent. leave it off for photos
 5. tap the character to cycle its three faces and watch them
-6. tap a place in a team row to put the character there. the round place on the left is the goalkeeper
+6. tap a place in a team row and pick a face for it. the round place on the left is the goalkeeper, and every face is shown in that team's colours so you can see how they will look. **–** leaves the place to a built-in player, **+** makes a new character and puts them straight in
 7. the ball is a picture slot too
 
 anything you do not fill in stays as a built-in cartoon part, so a character is playable the moment you make it. a face on a default body is the usual case.

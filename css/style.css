@@ -527,3 +527,55 @@ kbd {
 @media (max-height: 430px) {
   .ed__keys { font-size: 0.66rem; }
 }
+
+/* ===== Team place picker =====
+   Opened by tapping a place in a team row. Every face is drawn in that team's
+   kit colour, so you can see how a character will look before choosing them. */
+.picker__card {
+  background: #14301f;
+  border-radius: 18px;
+  padding: 12px 14px 14px;
+  max-width: min(92vw, 560px);
+  max-height: 86vh;
+  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.picker__head { display: flex; align-items: center; gap: 8px; }
+/* The kit colour and the role say which place you are filling, without words. */
+.picker__kit {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  flex: none;
+}
+.picker__role { font-size: 1.3rem; }
+.picker__close {
+  margin-left: auto;
+  background: none; border: none; color: #f2f7f3;
+  font-size: 1.1rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+}
+.picker__close:hover { background: rgba(255, 255, 255, 0.1); }
+.picker__grid {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center;
+  overflow-y: auto;
+}
+.picker__face {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f7f3;
+  font-size: 1.7rem;
+  cursor: pointer;
+  overflow: hidden; padding: 0;
+  flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.picker__face img { width: 100%; height: 100%; object-fit: contain; }
+.picker__face--on { border-color: #ffd166; box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3); }
+.picker__face--add { border-style: dashed; }
+.picker__face--none { border-style: dashed; opacity: 0.75; }
+@media (max-height: 430px) {
+  .picker__face { width: 54px; height: 54px; font-size: 1.3rem; }
+}

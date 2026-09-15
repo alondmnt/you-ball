@@ -20,6 +20,7 @@ const Editor = (() => {
   let _preview = null;        /* the live-running rig */
   let _onPlay = null;
   let _pendingSlot = null;    /* slot awaiting a file pick */
+  let _picking = null;        /* { team, place } the picker is choosing for */
 
   /* Adjust-overlay state. */
   let _adj = null;            /* { img, slot, view, paper, canvas } */
@@ -39,6 +40,11 @@ const Editor = (() => {
     document.getElementById('adjust-ok').addEventListener('click', _commitAdjust);
     document.getElementById('adjust-paper').addEventListener('click', _togglePaper);
     _bindAdjustGestures();
+    document.getElementById('picker-close').addEventListener('click', _closePicker);
+    /* Tapping the backdrop, but not the card, closes without changing anything. */
+    document.getElementById('picker').addEventListener('click', e => {
+      if (e.target.id === 'picker') _closePicker();
+    });
     window.addEventListener('resize', _sizePreview);
     window.addEventListener('orientationchange', _sizePreview);
   }
@@ -49,7 +55,17 @@ const Editor = (() => {
    */
   async function open(progress) {
     _progress = progress;
-    if (!_progress.roster.length) _addCharacter(false);
+    if (!_progress.roster.length) {
+      /* A brand new save gets one character, placed in the home team's first
+         field place - the player the human is driving at kickoff - so making a
+         face and pressing play actually shows it.
+         This is the only automatic assignment there is. Dropping every new
+         character into both teams is what made the editor read as though it
+         edited both sides at once. */
+      const seed = _addCharacter(false);
+      _progress.teams[0].players[1] = seed.id;
+      Storage.saveProgress(_progress);
+    }
     if (!_selected || !_find(_selected)) _selected = _progress.roster[0].id;
     await _refreshUrls();
     render();
@@ -83,13 +99,6 @@ const Editor = (() => {
       slots: {},
     };
     _progress.roster.push(record);
-    /* Fill an empty team place so a fresh save is playable immediately. Field
-       places first: both keepers are always AI, so a character parked in goal
-       is one the kid never gets to be. */
-    for (const team of _progress.teams) {
-      const gap = [1, 2, 3, 0].find(i => team.players[i] == null);
-      if (gap !== undefined) team.players[gap] = id;
-    }
     if (select !== false) _selected = id;
     Storage.saveProgress(_progress);
     return record;
@@ -284,13 +293,8 @@ const Editor = (() => {
         } else {
           cell.textContent = '+';
         }
-        /* Tap a team place to put the character you are editing into it. */
-        cell.addEventListener('click', () => {
-          team.players[i] = _selected;
-          Storage.saveProgress(_progress);
-          Audio.play('confirm');
-          render();
-        });
+        cell.setAttribute('aria-label', (i === 0 ? 'goalkeeper' : 'player ' + i) + ', team ' + (t + 1));
+        cell.addEventListener('click', () => _openPicker(t, i));
         row.appendChild(cell);
       }
       host.appendChild(row);
@@ -381,12 +385,94 @@ const Editor = (() => {
     }
     _progress.roster = _progress.roster.filter(c => c.id !== record.id);
     for (const team of _progress.teams) {
-      team.players = team.players.map(id => (id === record.id ? _progress.roster[0].id : id));
+      team.players = team.players.map(id => (id === record.id ? null : id));
     }
     _selected = _progress.roster[0].id;
     Storage.saveProgress(_progress);
     await _refreshUrls();
     Audio.play('tap');
+    render();
+  }
+
+  /* ─── Team place picker ─── */
+
+  /*
+   * Tap a place, tap a face.
+   *
+   * Assignment used to depend on which roster card happened to be selected,
+   * which is a mode with nothing on screen to announce it. Two taps and no
+   * mode: you can see what you are choosing and what you are choosing it for.
+   */
+
+  /**
+   * Open the picker for one place in one team.
+   * @param {number} team - 0 home, 1 away
+   * @param {number} place - 0 is the goalkeeper, 1-3 are the field players
+   */
+  function _openPicker(team, place) {
+    _picking = { team, place };
+    Audio.play('tap');
+    document.getElementById('picker-kit').style.background = _progress.teams[team].colour;
+    /* A glove or a boot, so the place says what it is without a word of text. */
+    document.getElementById('picker-role').textContent = place === 0 ? '🧤' : '👟';
+    _renderPicker();
+    document.getElementById('picker').classList.remove('overlay--hidden');
+  }
+
+  function _closePicker() {
+    _picking = null;
+    document.getElementById('picker').classList.add('overlay--hidden');
+  }
+
+  /** Every roster face, plus nobody, plus make a new one. */
+  function _renderPicker() {
+    const grid = document.getElementById('picker-grid');
+    if (!grid || !_picking) return;
+    const { team, place } = _picking;
+    const colour = _progress.teams[team].colour;
+    const current = _progress.teams[team].players[place];
+    grid.innerHTML = '';
+
+    for (const c of _progress.roster) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'picker__face' + (c.id === current ? ' picker__face--on' : '');
+      const img = document.createElement('img');
+      /* Drawn in this team's kit, so you see how they will look in it. */
+      img.src = Character.faceSrc(c, 'idle', colour, _urls);
+      img.alt = '';
+      btn.appendChild(img);
+      btn.addEventListener('click', () => _assign(c.id));
+      grid.appendChild(btn);
+    }
+
+    const none = document.createElement('button');
+    none.type = 'button';
+    none.className = 'picker__face picker__face--none' + (current == null ? ' picker__face--on' : '');
+    none.textContent = '–';
+    none.setAttribute('aria-label', 'nobody, use a built-in player');
+    none.addEventListener('click', () => _assign(null));
+    grid.appendChild(none);
+
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'picker__face picker__face--add';
+    add.textContent = '+';
+    add.setAttribute('aria-label', 'new character');
+    add.addEventListener('click', () => _assign(_addCharacter(true).id));
+    grid.appendChild(add);
+  }
+
+  /**
+   * Put a character, or nobody, in the place being picked for.
+   * @param {string|null} id - roster id, or null to leave the place empty
+   */
+  function _assign(id) {
+    if (!_picking) return;
+    _progress.teams[_picking.team].players[_picking.place] = id;
+    Storage.saveProgress(_progress);
+    Audio.play('confirm');
+    _closePicker();
     render();
   }
 
