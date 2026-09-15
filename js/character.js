@@ -25,6 +25,10 @@ const Character = (() => {
     sad: 'sad',
     'sad-dance': 'sad',
     dive: 'idle',
+    tackle: 'idle',
+    /* Being robbed is worth a face. It lasts as long as the stun, which the
+       steal immunity keeps well apart from the next one, so it cannot strobe. */
+    stumble: 'sad',
   };
 
   /**

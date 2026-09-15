@@ -85,6 +85,7 @@ const Physics = (() => {
           vx: 0, vy: 0,
           facing: attackDir(team),
           kickAt: -99,        /* world.t of the last kick, for the kick pose */
+          tackleAt: -99,      /* world.t of the last tackle they made */
           stunUntil: -99,     /* just been tackled - cannot steer */
           diveUntil: -99,     /* keepers only */
           diveDir: 1,
@@ -124,6 +125,7 @@ const Physics = (() => {
       p.vx = 0; p.vy = 0;
       p.facing = attackDir(p.team);
       p.kickAt = -99;
+      p.tackleAt = -99;
       p.stunUntil = -99;
       p.diveUntil = -99;
     }
@@ -417,6 +419,7 @@ const Physics = (() => {
     }
     if (!thief) return;
     _take(world, thief);
+    thief.tackleAt = world.t;
 
     /* Knock the dispossessed player clear and stun them briefly. This is what
        stops the two of them trading the ball back and forth on the spot. */

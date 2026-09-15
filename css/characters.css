@@ -164,6 +164,44 @@
   to   { transform: rotate(calc(var(--dive-dir, 1) * -72deg)) translateY(-14px); }
 }
 
+/* ===== tackle - the lunge =====
+   A shoulder into them and back. translateX is positive forwards, and the
+   root's scaleX(-1) mirrors it when facing left, so this reads correctly
+   whichever way the player is running. */
+.ch--tackle .ch__body  { animation: ch-tackle-body 0.3s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.ch--tackle .ch__arm-r { animation: ch-tackle-arm 0.3s ease-out; }
+.ch--tackle .ch__arm-l { animation: ch-tackle-arm-back 0.3s ease-out; }
+.ch--tackle .ch__leg-r { animation: ch-tackle-leg 0.3s ease-out; }
+@keyframes ch-tackle-body {
+  0%   { transform: rotate(0deg) translateX(0); }
+  35%  { transform: rotate(17deg) translateX(7px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+@keyframes ch-tackle-arm      { 0%, 100% { transform: rotate(0deg); } 35% { transform: rotate(-80deg); } }
+@keyframes ch-tackle-arm-back { 0%, 100% { transform: rotate(0deg); } 35% { transform: rotate(46deg); } }
+@keyframes ch-tackle-leg      { 0%, 100% { transform: rotate(0deg); } 35% { transform: rotate(-44deg); } }
+
+/* ===== stumble - being robbed =====
+   Runs for exactly the stun, so the player is visibly unable to do anything
+   for as long as they actually cannot steer. Arms up, legs out, tipped back. */
+.ch--stumble .ch__body  { animation: ch-stumble-body 0.4s ease-out; }
+.ch--stumble .ch__arm-l { animation: ch-stumble-arm-l 0.4s ease-out; }
+.ch--stumble .ch__arm-r { animation: ch-stumble-arm-r 0.4s ease-out; }
+.ch--stumble .ch__leg-l { animation: ch-stumble-leg-l 0.4s ease-out; }
+.ch--stumble .ch__leg-r { animation: ch-stumble-leg-r 0.4s ease-out; }
+.ch--stumble .ch__head  { animation: ch-stumble-head 0.4s ease-out; }
+@keyframes ch-stumble-body {
+  0%   { transform: rotate(0deg) translate(0, 0); }
+  22%  { transform: rotate(-36deg) translate(-11px, 5px); }
+  58%  { transform: rotate(-16deg) translate(-5px, 2px); }
+  100% { transform: rotate(0deg) translate(0, 0); }
+}
+@keyframes ch-stumble-arm-l { 0%, 100% { transform: rotate(0deg); } 28% { transform: rotate(132deg); } }
+@keyframes ch-stumble-arm-r { 0%, 100% { transform: rotate(0deg); } 28% { transform: rotate(-126deg); } }
+@keyframes ch-stumble-leg-l { 0%, 100% { transform: rotate(0deg); } 28% { transform: rotate(38deg); } }
+@keyframes ch-stumble-leg-r { 0%, 100% { transform: rotate(0deg); } 28% { transform: rotate(-24deg); } }
+@keyframes ch-stumble-head  { 0%, 100% { transform: rotate(0deg); } 28% { transform: rotate(22deg) translateY(2px); } }
+
 /* Motion sensitivity: keep the game readable, drop the perpetual motion. */
 @media (prefers-reduced-motion: reduce) {
   .ch--idle .ch__body,

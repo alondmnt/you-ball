@@ -263,10 +263,6 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 
 /* ===== Juice ===== */
-/* A tackled player flashes, so losing the ball reads as an event. */
-.ch--stunned { animation: ch-stun 0.18s steps(2) 2; }
-@keyframes ch-stun { 0%, 100% { filter: none; } 50% { filter: brightness(2.2) saturate(0.2); } }
-
 /* Ball trail: a fading clone dropped every few frames on a hard shot. */
 .ball-trail {
   position: absolute;

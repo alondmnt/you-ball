@@ -125,6 +125,9 @@ const Render = (() => {
       if (match.winner === null) return 'idle';
       return match.winner === p.team ? 'celebrate' : 'sad';
     }
+    /* Stunned first: a tackled player cannot be doing anything else. */
+    if (p.stunUntil > world.t) return 'stumble';
+    if (world.t - p.tackleAt < 0.30) return 'tackle';
     if (p.role === 'gk' && p.diveUntil > world.t) return 'dive';
     if (world.t - p.kickAt < 0.34) return 'kick';
     if (Math.hypot(p.vx, p.vy) > 45) return 'run';
@@ -165,8 +168,6 @@ const Render = (() => {
       rig.el.style.zIndex = q.z;
       if (p.role === 'gk') rig.setDiveDir(p.diveDir);
       rig.setAnim(animFor(p, world, match));
-      /* A stunned player flashes, so a tackle reads as something that happened. */
-      rig.el.classList.toggle('ch--stunned', p.stunUntil > world.t);
       rig.el.classList.toggle('ch--mine', !!controlled && controlled.has(p.id));
     }
 
