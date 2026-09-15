@@ -39,6 +39,8 @@ const Editor = (() => {
     document.getElementById('adjust-ok').addEventListener('click', _commitAdjust);
     document.getElementById('adjust-paper').addEventListener('click', _togglePaper);
     _bindAdjustGestures();
+    window.addEventListener('resize', _sizePreview);
+    window.addEventListener('orientationchange', _sizePreview);
   }
 
   /**
@@ -111,6 +113,9 @@ const Editor = (() => {
     _renderStage();
     _renderSlots();
     _renderTeams();
+    /* Last, not inside _renderStage: the stage only reaches its final height
+       once the team rows below it have been filled in. */
+    _sizePreview();
   }
 
   /** The strip of characters, plus the button that makes a new one. */
@@ -174,6 +179,21 @@ const Editor = (() => {
     });
   }
 
+  /**
+   * Scale the preview to the stage it is standing in.
+   *
+   * A fixed scale in CSS clipped the character's head on a short landscape
+   * screen, because the stage shrinks with the window but the rig did not.
+   */
+  function _sizePreview() {
+    const stage = document.getElementById('ed-stage');
+    if (!stage || !_preview) return;
+    const h = stage.clientHeight;
+    if (!h) return;
+    const scale = Math.max(0.45, Math.min(2.6, (h * 0.8) / Assets.CHAR_H));
+    _preview.el.style.transform = `scale(${scale})`;
+  }
+
   /** One chip per slot. A chip with a custom picture gets a clear button. */
   function _renderSlots() {
     const host = document.getElementById('ed-slots');
@@ -222,6 +242,7 @@ const Editor = (() => {
     more.setAttribute('aria-label', 'left and right parts separately');
     more.addEventListener('click', () => { _showExtras = !_showExtras; _renderSlots(); });
     host.appendChild(more);
+    _sizePreview();   /* the extra chips can change how tall the stage is */
   }
 
   /** The two team strips, the colour pickers, the ball, and the match settings. */

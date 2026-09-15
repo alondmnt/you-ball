@@ -351,7 +351,10 @@ img { -webkit-user-drag: none; user-select: none; }
 .ed__card--del { border-color: rgba(239, 71, 111, 0.5); font-size: 1.2rem; }
 
 /* Preview and slots */
-.ed__main { flex: 1; display: flex; gap: 14px; min-height: 0; justify-content: center; }
+/* min-height stops a short landscape screen crushing the preview to nothing.
+   Below that the editor body scrolls instead, which is the right trade on a
+   phone - the character you are building must stay visible. */
+.ed__main { flex: 1; display: flex; gap: 14px; min-height: 170px; justify-content: center; }
 .ed__stage {
   flex: 0 1 460px;
   position: relative;
@@ -363,14 +366,14 @@ img { -webkit-user-drag: none; user-select: none; }
   cursor: pointer;
   min-width: 120px;
 }
-/* The rig stands on the floor of the stage and scales up from its feet. */
+/* The rig stands on the floor of the stage and scales up from its feet.
+   The scale itself is set by Editor._sizePreview from the stage's measured
+   height, because a fixed one clips the head on a short screen. */
 .ed__stage .ch {
   left: 50%; top: auto; bottom: 8%;
   margin-left: -50px;
-  transform: scale(2.2);
   transform-origin: 50% 100%;
 }
-@media (max-height: 560px) { .ed__stage .ch { transform: scale(1.6); } }
 .ed__slots {
   flex: none;
   width: 150px;
