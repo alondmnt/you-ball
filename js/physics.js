@@ -64,6 +64,9 @@ const Physics = (() => {
         stealLockUntil: 0,   /* the carrier cannot be robbed before this */
         pickupLockUntil: 0,  /* a loose ball cannot be collected before this */
         lastTouch: null,
+        /* Set the instant a goal is detected. The ball then keeps flying into
+           the net for the slow-motion beat instead of re-scoring every step. */
+        scored: false,
       },
     };
   }
@@ -97,6 +100,7 @@ const Physics = (() => {
     b.stealLockUntil = world.t + CONFIG.stealImmunityMs / 1000;
     b.pickupLockUntil = 0;
     b.lastTouch = taker ? taker.id : null;
+    b.scored = false;
   }
 
   /** Look up a player by id. Ids are assigned as array indices in createWorld. */
@@ -142,8 +146,8 @@ const Physics = (() => {
     _movePlayers(world, intents, dt);
     _separatePlayers(world);
     _moveBall(world, dt, events);
-    if (events.some(e => e.type === 'goal')) return events;
-    _resolvePossession(world, events);
+    /* After a goal nobody may collect the ball - it is flying into the net. */
+    if (!world.ball.scored) _resolvePossession(world, events);
 
     return events;
   }
@@ -288,23 +292,31 @@ const Physics = (() => {
     if (Math.abs(b.vx) < 2) b.vx = 0;
     if (Math.abs(b.vy) < 2) b.vy = 0;
 
-    /* End walls: a goal inside the mouth, a bounce everywhere else. */
-    if (b.x <= R) {
-      if (inGoalMouth(b.y)) {
-        events.push({ type: 'goal', team: 1, x: b.x, y: b.y, by: b.lastTouch });
-        return;
+    /* End walls: a goal inside the mouth, a bounce everywhere else. Once a
+       goal is scored the end walls stop existing, so the ball carries on into
+       the net while the celebration plays. */
+    if (!b.scored) {
+      if (b.x <= R) {
+        if (inGoalMouth(b.y)) {
+          b.scored = true;
+          b.carrier = null;   /* a walked-in goal must roll on, not stay glued */
+          events.push({ type: 'goal', team: 1, x: b.x, y: b.y, by: b.lastTouch });
+        } else {
+          b.x = R;
+          b.vx = -b.vx * CONFIG.wallBounce;
+          events.push({ type: 'wall', speed: Math.abs(b.vx), x: b.x, y: b.y });
+        }
+      } else if (b.x >= CONFIG.pitchW - R) {
+        if (inGoalMouth(b.y)) {
+          b.scored = true;
+          b.carrier = null;   /* a walked-in goal must roll on, not stay glued */
+          events.push({ type: 'goal', team: 0, x: b.x, y: b.y, by: b.lastTouch });
+        } else {
+          b.x = CONFIG.pitchW - R;
+          b.vx = -b.vx * CONFIG.wallBounce;
+          events.push({ type: 'wall', speed: Math.abs(b.vx), x: b.x, y: b.y });
+        }
       }
-      b.x = R;
-      b.vx = -b.vx * CONFIG.wallBounce;
-      events.push({ type: 'wall', speed: Math.abs(b.vx), x: b.x, y: b.y });
-    } else if (b.x >= CONFIG.pitchW - R) {
-      if (inGoalMouth(b.y)) {
-        events.push({ type: 'goal', team: 0, x: b.x, y: b.y, by: b.lastTouch });
-        return;
-      }
-      b.x = CONFIG.pitchW - R;
-      b.vx = -b.vx * CONFIG.wallBounce;
-      events.push({ type: 'wall', speed: Math.abs(b.vx), x: b.x, y: b.y });
     }
 
     /* Touchlines are walls too - no out of bounds, no throw-ins. */
