@@ -147,30 +147,58 @@
   75%      { transform: rotate(14deg); }
 }
 
-/* ===== sad - shoulders droop, head tilts, arms hang ===== */
-.ch--sad .ch__body  { animation: ch-sad-body 3.2s ease-in-out infinite; }
-.ch--sad .ch__head  { transform: rotate(-13deg) translateY(5px); }
-.ch--sad .ch__arm-l { transform: rotate(13deg); }
-.ch--sad .ch__arm-r { transform: rotate(-13deg); }
-@keyframes ch-sad-body {
-  0%, 100% { transform: translateY(3px) rotate(0deg); }
-  50%      { transform: translateY(5px) rotate(-2.5deg); }
-}
+/* ===== sad and sad-dance - arms folded, weight off one hip, head down =====
+   Conceding used to play the celebration at half energy: the same jump, a bit
+   smaller, arms still up. A smaller celebration does not read as
+   disappointment - it reads as a smaller celebration. Folded arms, a slump and
+   a dropped head are unmistakable even at this size, and they are the one
+   gesture that cannot be confused with a happy one.
 
-/* ===== sad-dance - the celebration at half energy, head still drooped ===== */
-.ch--sad-dance .ch__body  { animation: ch-sad-dance-body 0.95s ease-in-out infinite; }
-.ch--sad-dance .ch__arm-l { animation: ch-sad-dance-arm-l 0.48s ease-in-out infinite alternate; }
-.ch--sad-dance .ch__arm-r { animation: ch-sad-dance-arm-r 0.48s ease-in-out infinite alternate; }
-.ch--sad-dance .ch__head  { transform: rotate(-11deg) translateY(4px); }
-@keyframes ch-sad-dance-body {
-  0%   { transform: translateY(2px) rotate(-3deg); }
-  25%  { transform: translateY(-7px) rotate(0deg); }
-  50%  { transform: translateY(2px) rotate(3deg); }
-  75%  { transform: translateY(-4px) rotate(0deg); }
-  100% { transform: translateY(2px) rotate(-3deg); }
+   Both states share the pose; only the tempo differs. Conceding sighs at
+   roughly breathing pace, full time is slower and heavier. */
+.ch--sad-dance .ch__body  { animation: ch-mope-body 1.9s ease-in-out infinite; }
+.ch--sad-dance .ch__head  { animation: ch-mope-head 1.9s ease-in-out infinite; }
+.ch--sad-dance .ch__arm-l { animation: ch-mope-arm-l 1.9s ease-in-out infinite; }
+.ch--sad-dance .ch__arm-r { animation: ch-mope-arm-r 1.9s ease-in-out infinite; }
+
+.ch--sad .ch__body  { animation: ch-mope-body 3.4s ease-in-out infinite; }
+.ch--sad .ch__head  { animation: ch-mope-head 3.4s ease-in-out infinite; }
+.ch--sad .ch__arm-l { animation: ch-mope-arm-l 3.4s ease-in-out infinite; }
+.ch--sad .ch__arm-r { animation: ch-mope-arm-r 3.4s ease-in-out infinite; }
+
+/* The left arm sits behind the torso in the rig, which is right everywhere
+   else and wrong here: an arm folded across the chest has to be in front of
+   it. The rig writes z-index inline, so the override has to shout. */
+.ch--sad .ch__arm-l,
+.ch--sad-dance .ch__arm-l { z-index: 4 !important; }
+
+/* The legs stand off square too. Standing to attention under folded arms
+   looks defiant; an uneven stance looks like the fight has gone out of it. */
+.ch--sad .ch__leg-l,
+.ch--sad-dance .ch__leg-l { transform: rotate(4deg); }
+.ch--sad .ch__leg-r,
+.ch--sad-dance .ch__leg-r { transform: rotate(-8deg); }
+
+/* Leaning off one hip rather than standing square. Negative here is a lean
+   towards the front, which reads as slumping rather than recoiling. */
+@keyframes ch-mope-body {
+  0%, 100% { transform: translateY(3px) rotate(-6deg); }
+  50%      { transform: translateY(5px) rotate(-8deg); }
 }
-@keyframes ch-sad-dance-arm-l { from { transform: rotate(95deg); } to { transform: rotate(118deg); } }
-@keyframes ch-sad-dance-arm-r { from { transform: rotate(-95deg); } to { transform: rotate(-118deg); } }
+@keyframes ch-mope-head {
+  0%, 100% { transform: rotate(-9deg) translateY(4px); }
+  50%      { transform: rotate(-13deg) translateY(6px); }
+}
+/* The two arms cross at slightly different angles, so one folds over the
+   other instead of the pair lying on top of each other. */
+@keyframes ch-mope-arm-l {
+  0%, 100% { transform: rotate(-54deg); }
+  50%      { transform: rotate(-49deg); }
+}
+@keyframes ch-mope-arm-r {
+  0%, 100% { transform: rotate(52deg); }
+  50%      { transform: rotate(47deg); }
+}
 
 /* ===== dive - goalkeeper only, full-body tilt toward the ball side =====
    --dive-dir is +1 toward the far touchline, -1 toward the near one. */
