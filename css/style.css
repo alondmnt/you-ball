@@ -293,3 +293,181 @@ img { -webkit-user-drag: none; user-select: none; }
   70%  { opacity: 1; }
   100% { transform: translate(var(--dx), calc(var(--dy) + 30px)) scale(0.9); opacity: 0; }
 }
+
+/* ===== Editor ===== */
+#editor-bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 44px;
+  padding: 0 10px;
+  padding-top: env(safe-area-inset-top, 0px);
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(8, 20, 13, 0.9);
+  z-index: 60;
+}
+#editor-bar #editor-back {
+  background: none; border: none; color: #f2f7f3;
+  font-size: 1.4rem; cursor: pointer; padding: 2px 8px; border-radius: 6px;
+}
+#editor-title { font-weight: 600; opacity: 0.85; }
+#editor-bar #editor-play { margin-left: auto; }
+
+#editor-body {
+  position: absolute;
+  top: calc(44px + env(safe-area-inset-top, 0px)); left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(#123021, #0a1a11);
+  overflow: hidden;
+}
+
+/* Roster strip */
+.ed__roster {
+  display: flex; gap: 8px;
+  overflow-x: auto; overflow-y: hidden;
+  flex: none;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+.ed__card {
+  flex: none;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f7f3;
+  font-size: 1.5rem;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.ed__card img { width: 100%; height: 100%; object-fit: contain; }
+.ed__card--on { border-color: #ffd166; box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3); }
+.ed__card--add { border-style: dashed; }
+.ed__card--del { border-color: rgba(239, 71, 111, 0.5); font-size: 1.2rem; }
+
+/* Preview and slots */
+.ed__main { flex: 1; display: flex; gap: 10px; min-height: 0; }
+.ed__stage {
+  flex: 1;
+  position: relative;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at 50% 92%, rgba(0, 0, 0, 0.35) 0%, transparent 60%),
+    linear-gradient(#2f7d4a, #1d5230);
+  overflow: hidden;
+  cursor: pointer;
+  min-width: 120px;
+}
+/* The rig stands on the floor of the stage and scales up from its feet. */
+.ed__stage .ch {
+  left: 50%; top: auto; bottom: 14px;
+  margin-left: -50px;
+  transform: scale(1.45);
+  transform-origin: 50% 100%;
+}
+.ed__slots {
+  flex: none;
+  width: 150px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  align-content: start;
+  overflow-y: auto;
+}
+.ed__chip { position: relative; }
+.ed__chip-btn {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 14px;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+.ed__chip-icon { font-size: 1.5rem; }
+.ed__chip--set .ed__chip-btn { border-style: solid; border-color: #ffd166; background: rgba(255, 209, 102, 0.14); }
+.ed__chip-clear {
+  position: absolute; top: -5px; right: -5px;
+  width: 21px; height: 21px;
+  border-radius: 50%;
+  border: none;
+  background: #ef476f; color: #fff;
+  font-size: 0.7rem; line-height: 1; cursor: pointer;
+  padding: 0;
+}
+.ed__more {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 14px; border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f2f7f3; font-size: 1.3rem; cursor: pointer;
+}
+.ed__more--on { background: rgba(255, 209, 102, 0.22); }
+
+/* Teams, ball and settings */
+.ed__teams { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.ed__team { display: flex; align-items: center; gap: 5px; }
+.ed__swatch {
+  width: 17px; height: 17px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer; padding: 0;
+}
+.ed__swatch--on { border-color: #fff; transform: scale(1.2); }
+.ed__slotcell {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  border: 2px solid var(--team-colour, #fff);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2f7f3; font-size: 1.1rem; cursor: pointer;
+  overflow: hidden; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.ed__slotcell img { width: 100%; height: 100%; object-fit: contain; }
+.ed__slotcell--gk { border-radius: 50%; margin-right: 6px; }
+.ed__extras { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ed__ball {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer; padding: 3px;
+}
+.ed__ball img { width: 100%; height: 100%; object-fit: contain; }
+.ed__toggle {
+  min-width: 42px; height: 42px;
+  border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 1.2rem; cursor: pointer; padding: 0 8px;
+}
+.ed__toggle--on { border-color: #ffd166; background: rgba(255, 209, 102, 0.18); }
+.ed__warn {
+  font-size: 0.75rem; color: #ffb3c1; opacity: 0.9;
+}
+
+/* Adjust overlay */
+.adjust__card {
+  background: #14301f;
+  border-radius: 18px;
+  padding: 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.adjust__frame {
+  position: relative;
+  height: min(52vh, 300px);
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    repeating-conic-gradient(#2a2a2a 0% 25%, #343434 0% 50%) 50% / 18px 18px;
+  border: 3px solid #ffd166;
+  touch-action: none;
+  cursor: grab;
+}
+.adjust__frame canvas { display: block; width: 100%; height: 100%; }
+.adjust__tools { display: flex; gap: 8px; align-items: center; }
+.btn--on { background: #ffd166; color: #10231a; }
+
+/* Portrait phones: stack the preview above the slots so neither gets squeezed. */
+@media (max-height: 430px) {
+  .ed__slots { width: 118px; }
+  .ed__slotcell, .ed__ball, .ed__toggle { width: 34px; height: 34px; }
+}
