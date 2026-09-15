@@ -318,7 +318,10 @@ img { -webkit-user-drag: none; user-select: none; }
   gap: 8px;
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(#123021, #0a1a11);
-  overflow: hidden;
+  /* Scroll rather than clip: the key legend at the bottom is the first thing
+     to be cut off on a short landscape screen. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Roster strip */
@@ -471,4 +474,53 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-height: 430px) {
   .ed__slots { width: 118px; }
   .ed__slotcell, .ed__ball, .ed__toggle { width: 34px; height: 34px; }
+}
+
+/* ===== Keyboard legend =====
+   Shown on the splash and under the editor's two-player toggle. Both are built
+   from Input.legendHtml, so neither can disagree with the actual bindings. */
+kbd {
+  display: inline-block;
+  font: inherit;
+  font-size: 0.85em;
+  line-height: 1;
+  padding: 0.25em 0.45em;
+  margin: 0 0.1em;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-bottom-width: 2px;
+  white-space: nowrap;
+}
+/* Which player a row belongs to. Colours match the two default team kits. */
+.who {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.4em; height: 1.4em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  background: var(--team-colour, #e63946);
+  font-size: 0.8em; font-weight: 700;
+  flex: none;
+}
+.who--2 { background: #457b9d; }
+
+.splash__keys {
+  margin: 0 0 1.2em;
+  display: flex; flex-direction: column; gap: 0.4em;
+  font-size: 0.82rem;
+  color: #a9c9b6;
+}
+.splash__keyrow { display: flex; align-items: center; justify-content: center; gap: 0.15em; flex-wrap: wrap; }
+
+.ed__keys {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 0.72rem;
+  color: #a9c9b6;
+}
+.ed__keyrow { display: flex; align-items: center; gap: 0.15em; flex-wrap: wrap; }
+/* Dimmed until two-player is switched on. */
+.ed__keyrow--off { opacity: 0.35; }
+
+@media (max-height: 430px) {
+  .ed__keys { font-size: 0.66rem; }
 }

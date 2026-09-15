@@ -152,15 +152,43 @@ const Input = (() => {
       shoot: ['f', 'F'], pass: ['g', 'G'] },
   ];
 
+  /*
+   * What to print for each seat. It sits next to the bindings deliberately:
+   * changing a key without changing its label is then obviously wrong, and the
+   * on-screen legend can never quietly disagree with what the keys do.
+   */
+  const LEGEND = [
+    { move: '\u2190 \u2191 \u2193 \u2192', shoot: 'space', pass: 'shift' },
+    { move: 'W A S D', shoot: 'F', pass: 'G' },
+  ];
+
+  /* Actions only - the other KEYMAP fields would confuse the lookup below. */
+  const ACTIONS = ['up', 'down', 'left', 'right', 'shoot', 'pass'];
+
   /** Which seat and action a key belongs to, or null. */
   function _lookup(key) {
     const limit = CONFIG.twoPlayer ? 2 : 1;
     for (let i = 0; i < limit; i++) {
-      for (const [action, keys] of Object.entries(KEYMAP[i])) {
-        if (keys.includes(key)) return { seat: i, action };
+      for (const action of ACTIONS) {
+        if (KEYMAP[i][action].includes(key)) return { seat: i, action };
       }
     }
     return null;
+  }
+
+  /**
+   * The keys for one seat, as markup ready to drop into the splash or the
+   * editor. Keeping this here rather than in each screen is what stops the two
+   * legends drifting apart from each other or from the bindings.
+   * @param {number} i - seat index
+   * @returns {string} HTML
+   */
+  function legendHtml(i) {
+    const l = LEGEND[i];
+    if (!l) return '';
+    return `<kbd>${l.move}</kbd> run` +
+           ` <kbd>${l.shoot}</kbd> shoot` +
+           ` <kbd>${l.pass}</kbd> pass`;
   }
 
   function _onKeyDown(e) {
@@ -227,5 +255,5 @@ const Input = (() => {
   /** How many seats are live. Two only when two-player is switched on. */
   function seatCount() { return CONFIG.twoPlayer ? 2 : 1; }
 
-  return { init, setEnabled, reset, seat, clearRequests, seatCount };
+  return { init, setEnabled, reset, seat, clearRequests, seatCount, legendHtml };
 })();

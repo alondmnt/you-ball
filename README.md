@@ -29,6 +29,8 @@ first to three goals, or whoever is ahead when ninety seconds are up.
 - arrow keys move, space shoots (hold it for more power), shift passes
 - turn on two players in the editor and the second player gets WASD, F to shoot, G to pass
 
+the keys are printed on the splash screen and under the two-player toggle in the editor, so nobody has to come here to find them. player one is the home team, player two the away team, and touch and the arrow keys are the same seat - so the kid can drag on the screen while you take WASD.
+
 ## making players
 
 the pencil opens the editor.

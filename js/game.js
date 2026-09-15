@@ -55,6 +55,7 @@ const Game = (() => {
     document.getElementById('ft-home').addEventListener('click', () => { Audio.play('tap'); goHome(); });
 
     _syncSoundButton();
+    _renderSplashKeys();
     /* Any gesture can wake an AudioContext the device suspended. */
     document.addEventListener('pointerdown', () => Audio.resume(), true);
     /* Pause when the tab is hidden, rather than banking up simulation time. */
@@ -67,6 +68,25 @@ const Game = (() => {
     Audio.play('tap');
     document.getElementById('splash').classList.add('splash--hidden');
     then();
+  }
+
+  /**
+   * Print the keyboard controls on the splash.
+   *
+   * Touch needs no explaining, but space and shift are not discoverable, and
+   * player two's keys were previously written down nowhere but the README.
+   * The second row only appears once two-player is switched on.
+   */
+  function _renderSplashKeys() {
+    const host = document.getElementById('splash-keys');
+    if (!host) return;
+    if (!CONFIG.twoPlayer) {
+      host.innerHTML = `<div class="splash__keyrow">${Input.legendHtml(0)}</div>`;
+      return;
+    }
+    host.innerHTML =
+      `<div class="splash__keyrow"><span class="who">1</span>${Input.legendHtml(0)}</div>` +
+      `<div class="splash__keyrow"><span class="who who--2">2</span>${Input.legendHtml(1)}</div>`;
   }
 
   /** Show one of the screens. */
@@ -96,6 +116,7 @@ const Game = (() => {
     Render.hideFullTime();
     Storage.revokeAll();
     _show('none');
+    _renderSplashKeys();   /* two-player may have been switched on since */
     document.getElementById('splash').classList.remove('splash--hidden');
   }
 
