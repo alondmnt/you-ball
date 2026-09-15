@@ -45,14 +45,21 @@ const Assets = (() => {
    *
    * `origin` is the pivot every animation rotates about: neck for the head,
    * shoulder for arms, hip for legs.
+   *
+   * The arm pivots sit just inside the torso frame, at x 32 and 68. They used
+   * to sit outside it, which is invisible while the arms hang down but makes
+   * them appear to fly off the body in any pose that swings them out - the
+   * stumble, the dive and the goal celebration all showed it. The built-in
+   * torso is narrower at the shoulders than its frame, and an uploaded one
+   * fills the frame, so these land between the two.
    */
   const CHAR_W = 100, CHAR_H = 140;
   const RIG = [
     { part: 'leg_l', slot: 'leg_l', x: 32, y: 92, w: 16, h: 48, z: 1, origin: '50% 0%' },
     { part: 'leg_r', slot: 'leg_r', x: 52, y: 92, w: 16, h: 48, z: 2, origin: '50% 0%' },
-    { part: 'arm_l', slot: 'arm_l', x: 15, y: 46, w: 14, h: 44, z: 1, origin: '50% 0%' },
+    { part: 'arm_l', slot: 'arm_l', x: 25, y: 48, w: 14, h: 44, z: 1, origin: '50% 0%' },
     { part: 'torso', slot: 'torso', x: 30, y: 42, w: 40, h: 52, z: 3, origin: '50% 100%' },
-    { part: 'arm_r', slot: 'arm_r', x: 71, y: 46, w: 14, h: 44, z: 4, origin: '50% 0%' },
+    { part: 'arm_r', slot: 'arm_r', x: 61, y: 48, w: 14, h: 44, z: 4, origin: '50% 0%' },
     /* The head is three stacked images - one per face. CSS shows one at a time,
        so a goal never waits on an image decode to change expression. */
     { part: 'head', slot: 'head_idle', x: 28, y: 0, w: 44, h: 44, z: 5, origin: '50% 100%',
