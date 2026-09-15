@@ -585,12 +585,52 @@ kbd {
    Regolith, craters, a starfield instead of a crowd, and Earth on the horizon. */
 .scene-moon { background: linear-gradient(#05060f 0%, #0a0c1a 60%, #141626 100%); }
 .scene-moon .pm__surface {
+  /*
+   * Craters, not dots. Each one is a bright raised rim, a bowl of shadow
+   * offset down and right, and a lit crescent on the upper-left wall, so the
+   * light reads as coming from one direction and the surface looks dented.
+   *
+   * The tile sizes are deliberately not multiples of each other, and each
+   * layer starts at its own offset. Tiles that share a size line up into rows
+   * and the ground stops looking like ground and starts looking perforated.
+   */
   background:
-    radial-gradient(circle at 18% 30%, rgba(0,0,0,0.20) 0 22px, transparent 24px),
-    radial-gradient(circle at 63% 68%, rgba(0,0,0,0.18) 0 34px, transparent 36px),
-    radial-gradient(circle at 86% 22%, rgba(0,0,0,0.16) 0 18px, transparent 20px),
-    radial-gradient(circle at 40% 82%, rgba(255,255,255,0.06) 0 26px, transparent 28px),
-    linear-gradient(#6d6f78 0%, #85878f 45%, #9a9ca3 100%);
+    /* large crater */
+    radial-gradient(circle at 196px 146px, rgba(255,255,255,0.14) 0 34px, transparent 36px),
+    radial-gradient(circle at 210px 160px, rgba(0,0,0,0.34) 0 40px, transparent 43px),
+    radial-gradient(circle at 200px 150px, transparent 0 43px, rgba(255,255,255,0.19) 45px 54px, transparent 57px),
+    /* medium crater */
+    radial-gradient(circle at 86px 76px, rgba(255,255,255,0.12) 0 16px, transparent 18px),
+    radial-gradient(circle at 96px 86px, rgba(0,0,0,0.30) 0 20px, transparent 22px),
+    radial-gradient(circle at 90px 80px, transparent 0 22px, rgba(255,255,255,0.17) 23px 29px, transparent 31px),
+    /* small crater A */
+    radial-gradient(circle at 46px 36px, rgba(0,0,0,0.26) 0 10px, transparent 12px),
+    radial-gradient(circle at 43px 33px, transparent 0 11px, rgba(255,255,255,0.15) 12px 15px, transparent 16px),
+    /* small crater B */
+    radial-gradient(circle at 141px 108px, rgba(0,0,0,0.24) 0 8px, transparent 10px),
+    radial-gradient(circle at 138px 105px, transparent 0 9px, rgba(255,255,255,0.14) 10px 13px, transparent 14px),
+    /* pits */
+    radial-gradient(circle at 52px 41px, rgba(0,0,0,0.18) 0 4px, transparent 6px),
+    /* mottling, so the flat ground is not flat */
+    radial-gradient(circle at 34% 44%, rgba(255,255,255,0.05) 0 24px, transparent 28px),
+    radial-gradient(circle at 74% 18%, rgba(0,0,0,0.06) 0 20px, transparent 24px),
+    linear-gradient(#7a7d86 0%, #8e9199 45%, #a3a6ad 100%);
+  background-size:
+    613px 421px, 613px 421px, 613px 421px,
+    337px 251px, 337px 251px, 337px 251px,
+    239px 173px, 239px 173px,
+    197px 149px, 197px 149px,
+    151px 113px,
+    109px 89px, 163px 127px,
+    100% 100%;
+  background-position:
+    40px 18px, 40px 18px, 40px 18px,
+    150px 90px, 150px 90px, 150px 90px,
+    20px 60px, 20px 60px,
+    110px 30px, 110px 30px,
+    70px 12px,
+    0 0, 55px 40px,
+    0 0;
 }
 .scene-moon .crowd {
   background:
