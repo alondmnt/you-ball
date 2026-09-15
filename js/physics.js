@@ -47,6 +47,7 @@ const Physics = (() => {
           vx: 0, vy: 0,
           facing: attackDir(team),
           kickAt: -99,        /* world.t of the last kick, for the kick pose */
+          stunUntil: -99,     /* just been tackled - cannot steer */
           diveUntil: -99,     /* keepers only */
           diveDir: 1,
           human: false,
@@ -85,6 +86,7 @@ const Physics = (() => {
       p.vx = 0; p.vy = 0;
       p.facing = attackDir(p.team);
       p.kickAt = -99;
+      p.stunUntil = -99;
       p.diveUntil = -99;
     }
     /* The kicking team's forward stands over the ball. */
@@ -211,9 +213,11 @@ const Physics = (() => {
       /* Keepers move at their own pace, and faster again while diving. */
       let base = CONFIG.playerSpeed;
       if (p.role === 'gk') base = p.diveUntil > world.t ? CONFIG.gkDiveSpeed : CONFIG.gkTrackSpeed;
+      if (world.ball.carrier === p.id) base *= CONFIG.carrierSpeedMult;
       const speed = base * (p.speedMult || 1);
 
-      if (mag > 0.01) {
+      const stunned = p.stunUntil > world.t;
+      if (mag > 0.01 && !stunned) {
         /* Normalise so diagonal input is not faster than straight. */
         const nx = mx / Math.max(1, mag), ny = my / Math.max(1, mag);
         const tvx = nx * speed, tvy = ny * speed;
@@ -251,7 +255,8 @@ const Physics = (() => {
    * and the steal rule fires every frame on the same pair.
    */
   function _separatePlayers(world) {
-    const minD = CONFIG.playerRadius * 1.15;
+    /* Must stay under stealDist, or contact could never happen at all. */
+    const minD = CONFIG.playerRadius * 1.6;
     const ps = world.players;
     for (let i = 0; i < ps.length; i++) {
       for (let j = i + 1; j < ps.length; j++) {
@@ -366,6 +371,19 @@ const Physics = (() => {
     }
     if (!thief) return;
     _take(world, thief);
+
+    /* Knock the dispossessed player clear and stun them briefly. This is what
+       stops the two of them trading the ball back and forth on the spot. */
+    let dx = holder.x - thief.x, dy = holder.y - thief.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const clear = CONFIG.stealDist * CONFIG.tackleClearance;
+    holder.x = thief.x + (dx / d) * clear;
+    holder.y = thief.y + (dy / d) * clear;
+    holder.x = Math.max(CONFIG.playerRadius, Math.min(CONFIG.pitchW - CONFIG.playerRadius, holder.x));
+    holder.y = Math.max(CONFIG.playerRadius, Math.min(CONFIG.pitchH - CONFIG.playerRadius, holder.y));
+    holder.vx = 0; holder.vy = 0;
+    holder.stunUntil = world.t + CONFIG.tackleStunMs / 1000;
+
     events.push({ type: 'steal', id: thief.id, from: holder.id, team: thief.team, x: b.x, y: b.y });
   }
 

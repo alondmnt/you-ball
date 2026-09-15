@@ -114,25 +114,31 @@ const AI = (() => {
 
   /* ─── Behaviours ─── */
 
-  /** Carrying: head for goal, shoot in range, pass out of trouble. */
+  /**
+   * Carrying: run at the goal, shoot once in range, and pass only when that
+   * actually gains ground.
+   *
+   * The order matters. An earlier version checked pressure first and passed on
+   * every touch, because a chaser is always inside pressureDist - the ball went
+   * round in circles and no one ever got within shooting range. So: settle
+   * first, then shoot, then pass, and only forward.
+   */
   function _withBall(world, p, intent) {
     const b = world.ball;
     const goalX = Physics.targetGoalX(p.team);
     const goalY = CONFIG.pitchH / 2;
+    const dir = Physics.attackDir(p.team);
     const dist = Math.hypot(goalX - p.x, goalY - p.y);
 
-    /* Pressure first - a pass beats losing it to a tackle. */
-    let nearest = Infinity;
-    for (const q of world.players) {
-      if (q.team === p.team) continue;
-      nearest = Math.min(nearest, Math.hypot(q.x - p.x, q.y - p.y));
-    }
-    if (nearest < CONFIG.pressureDist && Physics.passTarget(world, p)) {
-      intent.pass = true;
+    /* Time on the ball, read off the immunity window rather than stored. */
+    const heldFor = world.t - (b.stealLockUntil - CONFIG.stealImmunityMs / 1000);
+    if (heldFor < CONFIG.aiSettleMs / 1000) {
+      _steer(p, goalX, goalY + p.ai.jy * 0.6, intent);
       return;
     }
 
-    if (dist < CONFIG.shootRange && _laneClear(world, p, goalX, goalY)) {
+    if (dist < CONFIG.shootRange &&
+        (dist < CONFIG.aiPointBlank || _laneClear(world, p, goalX, goalY))) {
       /* Aim away from the keeper's current side, then add difficulty noise. */
       const gk = world.players.find(q => q.team !== p.team && q.role === 'gk');
       const half = CONFIG.goalMouth / 2 - CONFIG.ballRadius * 2;
@@ -148,6 +154,21 @@ const AI = (() => {
         power: Math.max(0.55, Math.min(1, dist / CONFIG.shootRange)),
       };
       return;
+    }
+
+    /* Under pressure, look for a teammate meaningfully further up the pitch.
+       A sideways or backward pass just hands the ball around. */
+    let nearest = Infinity;
+    for (const q of world.players) {
+      if (q.team === p.team) continue;
+      nearest = Math.min(nearest, Math.hypot(q.x - p.x, q.y - p.y));
+    }
+    if (nearest < CONFIG.pressureDist) {
+      const mate = Physics.passTarget(world, p);
+      if (mate && (mate.x - p.x) * dir > CONFIG.aiMinPassGain) {
+        intent.pass = true;
+        return;
+      }
     }
 
     _steer(p, goalX, goalY + p.ai.jy * 0.6, intent);

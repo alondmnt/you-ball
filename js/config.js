@@ -53,12 +53,25 @@ const CONFIG = {
   wallBounce: 0.7,
   stealImmunityMs: 500,  // a fresh carrier cannot be robbed for this long
   looseBallMs: 180,      // after a shot/pass, nobody can pick the ball up
+  carrierSpeedMult: 0.93,// carrying the ball slows you slightly, so a chase is
+                         // not hopeless and a converging defender can cut you off
+  // Being tackled costs you a moment. Without this, two equal-speed players
+  // stand on each other and trade the ball every half second forever - the ball
+  // never leaves midfield and nobody ever gets a shot away.
+  tackleStunMs: 400,     // the dispossessed player cannot steer for this long
+  tackleClearance: 1.3,  // …and is pushed back to this multiple of stealDist
 
   /* ─── AI ─── */
   shootRange: 700,
   pressureDist: 160,
   aiJitter: 60,          // how far a formation slot wanders, world units
   aiReactionMs: 140,     // how often an AI player re-decides
+  aiSettleMs: 350,       // an AI carrier runs with the ball this long before it
+                         // will consider passing - without it, possession is a
+                         // hot potato and nobody ever reaches shooting range
+  aiMinPassGain: 180,    // a pass must move the ball this far up the pitch,
+                         // which is what stops two players passing in a loop
+  aiPointBlank: 340,     // this close to goal, shoot whatever is in the way
   shootNoise: 0.10,      // radians of aim error on an AI shot
   gkReach: 190,          // how far a keeper will stray from its line
 
