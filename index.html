@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>you-ball</title>
+  <meta name="description" content="A free soccer game for kids where the players are built from your own photos and drawings. Everything stays on your device. No ads, no sign-up.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="you-ball">
+  <meta property="og:description" content="A free soccer game for kids where the players are built from your own photos and drawings. No ads, no sign-up.">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "you-ball",
+    "description": "A soccer game for kids where every player is built from your own photos and drawings.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>&#9917;</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/characters.css">
+</head>
+<body>
+
+  <noscript>
+    <h1>you-ball</h1>
+    <p>A free browser soccer game for kids. Build your players from your own photos and drawings, then play a match. Everything stays on your device - no ads, no sign-up, no upload.</p>
+  </noscript>
+
+  <!-- Portrait nag: this game is landscape only (a pitch is wide) -->
+  <div id="rotate-nag" class="rotate-nag">
+    <div class="rotate-nag__icon">&#128241;</div>
+    <div class="rotate-nag__text">turn me sideways</div>
+  </div>
+
+  <!-- Tap-to-start splash (also satisfies the autoplay policy) -->
+  <div id="splash" class="splash">
+    <div class="splash__content">
+      <div class="splash__icon">&#9917;</div>
+      <div class="splash__title">you-ball</div>
+      <div class="splash__intro">
+        <div class="splash__rule">&#128247; put your face on a player</div>
+        <div class="splash__rule">&#128070; drag to run, flick to shoot</div>
+        <div class="splash__rule">&#9917; touch the ball and it sticks</div>
+        <div class="splash__rule">&#127881; score and everybody dances</div>
+      </div>
+      <div class="splash__buttons">
+        <button id="splash-play" class="btn btn--big" type="button">play</button>
+        <button id="splash-edit" class="btn btn--big btn--ghost" type="button">&#9999;&#65039; make players</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Match screen ===== -->
+  <div id="match-screen" class="screen screen--hidden">
+
+    <div id="top-bar">
+      <div class="score score--home">
+        <div class="score__face" id="score-face-0"></div>
+        <div class="score__num" id="score-num-0">0</div>
+      </div>
+      <div id="clock">0:00</div>
+      <div class="score score--away">
+        <div class="score__num" id="score-num-1">0</div>
+        <div class="score__face" id="score-face-1"></div>
+      </div>
+      <div class="top-bar__actions">
+        <button id="sound-btn" type="button" aria-label="Toggle sound">&#128266;</button>
+        <button id="edit-btn" type="button" aria-label="Edit players">&#9999;&#65039;</button>
+        <button id="restart-btn" type="button" aria-label="Restart match">&#8635;</button>
+      </div>
+    </div>
+
+    <!-- Camera viewport. #pitch is the world layer the camera transforms. -->
+    <div id="viewport">
+      <div id="pitch" class="scene-grass">
+        <div id="crowd" class="crowd"></div>
+        <div id="pitch-markings"></div>
+        <div id="world"></div>
+        <div id="fx"></div>
+      </div>
+    </div>
+
+    <!-- Banner: KICK OFF / GOAL! / FULL TIME -->
+    <div id="banner" class="banner banner--hidden"><span id="banner-text"></span></div>
+
+    <!-- Full-time card -->
+    <div id="fulltime" class="overlay overlay--hidden">
+      <div class="fulltime__card">
+        <div class="fulltime__title"></div>
+        <div class="fulltime__score"></div>
+        <div class="fulltime__buttons">
+          <button id="ft-rematch" class="btn" type="button">play again</button>
+          <button id="ft-edit" class="btn btn--ghost" type="button">&#9999;&#65039; edit</button>
+          <button id="ft-home" class="btn btn--ghost" type="button">&#127968; home</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Editor screen ===== -->
+  <div id="editor-screen" class="screen screen--hidden">
+    <div id="editor-bar">
+      <button id="editor-back" type="button" aria-label="Back">&#8592;</button>
+      <div id="editor-title">make players</div>
+      <button id="editor-play" class="btn btn--small" type="button">play &#9654;</button>
+    </div>
+    <div id="editor-body"></div>
+    <!-- Slot adjust overlay: drag to position, pinch/wheel to scale -->
+    <div id="adjust" class="overlay overlay--hidden">
+      <div class="adjust__card">
+        <div class="adjust__frame"><canvas id="adjust-canvas"></canvas></div>
+        <div class="adjust__tools">
+          <button id="adjust-paper" class="btn btn--small btn--ghost" type="button" aria-pressed="false">&#9999;&#65039; paper</button>
+          <button id="adjust-cancel" class="btn btn--small btn--ghost" type="button">&#10005;</button>
+          <button id="adjust-ok" class="btn btn--small" type="button">&#10003;</button>
+        </div>
+      </div>
+    </div>
+    <input id="file-input" type="file" accept="image/*" hidden>
+  </div>
+
+  <!-- Scripts in dependency order -->
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/pitch.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/match.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
