@@ -1,5 +1,7 @@
 # you-ball
 
+**[play it](https://alondmnt.com/you-ball/)**
+
 a soccer game for kids where the players are built from your own pictures. a photo for the head, a drawing for the body, whatever you like for the arms and legs. each character has three faces - normal, GOAL, and sad - so the whole team reacts to what is happening in the match.
 
 ## origins
@@ -68,13 +70,19 @@ the flip side: a team built on the tablet does not appear on the desktop. that i
 
 ## run locally
 
+it is hosted at [alondmnt.com/you-ball](https://alondmnt.com/you-ball/), so you only need this for development.
+
 no build step and no dependencies, but it does need to be served over http rather than opened as a file. chrome blocks IndexedDB on a `file://` page, and that is where the pictures live:
 
 ```
 python3 -m http.server 8000
 ```
 
-then open `http://localhost:8000`. opened as a plain file the game still plays, it just cannot save pictures, and the editor says so.
+then open `http://localhost:8000`. to try it on a tablet on the same network, bind to every interface instead and open `http://<your-machine-ip>:8000` from the tablet:
+
+```
+python3 -m http.server 8000 --bind 0.0.0.0
+``` opened as a plain file the game still plays, it just cannot save pictures, and the editor says so.
 
 save data lives in localStorage under `youBall_progress`; pictures live in IndexedDB under `youBall_assets`.
 
