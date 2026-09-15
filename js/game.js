@@ -314,7 +314,7 @@ const Game = (() => {
 
     Pitch.follow(_world.ball.x);
     Pitch.stepFeel(elapsed);
-    Render.frame(_world, _match, _humanIds());
+    Render.frame(_world, _match, _humanIds(), elapsed);
   }
 
   /** One fixed logic step. */

@@ -140,6 +140,10 @@ it was built harsher first: a shoulder charge, a backwards tumble, impact shards
 
 none of the physics changed. the knockback and the stun are load-bearing and measured; only how they read did.
 
+the ball pool's loose balls are the one effect with state. a hundred and thirty of them lie on the pitch, get shoved aside by anyone who runs through, and drift back on a spring. they live in `render.js` and never touch `physics.js`: they do not affect possession, the match ball or how a player moves, so the whole feature cannot change a result. the wading is already in that scene's tuned speed and friction.
+
+what makes them affordable is that a ball at rest is skipped entirely, no maths and no DOM write. measured in play, about 15% are in motion at any moment and the rest cost nothing. the painted floor underneath was muted once they existed, because a floor at full strength competes with real balls and the match ball gets lost.
+
 the pool's waterline is worth singling out: a band of pool colour across each character's lower legs did more to say "in the water" than the caustics, the ripples and the surface pattern combined. it is eight lines of CSS.
 
 ### what the measurements taught us

@@ -723,14 +723,17 @@ kbd {
 /* ===== Scene: ball pool =====
    A floor of coloured balls, padded foam walls, soft-play netting overhead. */
 .scene-ballpit { background: linear-gradient(#2b1d3a 0%, #3d2a52 60%, #4a3363 100%); }
+/* The painted floor is deliberately muted. Once real loose balls sit on top of
+   it, a floor at full strength competes with them and the match ball gets lost
+   in the noise. It is a bed for them to lie in, not a second set of balls. */
 .scene-ballpit .pm__surface {
   background:
-    radial-gradient(circle at 16px 16px, #ef476f 0 13px, transparent 14px),
-    radial-gradient(circle at 48px 30px, #ffd166 0 13px, transparent 14px),
-    radial-gradient(circle at 80px 14px, #06d6a0 0 13px, transparent 14px),
-    radial-gradient(circle at 32px 52px, #4cc9f0 0 13px, transparent 14px),
-    radial-gradient(circle at 96px 46px, #b388eb 0 13px, transparent 14px),
-    linear-gradient(#6a4c8c, #533a70);
+    radial-gradient(circle at 16px 16px, rgba(239,71,111,0.40) 0 13px, transparent 14px),
+    radial-gradient(circle at 48px 30px, rgba(255,209,102,0.38) 0 13px, transparent 14px),
+    radial-gradient(circle at 80px 14px, rgba(6,214,160,0.36) 0 13px, transparent 14px),
+    radial-gradient(circle at 32px 52px, rgba(76,201,240,0.36) 0 13px, transparent 14px),
+    radial-gradient(circle at 96px 46px, rgba(179,136,235,0.40) 0 13px, transparent 14px),
+    linear-gradient(#4a3466, #3a2752);
   background-size: 112px 68px, 112px 68px, 112px 68px, 112px 68px, 112px 68px, 100% 100%;
 }
 .scene-ballpit .crowd {
@@ -859,3 +862,15 @@ kbd {
   100% { transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, 0px)) scale(1); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .pop, .twinkle { display: none; } }
+
+/* Loose balls on the ball pool floor. Kept deliberately cheap to paint: a flat
+   colour and one highlight, no gradient, because there are well over a hundred
+   of them and most never move. */
+.pit-ball {
+  position: absolute;
+  left: 0; top: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.35),
+              inset -1px -2px 0 rgba(0, 0, 0, 0.18);
+}

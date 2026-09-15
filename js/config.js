@@ -137,6 +137,8 @@ const CONFIG = {
    *   kick / wall / tackle  - one burst at that spot
    *   run          - while a player is moving, throttled
    *   ballBob      - world units the ball rides up and down by
+   *   loose        - how many loose balls lie on the pitch and get shoved
+   *                  about. Decoration only: they never touch the match.
    */
   fx: {},
   scenes: {
@@ -196,6 +198,7 @@ const CONFIG = {
       pickupDist: 44,
       stealDist: 88,
       looseBallMs: 320,
+      fx: { loose: 130 },
     },
   },
 

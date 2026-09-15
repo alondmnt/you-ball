@@ -85,6 +85,9 @@ const Render = (() => {
     }
     _lastScore = [-1, -1];
     _lastClock = '';
+
+    const loose = (CONFIG.fx || {}).loose;
+    if (loose) _buildPit(loose);
   }
 
   /**
@@ -104,6 +107,8 @@ const Render = (() => {
   function unmount() {
     for (const rig of _rigs) if (rig) rig.destroy();
     _rigs = [];
+    for (const b of _pit) b.el.remove();
+    _pit = [];
     if (_ball) { _ball.el.remove(); _ball.shadow.remove(); _ball = null; }
     const fx = Pitch.fxLayer();
     if (fx) fx.innerHTML = '';
@@ -139,10 +144,12 @@ const Render = (() => {
    * @param {object} world
    * @param {object} match
    * @param {Set<number>} [controlled] - player ids a human is driving
+   * @param {number} [dt] - seconds since the last frame, for the loose balls
    */
-  function frame(world, match, controlled) {
+  function frame(world, match, controlled, dt) {
     if (!_ball) return;   /* unmounted between a frame being queued and run */
     const L = Pitch.layout();
+    if (_pit.length) _stepPit(world, Math.min(0.05, dt || 1 / 60), L);
     const runFx = _calmly ? null : EMITTERS[(CONFIG.fx || {}).run];
     let runFxLeft = RUN_FX_MAX;   /* capped per frame: eight players kicking up
                                      dust continuously is noise, not atmosphere */
@@ -220,6 +227,132 @@ const Render = (() => {
     if (text !== _lastClock) {
       _lastClock = text;
       if (_els.clock) _els.clock.textContent = text;
+    }
+  }
+
+  /* ─── Loose balls (the ball pool floor) ─── */
+
+  /*
+   * Balls that lie on the pitch, get shoved aside by anyone who runs through
+   * them, and drift back to where they were.
+   *
+   * Deliberately not in physics.js. They never touch possession, the match
+   * ball or a player's movement - the wading is already in the ball pool's
+   * tuned speed and friction. Keeping them here means the whole feature
+   * cannot affect a match result, and the pure seam stays pure.
+   *
+   * The cost control is that a ball at rest is skipped entirely: no maths and
+   * no DOM write. Only the handful someone is currently disturbing cost
+   * anything, so a still pitch is free.
+   */
+  const PIT_R = 15;        /* world units, matching the painted floor */
+  const PIT_PUSH = 2600;   /* how hard a player displaces one */
+  const PIT_BALL_PUSH = 5200;
+  const PIT_SPRING = 3.4;  /* pull back toward home */
+  const PIT_DAMP = 0.86;
+  const PIT_REST = 1.2;    /* below this speed and offset, treat it as settled */
+  const PIT_COLOURS = ['#ef476f', '#ffd166', '#06d6a0', '#4cc9f0', '#b388eb'];
+
+  let _pit = [];
+
+  /**
+   * Scatter loose balls over the pitch in a jittered grid, so they read as a
+   * floor rather than a pattern.
+   * @param {number} count
+   */
+  function _buildPit(count) {
+    const layer = Pitch.worldLayer();
+    if (!layer) return;
+    /* A grid with jitter covers evenly without clumping or obvious rows. */
+    const cols = Math.max(1, Math.round(Math.sqrt(count * CONFIG.pitchW / CONFIG.pitchH)));
+    const rows = Math.max(1, Math.ceil(count / cols));
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < count; i++) {
+      const cx = (i % cols + 0.5) / cols * CONFIG.pitchW;
+      const cy = (Math.floor(i / cols) + 0.5) / rows * CONFIG.pitchH;
+      const hx = cx + (Math.random() - 0.5) * (CONFIG.pitchW / cols) * 0.85;
+      const hy = cy + (Math.random() - 0.5) * (CONFIG.pitchH / rows) * 0.85;
+      const el = document.createElement('div');
+      el.className = 'pit-ball';
+      el.style.background = PIT_COLOURS[i % PIT_COLOURS.length];
+      frag.appendChild(el);
+      const b = {
+        hx, hy, x: hx, y: hy, vx: 0, vy: 0, el,
+        settled: false,   /* forces one write to place it */
+      };
+      _pit.push(b);
+    }
+    layer.appendChild(frag);
+  }
+
+  /** Place one loose ball, with depth. */
+  function _drawPitBall(b, L) {
+    const q = Pitch.project(b.x, b.y);
+    const size = PIT_R * 2 * L.zoom * q.scale;
+    b.el.style.width = size + 'px';
+    b.el.style.height = size + 'px';
+    b.el.style.transform = `translate3d(${q.sx - size / 2}px,${q.sy - size / 2}px,0)`;
+    b.el.style.zIndex = q.z;
+  }
+
+  /**
+   * Shove the loose balls around and let them settle back.
+   * @param {object} world
+   * @param {number} dt - seconds since the last frame
+   * @param {object} L - the pitch layout
+   */
+  function _stepPit(world, dt, L) {
+    const reach = PIT_R + CONFIG.playerRadius;
+    const ballReach = PIT_R + CONFIG.ballRadius;
+    const damp = Math.pow(PIT_DAMP, dt * 60);
+    const mb = world.ball;
+
+    for (const b of _pit) {
+      let touched = false;
+
+      for (const p of world.players) {
+        const dx = b.x - p.x, dy = b.y - p.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= reach * reach) continue;
+        const d = Math.sqrt(d2) || 0.01;
+        const push = (reach - d) / reach;
+        b.vx += (dx / d) * push * PIT_PUSH * dt;
+        b.vy += (dy / d) * push * PIT_PUSH * dt;
+        touched = true;
+      }
+
+      /* The match ball ploughs a line through them, which is the best of it. */
+      const bx = b.x - mb.x, by = b.y - mb.y;
+      const bd2 = bx * bx + by * by;
+      if (bd2 < ballReach * ballReach) {
+        const bd = Math.sqrt(bd2) || 0.01;
+        const push = (ballReach - bd) / ballReach;
+        b.vx += (bx / bd) * push * PIT_BALL_PUSH * dt;
+        b.vy += (by / bd) * push * PIT_BALL_PUSH * dt;
+        touched = true;
+      }
+
+      /* A ball nobody is near, already home and still, costs nothing. */
+      if (b.settled && !touched) continue;
+
+      b.vx += (b.hx - b.x) * PIT_SPRING * dt * 60 * dt;
+      b.vy += (b.hy - b.y) * PIT_SPRING * dt * 60 * dt;
+      b.vx *= damp;
+      b.vy *= damp;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.x = Math.max(PIT_R, Math.min(CONFIG.pitchW - PIT_R, b.x));
+      b.y = Math.max(PIT_R, Math.min(CONFIG.pitchH - PIT_R, b.y));
+
+      const speed = Math.hypot(b.vx, b.vy);
+      const offset = Math.hypot(b.x - b.hx, b.y - b.hy);
+      if (!touched && speed < PIT_REST && offset < PIT_REST) {
+        b.x = b.hx; b.y = b.hy; b.vx = 0; b.vy = 0;
+        b.settled = true;
+      } else {
+        b.settled = false;
+      }
+      _drawPitBall(b, L);
     }
   }
 
