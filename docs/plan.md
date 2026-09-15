@@ -38,6 +38,7 @@ same stack as car-doctor and boo-boss: vanilla JS, DOM + CSS animations, Web Aud
 
 - **world coordinates**: `x` runs goal to goal (0..PITCH_W), `y` runs near touchline to far touchline (0..PITCH_H). the pitch is wider than the screen; the camera window slides along `x`
 - **screen mapping**: `sx = (x - camX) * zoom`, `sy = pitchTop + y * depthStep`, `scale = 1 - (y / PITCH_H) * DEPTH_SHRINK` (default 0.15), `z-index = round(y)`. the trapezoid is subtle - it's for feel, not simulation
+  - *correction, found during the build*: the `sy` and `z-index` above are inverted. `y = 0` is the near touchline, which the scale formula makes the **largest**, so it has to draw at the **bottom** and in **front**. the shipped code uses `sy = pitchTop + (PITCH_H - y) * depthStep` and `z-index = round(PITCH_H - y)`. see [design.md](design.md)
 - **camera**: lerps toward ball `x`, clamped so the goal mouth stays on screen at each end. **zoom punch** (quick scale to ~1.3 and back) + brief slow-mo on goals. **screen shake** on hard wall hits
 - **scene**: grass to start. the pitch background, wall style and crowd strip are one CSS class on the pitch container (`scene-grass`), so new scenes in stage 5 are a CSS block + a config value, not a code change
 - **top bar**: score shown as each team's current face (the GOAL face after scoring, sad face after conceding, idle otherwise) - the kid reads the mood, not the number, though the number is there too. ✏️ opens the editor
