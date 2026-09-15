@@ -166,13 +166,42 @@ const Audio = (() => {
       }
     },
 
-    /** A goal: rising fanfare over a crowd swell. */
-    goal() {
-      const notes = [392, 523, 659, 784];
-      notes.forEach((f, i) => {
-        _note(f, i * 0.08, 0.3, 'triangle', 0.13);
-        _note(f * 2, i * 0.08, 0.22, 'sine', 0.05);
+    /**
+     * A goal. Two motifs, both quoted straight out of the music, so whichever
+     * one you hear it belongs to the same song - the old fanfare was a C major
+     * arpeggio, which shared nothing with an E minor anthem but the tuning.
+     *
+     * Home carries the hook's own B-D-E on up past where the hook stops, and
+     * lands on the octave with the crowd behind it. Away walks the Phrygian
+     * line the away theme is built on, Am G F Em, and settles on F against E -
+     * the whole away idea in two notes. It is the same music either way; one
+     * goes up and one comes down.
+     *
+     * These play into the master bus, not the music bus, because the music is
+     * ducked for exactly this moment.
+     *
+     * @param {string} [side] - 'home' or 'away'; home if omitted
+     */
+    goal(side) {
+      if (side === 'away') {
+        ['A3', 'G3', 'F3', 'E3'].forEach((n, i) => {
+          _note(HZ[n], i * 0.14, 0.32, 'sawtooth', 0.10);
+          _note(HZ[n] / 2, i * 0.14, 0.36, 'sine', 0.085);
+        });
+        _note(HZ.F3, 0.58, 1.0, 'sawtooth', 0.095);
+        _note(HZ.E3, 0.58, 1.0, 'sawtooth', 0.085);
+        _note(HZ.E2, 0.58, 1.1, 'sine', 0.10);
+        /* A groan rather than a cheer: the same noise swept down, not up. */
+        _noise(0, 1.5, 900, 0.11, 'bandpass', 300);
+        return;
+      }
+      ['B3', 'D4', 'E4', 'G4', 'B4'].forEach((n, i) => {
+        _note(HZ[n], i * 0.075, 0.26, 'square', 0.095);
+        _note(HZ[n] * 2, i * 0.075, 0.18, 'sine', 0.03);
       });
+      _note(HZ.E5, 0.375, 0.75, 'square', 0.11);
+      _note(HZ.E4, 0.375, 0.8, 'sawtooth', 0.07);
+      _note(HZ.E2, 0.375, 0.9, 'sine', 0.10);
       effects.crowd();
     },
 
@@ -180,13 +209,6 @@ const Audio = (() => {
     crowd() {
       _noise(0, 1.6, 420, 0.13, 'bandpass', 1500);
       _noise(0.12, 1.3, 900, 0.07, 'bandpass', 2000);
-    },
-
-    /** Conceding - a sad little slide down. */
-    concede() {
-      _note(330, 0, 0.26, 'sawtooth', 0.09, 247);
-      _note(247, 0.24, 0.3, 'sawtooth', 0.09, 185);
-      _note(185, 0.5, 0.5, 'sawtooth', 0.09, 139);
     },
 
     /** A button or a tap in the editor. */
@@ -584,10 +606,10 @@ const Audio = (() => {
     layers.shine = diff > 0;
     if (diff < 0) layers.hat = HAT_UP[layers.hat];
 
-    /* A goal owns the room: the fanfare, the concede slide and the fireworks
-       all land in the same two seconds, and the music would only fight them.
-       It comes back up under the KICK OFF banner rather than at the whistle,
-       so the return is a build instead of a snap. */
+    /* A goal owns the room: the motif and the fireworks land in the same two
+       seconds, and the music would only fight them. It comes back up under the
+       KICK OFF banner rather than at the whistle, so the return is a build
+       instead of a snap. */
     const duck = phase === 'slowmo' || phase === 'goal';
 
     return { team, key, want, wantFor, looseFor, sinceSwing, theme, layers, duck };

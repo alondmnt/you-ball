@@ -211,6 +211,17 @@ is below the noise floor. The music has its own gain bus with a limiter on it,
 because eight layers landing on one downbeat sum past full scale; the effects
 stay off that bus so they always cut through.
 
+**The goal motifs** are quoted out of the music rather than written beside it.
+The original was a C major arpeggio, which shared nothing with an E minor
+anthem but the tuning. A goal for home carries the hook's B-D-E on up to G4,
+B4 and the octave, with the crowd behind it; a goal for away walks the Phrygian
+line the away theme is built on, Am G F Em, and settles on F against E. Same
+music either way, one going up and one coming down. They play into the master
+bus and not the music bus, because the music is ducked for exactly that moment.
+
+This also fixed a plain bug: a sad slide used to play 800ms after *every* goal,
+including the ones you scored.
+
 **The arrangement rule is pure.** `Audio.arrange(prev, input, dt)` takes
 possession, match phase and the score, and returns the texture, the key and
 whether to duck. No context, no clock, no randomness - the same seam as

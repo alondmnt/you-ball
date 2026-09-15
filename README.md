@@ -66,7 +66,9 @@ three textures play over whichever part is running:
 | the other team has it | half time drums, a chugging guitar, a drone, no hook |
 | nobody has it | the same harmony with most of the notes taken out. this is the verse, and it is what makes the rest land |
 
-the scoreline colours whoever is carrying: a team in front gains an octave on the chords, a team behind gets double time hats. a goal ducks the music so the fanfare and the crowd have the room, and it comes back up under the KICK OFF banner.
+the scoreline colours whoever is carrying: a team in front gains an octave on the chords, a team behind gets double time hats. a goal ducks the music so the motif and the crowd have the room, and it comes back up under the KICK OFF banner.
+
+the two ends of the pitch sound different when the ball goes in. a goal for you carries the hook's own notes on up past where the hook stops, and the crowd goes with it. a goal against walks the other team's line down and settles on the note that clashes - the same music, one going up and one coming down.
 
 texture and harmony move at different speeds on purpose. losing the ball changes the drums and drops the hook within about half a second, because that is the bit you actually hear. the chord progression waits for possession that has lasted a couple of seconds, because a progression needs a bar or two to say anything.
 

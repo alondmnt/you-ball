@@ -407,9 +407,9 @@ const Game = (() => {
         case 'goal':
           Render.goalBurst(e.team, e.x, e.y);
           Render.banner('GOAL!');
-          Audio.play('goal');
-          /* The conceding slide comes in under the cheer, not over it. */
-          setTimeout(() => Audio.play('concede'), 800);
+          /* Which end it went in decides which motif plays. The sad slide
+             that used to follow every goal played when you scored too. */
+          Audio.play('goal', e.team === 0 ? 'home' : 'away');
           Input.setEnabled(false);
           Input.reset();
           break;
