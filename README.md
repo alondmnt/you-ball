@@ -31,6 +31,19 @@ first to three goals, or whoever is ahead when ninety seconds are up.
 
 the keys are printed on the splash screen and under the two-player toggle in the editor, so nobody has to come here to find them. player one is the home team, player two the away team, and touch and the arrow keys are the same seat - so the kid can drag on the screen while you take WASD.
 
+## where you play
+
+four places, picked in the editor. they are not just different colours - each one plays differently.
+
+| | what it looks like | what it feels like |
+|---|---|---|
+| 🌱 grass | a normal pitch | the ordinary game |
+| 🌙 moon | grey dust, craters, stars | nothing ever stops. the ball slides on and on, players skate through their turns, the walls are springy |
+| 🏊 pool | water, lane ropes, umbrellas | heavy. a shot dies on its way, so you have to get close to score, and the walls are soggy |
+| 🔴 ball pool | a floor of coloured balls, padded walls | springy and unpredictable. the ball comes off a wall at an angle you did not expect |
+
+a pool rather than an ocean, because the game is a walled pitch and the ball bounces off the edges. an ocean has no walls.
+
 ## making players
 
 the pencil opens the editor.
@@ -66,6 +79,8 @@ save data lives in localStorage under `youBall_progress`; pictures live in Index
 ## tuning
 
 `js/config.js` is every number in one place - speeds, match length, goals to win, how hard the computer is, colours, how big the zoom punch is, the size images are stored at. plain values, safe to edit.
+
+the scenes live there too, as a short list of overrides each. a new scene is a block of CSS and a handful of numbers, not a code change. if you change a scene's numbers, run the tests below: they check that each scene still produces goals, which is the thing that quietly breaks.
 
 ## tests
 

@@ -118,6 +118,29 @@ exactly one assignment happens automatically: a brand new save gets one characte
 
 nothing needs assigning for a match to run. `_buildTeams` in `game.js` fills any empty place with a generated built-in character.
 
+## scenes
+
+a scene is a CSS class on `#pitch` plus a set of value overrides in `CONFIG.scenes`. `CONFIG.applyScene` restores the baseline and lays the chosen set on top; `game.js` calls it alongside `Pitch.setScene` at match start. no module branches on which scene is playing.
+
+the overrides are not cosmetic. a kid asks to play on the moon because of what the moon does, so each scene moves the values that carry the feeling: ball friction, wall bounce, player acceleration. moon and pool are deliberate opposites, so playing one after the other teaches that the choice matters.
+
+the AI values move with them, and that is the part that breaks quietly. its shooting range assumes a ball that travels a certain distance, so a scene that changes the ball's roll has to change the range too, or nobody ever shoots. `test/logic.js` runs six AI-vs-AI matches per scene and fails if a scene stops producing goals.
+
+### what the measurements taught us
+
+the first pool scene slowed players and blunted their acceleration, on the theory that water is heavy. every one of twelve matches finished nil-nil: the pitch stays the same size while everything on it gets slower, so the AI could never work the ball into shooting range before losing it. a one-value-at-a-time sweep showed no single override was fatal; low acceleration and a short steal immunity compounded into permanent churn.
+
+the fix was to put the weight in the **ball** and leave the players close to normal. water reads through the ball dying and the walls going soggy, which is also more fun to play than being slowed down.
+
+two AI changes attempted along the way were reverted, because measurement said they made things worse:
+
+- picking the pass target by furthest forward gain rather than nearest. inert, because of the next point.
+- pushing the most advanced player ahead of the ball so there was someone to pass to. this collapsed grass from 4.2 goals a match to 0.3, as the AI leapfrogged the ball between two players and never shot.
+
+a standing consequence: **every formation slot sits in its own defensive half**, so nobody is ever ahead of the carrier and the AI essentially never passes. it dribbles. that is fine at this level and the scene values are tuned around it, but it is the thing to fix first if the AI ever needs to look like a team.
+
+`bounceScatter` was nearly cut. across twelve AI matches it fired twice, because the AI aims and keepers save. simulating a human who shoots without aiming raised it to eight to ten wall hits a match, which is the case it exists for.
+
 ## the seams, by file
 
 | file | knows about | does not know about |
@@ -141,6 +164,7 @@ nothing needs assigning for a match to run. `_buildTeams` in `game.js` fills any
 
 | what | why |
 |---|---|
+| scenes override physics, not just CSS | a moon that only looks different is a let-down; the plan left scenes as cosmetic |
 | `sy` and `z` invert y | the plan's formula contradicts its own scale formula and layout diagram |
 | three face images, CSS picks one | a `src` swap can show a blank head on the goal frame |
 | camera moved from per-entity to per-layer | same arithmetic, fewer operations, free crowd parallax |
@@ -154,6 +178,6 @@ nothing needs assigning for a match to run. `_buildTeams` in `game.js` fills any
 
 ## not built
 
-stage 5 is untouched and deliberately open: new scenes and weather, power shots and items, export/import a character or team as a file. `CONFIG.scene` sets one CSS class on the pitch container, so a new scene is a CSS block and a config value.
+stage 5 is partly done: the scenes above exist, weather does not. still open: weather, power shots and items, export/import a character or team as a file. an ocean scene is the natural home for weather, because a current that pushes the ball only makes sense somewhere without edges.
 
 also outstanding from the plan's own risk list: the drag-and-flick controls are still a proposal that has not met the child's hands. dead zones (`dragDeadZonePx`), flick thresholds (`flickMaxMs`, `flickMinPx`) and the joystick radius are the dials. the fallback, if it does not survive contact, is an on-screen joystick and one big shoot button.
