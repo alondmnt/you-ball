@@ -231,10 +231,14 @@ const Audio = (() => {
    *
    * and three textures play over whichever is running:
    *
-   *   home   full kit, power chord stabs, the hook, a crowd chant
-   *   away   half time drums, a chugging guitar, a drone, no hook
-   *   loose  the same harmony with most of the notes taken out. This is the
-   *          verse, and it is what makes the chorus land.
+   *   home   full kit, power chord stabs, the hook, the melody, a crowd chant
+   *   away   half time drums, a chugging guitar, a drone, and no tune at all
+   *   loose  the same riff with most of it taken out. This is the verse, and
+   *          it is what makes the chorus land.
+   *
+   * Within a part the top line hands over once: riff and hook answers for the
+   * first sentence, then the melody enters at bar nine and owns part B. The
+   * riff stays square underneath, so the two are counterweights.
    *
    * The two move at different speeds on purpose. Texture is what you hear
    * change, so it answers a turnover within a beat. Harmony needs a bar or
@@ -275,10 +279,14 @@ const Audio = (() => {
    * is what a band locking onto a figure sounds like, while the drums hold a
    * straight pulse so the syncopation has something to push against.
    *
-   *   home  [0 3 4 6 | 8 11 12 14]  the same half-bar figure twice: stable,
-   *                                 symmetrical, the kind of thing you nod to
-   *   away  [0 3 6 9 12]            five hits evenly spaced by three against a
-   *                                 four-four kick, so it never quite settles
+   *   home  [0 2 4 6 | 8 10 12 14]  driving eighths, accented on one and three
+   *   away  [0 4 6 8 | 12 14]       one, two-and, three, four-and: heavier,
+   *                                 and it breathes where home does not
+   *
+   * Both are square on the beat and symmetrical across the half bar. An
+   * earlier version put hits on the "a" of one and three, which read as
+   * unpredictable rather than syncopated: with a melody over the top, the
+   * riff's job is to be the floor, not to compete.
    *
    * `turn` replaces the cell on the last bar of each four-bar phrase, so the
    * joints are audible. `bass` lists one pitch per cell hit, so a bar has as
@@ -294,8 +302,8 @@ const Audio = (() => {
       /* The anthem. Em Em C D, said again with a different landing, lifted to
          the four, then walked home. */
       a: {
-        cell: [0, 3, 4, 6, 8, 11, 12, 14],
-        turn: [0, 4, 6, 8, 10, 12, 14, 15],
+        cell: [0, 2, 4, 6, 8, 10, 12, 14],
+        turn: [0, 2, 4, 6, 8, 12, 14, 15],
         chord: ['E3', 'E3', 'C4', 'D4', 'E3', 'E3', 'C4', 'G3',
                 'A3', 'A3', 'C4', 'D4', 'E3', 'E3', 'D4', 'E3'],
         bass: [
@@ -320,8 +328,8 @@ const Audio = (() => {
       /* The other half of the song: it sits up on the four and finishes on
          two bars of D that can only resolve one way. */
       b: {
-        cell: [0, 3, 4, 6, 8, 11, 12, 14],
-        turn: [0, 4, 6, 8, 10, 12, 14, 15],
+        cell: [0, 2, 4, 6, 8, 10, 12, 14],
+        turn: [0, 2, 4, 6, 8, 12, 14, 15],
         chord: ['A3', 'A3', 'E3', 'E3', 'C4', 'C4', 'D4', 'D4',
                 'A3', 'A3', 'E3', 'G3', 'C4', 'C4', 'D4', 'D4'],
         bass: [
@@ -349,53 +357,53 @@ const Audio = (() => {
          phrase alternates E and F bar by bar rather than repeating the first,
          which is tighter and leaves nothing to settle into. */
       a: {
-        cell: [0, 3, 6, 9, 12],
-        turn: [0, 4, 8, 12, 15],
+        cell: [0, 4, 6, 8, 12, 14],
+        turn: [0, 4, 6, 8, 12, 15],
         chord: ['E3', 'E3', 'F3', 'F3', 'A3', 'G3', 'F3', 'E3',
                 'E3', 'F3', 'E3', 'F3', 'C4', 'D4', 'F3', 'E3'],
         bass: [
-          ['E2', 'E2', 'E2', 'E2', 'F2'],
-          ['E2', 'E2', 'E2', 'F2', 'E2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2'],
-          ['F2', 'F2', 'E2', 'F2', 'G2'],
-          ['A2', 'A2', 'A2', 'A2', 'G2'],
-          ['G2', 'G2', 'G2', 'G2', 'F2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'E2', 'F2'],
-          ['F2', 'F2', 'F2', 'E2', 'F2'],
-          ['E2', 'E2', 'E2', 'E2', 'F2'],
-          ['F2', 'F2', 'E2', 'F2', 'G2'],
-          ['C3', 'C3', 'C3', 'C3', 'B2'],
-          ['D3', 'D3', 'D3', 'C3', 'B2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'E2'],
+          ['F2', 'F2', 'F2', 'E2', 'F2', 'G2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'G2'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'E2', 'F2'],
+          ['E2', 'E2', 'E2', 'E2', 'E2', 'F2'],
+          ['F2', 'F2', 'F2', 'E2', 'F2', 'G2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'B2'],
+          ['D3', 'D3', 'D3', 'D3', 'C3', 'B2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
         ],
       },
       /* Away's other half climbs away from the root instead of hanging on it,
          so the return to that F against E lands harder. */
       b: {
-        cell: [0, 3, 6, 9, 12],
-        turn: [0, 4, 8, 12, 15],
+        cell: [0, 4, 6, 8, 12, 14],
+        turn: [0, 4, 6, 8, 12, 15],
         chord: ['C4', 'C4', 'D4', 'D4', 'A3', 'A3', 'F3', 'F3',
                 'C4', 'C4', 'D4', 'D4', 'A3', 'G3', 'F3', 'E3'],
         bass: [
-          ['C3', 'C3', 'C3', 'C3', 'B2'],
-          ['C3', 'C3', 'C3', 'D3', 'C3'],
-          ['D3', 'D3', 'D3', 'D3', 'C3'],
-          ['D3', 'D3', 'C3', 'B2', 'A2'],
-          ['A2', 'A2', 'A2', 'A2', 'G2'],
-          ['A2', 'A2', 'A2', 'G2', 'A2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2'],
-          ['F2', 'F2', 'E2', 'F2', 'G2'],
-          ['C3', 'C3', 'C3', 'C3', 'B2'],
-          ['C3', 'C3', 'C3', 'D3', 'C3'],
-          ['D3', 'D3', 'D3', 'D3', 'C3'],
-          ['D3', 'D3', 'C3', 'B2', 'A2'],
-          ['A2', 'A2', 'A2', 'A2', 'G2'],
-          ['G2', 'G2', 'G2', 'G2', 'F2'],
-          ['F2', 'F2', 'F2', 'F2', 'E2'],
-          ['E2', 'E2', 'E2', 'F2', 'E2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'B2'],
+          ['C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'C3', 'B2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'G2'],
+          ['A2', 'A2', 'A2', 'A2', 'G2', 'A2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'E2'],
+          ['F2', 'F2', 'F2', 'E2', 'F2', 'G2'],
+          ['C3', 'C3', 'C3', 'C3', 'C3', 'B2'],
+          ['C3', 'C3', 'C3', 'C3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'D3', 'D3', 'C3'],
+          ['D3', 'D3', 'D3', 'C3', 'B2', 'A2'],
+          ['A2', 'A2', 'A2', 'A2', 'A2', 'G2'],
+          ['G2', 'G2', 'G2', 'G2', 'G2', 'F2'],
+          ['F2', 'F2', 'F2', 'F2', 'F2', 'E2'],
+          ['E2', 'E2', 'E2', 'E2', 'F2', 'E2'],
         ],
       },
     },
@@ -421,22 +429,66 @@ const Audio = (() => {
    * answer, a higher lift, then back down.
    * [step within the bar, note, length in sixteenths]
    */
+  /*
+   * The hook answers the riff at the end of the first sentence's phrases, and
+   * then gets out of the way: from bar nine the melody has the top.
+   * [step within the bar, note, length in sixteenths]
+   */
   const HOOK = {
-    /* One answer at the end of each four bar phrase. The four have different
-       rhythms as well as different notes: short-short-long, then long-short-
-       short, then a sixteenth pickup into a held note, then syncopated. Four
-       statements of one rhythm is a pattern, not a hook. */
     a: {
       3: [[8, 'B3', 2], [10, 'D4', 2], [12, 'E4', 4]],
       7: [[8, 'D4', 4], [12, 'B3', 2], [14, 'A3', 2]],
-      11: [[9, 'D4', 1], [10, 'E4', 1], [11, 'G4', 5]],
-      15: [[8, 'E4', 2], [11, 'D4', 1], [12, 'B3', 4]],
     },
-    /* The other part answers half as often. Space is what makes it the other
-       part rather than more of the same. */
-    b: {
-      7: [[8, 'E4', 3], [11, 'D4', 1], [12, 'B3', 4]],
-      15: [[10, 'D4', 1], [11, 'E4', 1], [12, 'A3', 4]],
+    b: {},
+  };
+
+  /*
+   * The melody. Song 2 has no tune in it, which is fine over three minutes and
+   * thin under a whole match, so this departs from the reference deliberately.
+   *
+   * It does not run the whole way. Part A's first sentence is riff and hook
+   * only, which is what gives the melody somewhere to arrive; it enters at bar
+   * nine and then owns all of part B. Under it the riff stays square, so the
+   * two are counterweights rather than competitors.
+   *
+   * Pentatonic (E G A B D) with the C from the chords, mostly stepwise, inside
+   * an octave and a bit - singable by a five year old, which is the test that
+   * matters here. Away has no melody at all, the same way it has no hook: your
+   * team gets a tune, theirs gets a riff and a drone.
+   */
+  const MELODY = {
+    home: {
+      /* Enters on the lift to Am, climbs to the top of its range at bar 13,
+         and comes down to rest on E. */
+      a: {
+        8: [[0, 'A4', 6], [8, 'G4', 3], [12, 'E4', 4]],
+        9: [[0, 'E4', 6], [8, 'G4', 3], [12, 'A4', 4]],
+        10: [[0, 'G4', 4], [4, 'A4', 2], [6, 'G4', 2], [8, 'E4', 6]],
+        11: [[0, 'D4', 14]],
+        12: [[0, 'E4', 6], [8, 'G4', 3], [12, 'B4', 4]],
+        13: [[0, 'B4', 6], [8, 'A4', 3], [12, 'G4', 4]],
+        14: [[0, 'A4', 4], [4, 'G4', 2], [6, 'E4', 2], [8, 'D4', 6]],
+        15: [[0, 'E4', 14]],
+      },
+      /* Part B sits higher and holds longer - the chorus to part A's verse. */
+      b: {
+        0: [[0, 'C5', 6], [8, 'B4', 6]],
+        1: [[0, 'A4', 10], [12, 'B4', 4]],
+        2: [[0, 'B4', 6], [8, 'G4', 6]],
+        3: [[0, 'E4', 14]],
+        4: [[0, 'G4', 6], [8, 'A4', 6]],
+        5: [[0, 'B4', 10], [12, 'C5', 4]],
+        6: [[0, 'D5', 6], [8, 'B4', 6]],
+        7: [[0, 'A4', 14]],
+        8: [[0, 'C5', 6], [8, 'B4', 6]],
+        9: [[0, 'A4', 10], [12, 'G4', 4]],
+        10: [[0, 'E4', 6], [8, 'G4', 6]],
+        11: [[0, 'A4', 14]],
+        12: [[0, 'B4', 6], [8, 'C5', 6]],
+        13: [[0, 'D5', 10], [12, 'B4', 4]],
+        14: [[0, 'A4', 6], [8, 'G4', 6]],
+        15: [[0, 'E4', 14]],
+      },
     },
   };
 
@@ -522,12 +574,12 @@ const Audio = (() => {
 
     const layers = theme === 'home'
       ? { kick: 'drive', snare: 'backbeat', hat: 'eighths', bass: 'full',
-          guitar: 'stab', hook: true, chant: true, drone: false }
+          guitar: 'stab', hook: true, melody: true, chant: true, drone: false }
       : theme === 'away'
         ? { kick: 'half', snare: 'half', hat: 'quarters', bass: 'full',
-            guitar: 'chug', hook: false, chant: false, drone: true }
+            guitar: 'chug', hook: false, melody: false, chant: false, drone: true }
         : { kick: 'sparse', snare: null, hat: 'eighths', bass: 'sparse',
-            guitar: 'hold', hook: false, chant: false, drone: false };
+            guitar: 'hold', hook: false, melody: false, chant: false, drone: false };
 
     layers.shine = diff > 0;
     if (diff < 0) layers.hat = HAT_UP[layers.hat];
@@ -641,6 +693,31 @@ const Audio = (() => {
     }
   }
 
+  /**
+   * The melody voice: two triangles a few cents apart through a gentle
+   * lowpass. Triangle because it has to sing over a distorted guitar without
+   * fighting it, and the detune is what stops it sounding like a test tone.
+   */
+  function _melodyVoice(freq, t, dur, vol) {
+    const lp = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(2600, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.03);
+    gain.gain.setValueAtTime(vol, t + dur * 0.7);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    lp.connect(gain).connect(_mBus);
+    for (const f of [freq, freq * 1.004]) {
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      osc.connect(lp);
+      osc.start(t);
+      osc.stop(t + dur);
+    }
+  }
+
   /** A sustained detuned pair. The away theme's unease, held under the bar. */
   function _droneVoice(freq, t, dur, vol) {
     const lp = ctx.createBiquadFilter();
@@ -744,6 +821,14 @@ const Audio = (() => {
     if (lay.hook && hook) {
       for (const [step16, note, len] of hook) {
         if (step16 === s) _note(HZ[note], 0, sixteenth * len * 0.92, 'square', L.hook, null, _mBus, at);
+      }
+    }
+    /* The melody belongs to the home key as well as the home texture: with the
+       key on away there is no line written for those chords, so it rests. */
+    const tune = lay.melody && MELODY[_mKey] && MELODY[_mKey][_mPart];
+    if (tune && tune[bar]) {
+      for (const [step16, note, len] of tune[bar]) {
+        if (step16 === s) _melodyVoice(HZ[note], at, sixteenth * len * 0.95, L.melody);
       }
     }
     if (lay.chant && s === 0 && CHANT.indexOf(bar) >= 0) {

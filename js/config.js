@@ -147,6 +147,7 @@ const CONFIG = {
       chug:  0.085,
       stab:  0.13,
       hook:  0.10,
+      melody: 0.115,
       chant: 0.11,
       drone: 0.06,
     },
