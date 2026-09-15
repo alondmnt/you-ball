@@ -176,3 +176,71 @@ img { -webkit-user-drag: none; user-select: none; }
 .fulltime__title { font-size: 2rem; font-weight: 800; }
 .fulltime__score { font-size: 1.2rem; opacity: 0.8; margin: 0.3em 0 1em; }
 .fulltime__buttons { display: flex; gap: 0.6em; justify-content: center; flex-wrap: wrap; }
+
+/* ===== Viewport and pitch =====
+   #viewport clips; #pitch carries the zoom punch and screen shake; the three
+   layers inside it each pan by -camX * zoom (the crowd at a third of that). */
+#viewport {
+  position: fixed;
+  top: 44px; left: 0; right: 0; bottom: 0;
+  top: calc(44px + env(safe-area-inset-top, 0px));
+  overflow: hidden;
+  background: #0d1b12;
+}
+#pitch { position: absolute; inset: 0; will-change: transform; }
+#crowd, #pitch-markings, #world, #fx {
+  position: absolute; left: 0; top: 0;
+  will-change: transform;
+}
+#world, #fx { width: 100%; height: 100%; }
+#fx { pointer-events: none; }
+
+/* ===== Scene: grass ===== */
+.scene-grass { background: linear-gradient(#0f3f24 0%, #0b2a18 55%, #071a0f 100%); }
+.scene-grass .pm__surface {
+  position: absolute;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0 64px, rgba(0,0,0,0.045) 64px 128px),
+    linear-gradient(#2f7d4a 0%, #3f9459 45%, #4aa463 100%);
+  box-shadow: inset 0 24px 40px rgba(0, 0, 0, 0.28);
+}
+.scene-grass .crowd {
+  background:
+    radial-gradient(circle at 12px 10px, #ffd166 0 4px, transparent 5px),
+    radial-gradient(circle at 34px 16px, #ef476f 0 4px, transparent 5px),
+    radial-gradient(circle at 56px 8px, #06d6a0 0 4px, transparent 5px),
+    radial-gradient(circle at 78px 18px, #118ab2 0 4px, transparent 5px),
+    linear-gradient(#20313f, #16232d);
+  background-size: 96px 28px, 96px 28px, 96px 28px, 96px 28px, 100% 100%;
+}
+.scene-grass .pm__wall { background: linear-gradient(#f4f6f8, #c6ced6); }
+.scene-grass .pm__endwall { background: linear-gradient(90deg, #f4f6f8, #c6ced6); }
+
+/* ===== Pitch markings ===== */
+#pitch-markings { pointer-events: none; }
+.pm__line, .pm__circle, .pm__box, .pm__spot, .pm__wall, .pm__endwall, .pm__goal {
+  position: absolute;
+}
+.pm__halfway { width: 3px; background: rgba(255, 255, 255, 0.5); margin-left: -1.5px; }
+.pm__circle { border: 3px solid rgba(255, 255, 255, 0.45); border-radius: 50%; }
+.pm__spot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); }
+.pm__box { border: 3px solid rgba(255, 255, 255, 0.4); }
+/* Walls: the pitch is fully enclosed, so the ball never goes out. */
+.pm__wall { height: 7px; border-radius: 3px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.pm__wall--far { transform: translateY(-7px); }
+.pm__endwall { width: 6px; border-radius: 3px; }
+.pm__goal {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.75) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.75) 0 1px, transparent 1px 9px),
+    rgba(10, 20, 14, 0.45);
+  border: 3px solid #fff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.3);
+}
+.crowd { pointer-events: none; }
+/* The crowd bounces along with the match. */
+.crowd--cheer { animation: crowd-bounce 0.28s ease-in-out 8; }
+@keyframes crowd-bounce {
+  0%, 100% { background-position-y: 0, 0, 0, 0, 0; }
+  50%      { background-position-y: -5px, 3px, -4px, 4px, 0; }
+}

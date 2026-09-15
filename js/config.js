@@ -29,6 +29,9 @@ const CONFIG = {
   /* ─── Sizes (world units) ─── */
   ballRadius: 16,
   playerRadius: 42,
+  playerDrawH: 150,      // how tall a player is drawn, in world units
+  ballDrawD: 46,         // how wide the ball is drawn - larger than its physics
+                         // radius so a small screen still reads it clearly
   pickupDist: 58,        // ball within this of a player -> that player carries it
   stealDist: 76,         // opponent within this of the carrier -> steal
   carryOffset: 46,       // how far in front of the carrier the ball sits
