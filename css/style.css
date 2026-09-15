@@ -198,11 +198,9 @@ img { -webkit-user-drag: none; user-select: none; }
 /* ===== Scene: grass ===== */
 .scene-grass { background: linear-gradient(#0f3f24 0%, #0b2a18 55%, #071a0f 100%); }
 .scene-grass .pm__surface {
-  position: absolute;
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0 64px, rgba(0,0,0,0.045) 64px 128px),
     linear-gradient(#2f7d4a 0%, #3f9459 45%, #4aa463 100%);
-  box-shadow: inset 0 24px 40px rgba(0, 0, 0, 0.28);
 }
 .scene-grass .crowd {
   background:
@@ -218,9 +216,12 @@ img { -webkit-user-drag: none; user-select: none; }
 
 /* ===== Pitch markings ===== */
 #pitch-markings { pointer-events: none; }
-.pm__line, .pm__circle, .pm__box, .pm__spot, .pm__wall, .pm__endwall, .pm__goal {
+.pm__surface, .pm__line, .pm__circle, .pm__box, .pm__spot,
+.pm__wall, .pm__endwall, .pm__goal {
   position: absolute;
 }
+/* Shared by every scene; the scene blocks only paint. */
+.pm__surface { box-shadow: inset 0 24px 40px rgba(0, 0, 0, 0.28); }
 .pm__halfway { width: 3px; background: rgba(255, 255, 255, 0.5); margin-left: -1.5px; }
 .pm__circle { border: 3px solid rgba(255, 255, 255, 0.45); border-radius: 50%; }
 .pm__spot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); }
@@ -579,3 +580,89 @@ kbd {
 @media (max-height: 430px) {
   .picker__face { width: 54px; height: 54px; font-size: 1.3rem; }
 }
+
+/* ===== Scene: moon =====
+   Regolith, craters, a starfield instead of a crowd, and Earth on the horizon. */
+.scene-moon { background: linear-gradient(#05060f 0%, #0a0c1a 60%, #141626 100%); }
+.scene-moon .pm__surface {
+  background:
+    radial-gradient(circle at 18% 30%, rgba(0,0,0,0.20) 0 22px, transparent 24px),
+    radial-gradient(circle at 63% 68%, rgba(0,0,0,0.18) 0 34px, transparent 36px),
+    radial-gradient(circle at 86% 22%, rgba(0,0,0,0.16) 0 18px, transparent 20px),
+    radial-gradient(circle at 40% 82%, rgba(255,255,255,0.06) 0 26px, transparent 28px),
+    linear-gradient(#6d6f78 0%, #85878f 45%, #9a9ca3 100%);
+}
+.scene-moon .crowd {
+  background:
+    radial-gradient(circle at 78% 62%, #4f7fc4 0 26px, #2f5a99 27px 30px, transparent 31px),
+    radial-gradient(circle at 14px 10px, #fff 0 1.4px, transparent 2px),
+    radial-gradient(circle at 52px 22px, #ffe9a8 0 1.6px, transparent 2px),
+    radial-gradient(circle at 80px 7px, #fff 0 1.2px, transparent 2px),
+    linear-gradient(#05060f, #0b0d1c);
+  background-size: 100% 100%, 96px 34px, 96px 34px, 96px 34px, 100% 100%;
+}
+.scene-moon .pm__wall { background: linear-gradient(#e8ecf5, #9aa3b8); box-shadow: 0 0 10px rgba(180, 210, 255, 0.4); }
+.scene-moon .pm__endwall { background: linear-gradient(90deg, #e8ecf5, #9aa3b8); }
+.scene-moon .pm__line, .scene-moon .pm__circle, .scene-moon .pm__box { border-color: rgba(190, 220, 255, 0.5); }
+.scene-moon .pm__halfway { background: rgba(190, 220, 255, 0.5); }
+
+/* ===== Scene: pool =====
+   Water, lane ropes, tiled walls, and umbrellas along the deck.
+   A pool, not an ocean: this game is a walled pitch, and a pool has walls. */
+.scene-pool { background: linear-gradient(#cfd8dc 0%, #a9b6bd 60%, #8c9aa2 100%); }
+.scene-pool .pm__surface {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 3px, transparent 3px 13px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.14) 0 2px, transparent 2px 46px),
+    linear-gradient(#0f77a8 0%, #17a0c9 45%, #2fc0dd 100%);
+}
+.scene-pool .crowd {
+  background:
+    radial-gradient(circle at 24px 26px, #ef476f 0 15px, transparent 16px),
+    radial-gradient(circle at 68px 26px, #ffd166 0 15px, transparent 16px),
+    radial-gradient(circle at 112px 26px, #06d6a0 0 15px, transparent 16px),
+    linear-gradient(#e8edef 0%, #cbd5d9 100%);
+  background-size: 144px 40px, 144px 40px, 144px 40px, 100% 100%;
+  background-position-y: bottom, bottom, bottom, 0;
+}
+.scene-pool .pm__wall {
+  background:
+    repeating-linear-gradient(90deg, #f7fbfc 0 22px, #dbe6ea 22px 24px);
+}
+.scene-pool .pm__endwall { background: linear-gradient(90deg, #f7fbfc, #cfdde2); }
+.scene-pool .pm__line, .scene-pool .pm__circle, .scene-pool .pm__box { border-color: rgba(255, 255, 255, 0.55); }
+.scene-pool .pm__halfway { background: rgba(255, 255, 255, 0.55); }
+
+/* ===== Scene: ball pool =====
+   A floor of coloured balls, padded foam walls, soft-play netting overhead. */
+.scene-ballpit { background: linear-gradient(#2b1d3a 0%, #3d2a52 60%, #4a3363 100%); }
+.scene-ballpit .pm__surface {
+  background:
+    radial-gradient(circle at 16px 16px, #ef476f 0 13px, transparent 14px),
+    radial-gradient(circle at 48px 30px, #ffd166 0 13px, transparent 14px),
+    radial-gradient(circle at 80px 14px, #06d6a0 0 13px, transparent 14px),
+    radial-gradient(circle at 32px 52px, #4cc9f0 0 13px, transparent 14px),
+    radial-gradient(circle at 96px 46px, #b388eb 0 13px, transparent 14px),
+    linear-gradient(#6a4c8c, #533a70);
+  background-size: 112px 68px, 112px 68px, 112px 68px, 112px 68px, 112px 68px, 100% 100%;
+}
+.scene-ballpit .crowd {
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.16) 0 2px, transparent 2px 14px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.16) 0 2px, transparent 2px 14px),
+    linear-gradient(#241832, #33224a);
+}
+/* Padded foam, so the springy walls look springy. */
+.scene-ballpit .pm__wall {
+  height: 11px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(90deg, #ffd166 0 34px, #ef476f 34px 68px);
+}
+.scene-ballpit .pm__wall--far { transform: translateY(-11px); }
+.scene-ballpit .pm__endwall {
+  width: 10px;
+  border-radius: 5px;
+  background: repeating-linear-gradient(0deg, #ffd166 0 34px, #ef476f 34px 68px);
+}
+.scene-ballpit .pm__line, .scene-ballpit .pm__circle, .scene-ballpit .pm__box { border-color: rgba(255, 255, 255, 0.4); }
+.scene-ballpit .pm__halfway { background: rgba(255, 255, 255, 0.4); }
