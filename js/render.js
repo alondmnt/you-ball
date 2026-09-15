@@ -245,12 +245,28 @@ const Render = (() => {
    * no DOM write. Only the handful someone is currently disturbing cost
    * anything, so a still pitch is free.
    */
-  const PIT_R = 15;        /* world units, matching the painted floor */
-  const PIT_PUSH = 2600;   /* how hard a player displaces one */
-  const PIT_BALL_PUSH = 5200;
-  const PIT_SPRING = 3.4;  /* pull back toward home */
-  const PIT_DAMP = 0.86;
-  const PIT_REST = 1.2;    /* below this speed and offset, treat it as settled */
+  const PIT_R = 15;            /* world units, matching the painted floor */
+  const PIT_PUSH = 2900;       /* how hard a player displaces one */
+  const PIT_BALL_PUSH = 5600;  /* the match ball hits harder */
+  const PIT_NEIGHBOUR = 380;   /* a moving ball nudges the ones around it */
+  /*
+   * Only a ball actually travelling passes the nudge on. Without this the
+   * chain never dies: a ball drifting home nudges its neighbours, they nudge
+   * back, and the whole pit shimmers forever instead of settling behind
+   * whoever ran through it.
+   */
+  const PIT_SOURCE_SPEED = 55;
+  /*
+   * How far that nudge carries. Contact distance would be PIT_R * 2, but at
+   * this density the balls sit about 110 units apart and would essentially
+   * never touch, so propagation did nothing. This is a sloshing radius rather
+   * than a collision one - it is decoration, and what it has to do is spread.
+   */
+  const PIT_NEIGHBOUR_R = 110;
+  const PIT_WAKE = 1.7;        /* a player's reach, as a multiple of contact */
+  const PIT_SPRING = 2.5;      /* pull back toward home */
+  const PIT_DAMP = 0.905;
+  const PIT_REST = 4;          /* below this speed and offset, treat it as settled */
   const PIT_COLOURS = ['#ef476f', '#ffd166', '#06d6a0', '#4cc9f0', '#b388eb'];
 
   let _pit = [];
@@ -302,13 +318,15 @@ const Render = (() => {
    * @param {object} L - the pitch layout
    */
   function _stepPit(world, dt, L) {
-    const reach = PIT_R + CONFIG.playerRadius;
-    const ballReach = PIT_R + CONFIG.ballRadius;
+    const reach = (PIT_R + CONFIG.playerRadius) * PIT_WAKE;
+    const ballReach = (PIT_R + CONFIG.ballRadius) * PIT_WAKE;
+    const near = PIT_NEIGHBOUR_R;
     const damp = Math.pow(PIT_DAMP, dt * 60);
     const mb = world.ball;
 
+    /* Pass one: what the players and the match ball disturb directly. */
     for (const b of _pit) {
-      let touched = false;
+      b.touched = false;
 
       for (const p of world.players) {
         const dx = b.x - p.x, dy = b.y - p.y;
@@ -318,7 +336,7 @@ const Render = (() => {
         const push = (reach - d) / reach;
         b.vx += (dx / d) * push * PIT_PUSH * dt;
         b.vy += (dy / d) * push * PIT_PUSH * dt;
-        touched = true;
+        b.touched = true;
       }
 
       /* The match ball ploughs a line through them, which is the best of it. */
@@ -329,11 +347,38 @@ const Render = (() => {
         const push = (ballReach - bd) / ballReach;
         b.vx += (bx / bd) * push * PIT_BALL_PUSH * dt;
         b.vy += (by / bd) * push * PIT_BALL_PUSH * dt;
-        touched = true;
+        b.touched = true;
       }
+    }
 
-      /* A ball nobody is near, already home and still, costs nothing. */
-      if (b.settled && !touched) continue;
+    /*
+     * Pass two: a ball that is moving shoves the ones it is touching, so a
+     * disturbance spreads outward instead of stopping at whoever caused it.
+     * This is what makes a run through the pit look like a run through a pit.
+     *
+     * Only moving balls are sources, so a still pitch does no work here, and
+     * the push is one-directional - the source is already being driven, and
+     * pushing both ways invites two balls oscillating against each other.
+     */
+    for (const a of _pit) {
+      if (a.settled && !a.touched) continue;
+      if (Math.hypot(a.vx, a.vy) < PIT_SOURCE_SPEED) continue;
+      for (const b of _pit) {
+        if (b === a) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= near * near) continue;
+        const d = Math.sqrt(d2) || 0.01;
+        const push = (near - d) / near;
+        b.vx += (dx / d) * push * PIT_NEIGHBOUR * dt;
+        b.vy += (dy / d) * push * PIT_NEIGHBOUR * dt;
+        b.touched = true;
+      }
+    }
+
+    /* Pass three: move what is moving. A ball at home and still costs nothing. */
+    for (const b of _pit) {
+      if (b.settled && !b.touched) continue;
 
       b.vx += (b.hx - b.x) * PIT_SPRING * dt * 60 * dt;
       b.vy += (b.hy - b.y) * PIT_SPRING * dt * 60 * dt;
@@ -346,7 +391,7 @@ const Render = (() => {
 
       const speed = Math.hypot(b.vx, b.vy);
       const offset = Math.hypot(b.x - b.hx, b.y - b.hy);
-      if (!touched && speed < PIT_REST && offset < PIT_REST) {
+      if (!b.touched && speed < PIT_REST && offset < PIT_REST) {
         b.x = b.hx; b.y = b.hy; b.vx = 0; b.vy = 0;
         b.settled = true;
       } else {

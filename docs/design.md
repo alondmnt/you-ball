@@ -142,7 +142,9 @@ none of the physics changed. the knockback and the stun are load-bearing and mea
 
 the ball pool's loose balls are the one effect with state. a hundred and thirty of them lie on the pitch, get shoved aside by anyone who runs through, and drift back on a spring. they live in `render.js` and never touch `physics.js`: they do not affect possession, the match ball or how a player moves, so the whole feature cannot change a result. the wading is already in that scene's tuned speed and friction.
 
-what makes them affordable is that a ball at rest is skipped entirely, no maths and no DOM write. measured in play, about 15% are in motion at any moment and the rest cost nothing. the painted floor underneath was muted once they existed, because a floor at full strength competes with real balls and the match ball gets lost.
+a moving ball also nudges the ones around it, so a disturbance spreads instead of stopping at whoever caused it. two things had to be got right there. propagating at contact distance did nothing, because at this density the balls sit about 110 units apart and never touch, so the nudge carries over a sloshing radius rather than a collision one. and only a ball actually travelling passes it on: without that threshold the chain never dies, a ball drifting home nudges its neighbours, they nudge back, and the whole pit shimmers forever. measured at every one of 190 balls moving permanently before the threshold went in, and about 53 after.
+
+what makes them affordable is that a ball at rest is skipped entirely, no maths and no DOM write, and only moving balls are propagation sources. the painted floor underneath was muted once they existed, because a floor at full strength competes with real balls and the match ball gets lost.
 
 the pool's waterline is worth singling out: a band of pool colour across each character's lower legs did more to say "in the water" than the caustics, the ripples and the surface pattern combined. it is eight lines of CSS.
 

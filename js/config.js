@@ -198,7 +198,7 @@ const CONFIG = {
       pickupDist: 44,
       stealDist: 88,
       looseBallMs: 320,
-      fx: { loose: 130 },
+      fx: { loose: 190 },
     },
   },
 
