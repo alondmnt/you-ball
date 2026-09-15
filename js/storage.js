@@ -42,6 +42,7 @@ const Storage = (() => {
       muted: false,
       difficulty: CONFIG.difficulty,
       twoPlayer: CONFIG.twoPlayer,
+      scene: CONFIG.scene,
       nextId: 1,
     };
   }

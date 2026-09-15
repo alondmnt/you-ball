@@ -3,8 +3,11 @@
  *
  * Safe to edit by hand without a code session: speeds, match length, goals to
  * win, colours, how hard the AI is, how big the zoom punch is, the image size
- * cap. Anything here is a plain number, string or array - no behaviour lives in
- * this file.
+ * cap. Anything here is a plain number, string or array.
+ *
+ * The one function in this file is applyScene, at the bottom. It swaps between
+ * the value sets in `scenes`, and it lives here so a scene's numbers and the
+ * switch that applies them stay in one place.
  *
  * World units: x runs goal to goal (0..pitchW), y runs near touchline to far
  * touchline (0..pitchH). y = 0 is the NEAR touchline - it renders at the bottom
@@ -102,7 +105,77 @@ const CONFIG = {
   teamNames: ['home', 'away'],
 
   /* ─── Scenes ─── */
-  scene: 'grass',        // one CSS class on #pitch - 'moon', 'candy', … later
+  /*
+   * A scene is a CSS class on #pitch plus the overrides below. Nothing in the
+   * game code branches on which scene is playing.
+   *
+   * These are not decoration. A kid asks to play on the moon because of what
+   * the moon does, so each scene moves the handful of values that carry the
+   * feeling: how far the ball rolls, how lively the walls are, how quickly a
+   * player can change direction. Moon and pool are deliberate opposites.
+   *
+   * The AI values move too. Its shooting range assumes a ball that travels a
+   * certain distance, so a scene that changes the ball's roll has to change
+   * the range with it, or nobody scores. test/logic.js checks each scene.
+   */
+  scene: 'grass',
+  scenes: {
+    /* The baseline. Every value above is already the grass value. */
+    grass: {},
+
+    /* Low gravity reads, in a game with no vertical axis, as nothing ever
+       stopping: the ball slides on and players skate through their turns. */
+    moon: {
+      ballFriction: 0.994,
+      wallBounce: 0.88,
+      playerSpeed: 400,
+      playerAccel: 1300,
+      playerFriction: 0.94,
+      tackleClearance: 1.9,
+      shootRange: 1100,
+      gkTrackSpeed: 340,
+      pickupDist: 46,
+      stealDist: 92,
+      looseBallMs: 320,
+    },
+
+    /* Water is the opposite: everything is heavy and nothing carries. You have
+       to get close to score, because a shot dies on its way. */
+    pool: {
+      /* The weight is in the ball. A shot dies on its way, so you have to get
+         closer to score, and the walls are soggy rather than springy. */
+      ballFriction: 0.968,
+      wallBounce: 0.34,
+      shootPowerMin: 560,
+      shootPowerMax: 1250,
+      shootRange: 560,
+      /* Players wade a little, but only a little. Slowing them further, or
+         blunting their acceleration, made the pitch effectively too long: the
+         AI could never work the ball into shooting range and every match
+         finished nil-nil. Measured, not guessed - see test/logic.js. */
+      playerSpeed: 350,
+      playerFriction: 0.72,
+      carrierSpeedMult: 0.90,
+      stealDist: 72,
+    },
+
+    /* Springy and unpredictable. The scatter is what makes it a ball pool
+       rather than a bouncy pitch. */
+    ballpit: {
+      ballFriction: 0.982,
+      wallBounce: 0.92,
+      bounceScatter: 0.22,
+      playerSpeed: 320,
+      playerAccel: 1500,
+      playerFriction: 0.82,
+      tackleClearance: 1.6,
+      shootPowerMax: 1250,
+      shootRange: 680,
+      pickupDist: 44,
+      stealDist: 88,
+      looseBallMs: 320,
+    },
+  },
 
   /* ─── Controls ─── */
   dragDeadZonePx: 14,    // finger travel before the joystick engages
@@ -125,3 +198,34 @@ const CONFIG = {
   ],
   formationBallPull: 0.42,  // how far a slot drifts toward the ball's x
 };
+
+/**
+ * Switch scene: restore every value any scene touches, then lay the chosen
+ * scene's overrides on top.
+ *
+ * The baseline is captured the first time this runs, before anything has been
+ * overridden, so switching scenes repeatedly always starts from the values as
+ * written above rather than from whatever the last scene left behind.
+ *
+ * @param {string} name - a key of CONFIG.scenes; anything unknown falls back
+ *   to grass
+ * @returns {string} the scene actually applied
+ */
+CONFIG.applyScene = (() => {
+  let baseline = null;
+  return function applyScene(name) {
+    const scenes = CONFIG.scenes || {};
+    if (!baseline) {
+      baseline = {};
+      for (const set of Object.values(scenes)) {
+        for (const key of Object.keys(set)) {
+          if (!(key in baseline)) baseline[key] = CONFIG[key];
+        }
+      }
+    }
+    const chosen = scenes[name] ? name : 'grass';
+    Object.assign(CONFIG, baseline, scenes[chosen]);
+    CONFIG.scene = chosen;
+    return chosen;
+  };
+})();

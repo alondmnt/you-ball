@@ -145,6 +145,8 @@ const Game = (() => {
 
     CONFIG.difficulty = _progress.difficulty || 'normal';
     CONFIG.twoPlayer = !!_progress.twoPlayer;
+    /* Both halves of a scene at once: how it plays, then how it looks. */
+    Pitch.setScene(CONFIG.applyScene(_progress.scene));
 
     _teams = _buildTeams();
     _urls = await _loadUrls();
@@ -158,7 +160,9 @@ const Game = (() => {
     _humanKey = '';
     _switchTimer = 0;
 
-    AI.seed((Date.now() ^ (Math.random() * 0xffffffff)) >>> 0);
+    const s = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
+    AI.seed(s);
+    Physics.seed(s ^ 0x5bf03635);   /* a separate stream from the AI's */
     Match.begin(_match, _world, 0);
 
     Render.mount(_world, _teams, _urls, _ballSrc);
