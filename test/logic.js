@@ -222,10 +222,17 @@ console.log('\n-- difficulty --');
   ok('and their aim is loosened, yours is not',
      ours.every(p => p.aimNoise === CONFIG.shootNoise) && theirs.every(p => p.aimNoise > CONFIG.shootNoise));
 
+  /* Harder than normal is the property that matters. Whether the opposition
+     ends up above full speed is incidental and used to be asserted here,
+     which broke the moment the presets were softened. */
+  CONFIG.difficulty = 'normal';
+  AI.applyDifficulty(w, new Set([1]));
+  const oppOnNormal = w.players[5].speedMult;
   CONFIG.difficulty = 'hard';
   AI.applyDifficulty(w, new Set([1]));
-  ok('hard speeds the opposition up instead',
-     w.players.filter(p => p.team === 1 && p.role !== 'gk').every(p => p.speedMult > 1));
+  ok('hard makes the opposition quicker than normal does',
+     w.players[5].speedMult > oppOnNormal,
+     oppOnNormal + ' -> ' + w.players[5].speedMult);
   ok('your side is still untouched on hard',
      w.players.filter(p => p.team === 0).every(p => p.speedMult === 1));
 
@@ -235,7 +242,9 @@ console.log('\n-- difficulty --');
 
   /* No human at all, as in the scene checks above: both sides get it. */
   AI.applyDifficulty(w, new Set());
-  ok('with nobody human both sides get it', w.players.every(p => p.speedMult !== 1));
+  const hard = CONFIG.difficulties.hard;
+  ok('with nobody human both sides get it',
+     w.players.every(p => p.speedMult === (p.role === 'gk' ? hard.gkTrack : hard.aiSpeed)));
 
   const tiers = ['easy', 'normal', 'hard'].map(t => { CONFIG.difficulty = t; return CONFIG.difficulties[t]; });
   ok('the dial only ever goes one way',

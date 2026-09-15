@@ -93,9 +93,9 @@ const CONFIG = {
    */
   difficulty: 'normal',
   difficulties: {
-    easy:   { aiSpeed: 0.75, gkTrack: 0.70, shootNoise: 1.9 },
-    normal: { aiSpeed: 0.90, gkTrack: 0.88, shootNoise: 1.25 },
-    hard:   { aiSpeed: 1.08, gkTrack: 1.15, shootNoise: 0.65 },
+    easy:   { aiSpeed: 0.66, gkTrack: 0.60, shootNoise: 2.2 },
+    normal: { aiSpeed: 0.82, gkTrack: 0.78, shootNoise: 1.5 },
+    hard:   { aiSpeed: 1.00, gkTrack: 1.05, shootNoise: 0.8 },
   },
 
   /* ─── Feel ─── */
