@@ -130,6 +130,16 @@ the ball is the meter. a ring round it fills as the wind-up goes, and at the top
 
 the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
 
+## playing in goal
+
+`inGoal` pins seat one to its keeper. `_autoSwitch` leaves a pinned seat alone and a tap will not switch off it, which is the whole point: you chose the position.
+
+the obvious design - hand the child the keeper the moment a shot comes in - was measured and dropped. over 40 matches a shot takes **457ms** from the foot to the goal line, and the keeper, having tracked the ball all along, still has a **157 unit** median gap to close in a 320 wide mouth. at tracking pace only 44% of those are reachable at all, with a median of **53ms too late**. the AI only copes because it dives at 720 units/s off its own prediction. a child's reaction time alone eats that window, so the switch would take control away at the worst moment and then let them concede. widening the trigger to "an opponent is in your third" buys 383ms more, no use either, because `shootRange` (700) is nearly as wide as a third (800) - they are in range almost as they arrive.
+
+the fear that standing in goal would be boring is the other way round: a shot arrives at your goal every 12 seconds and an opponent enters your third every 7.
+
+the keeper's line is a **wall from the inside, not a leash**. it lets go entirely while the keeper is carrying, so a child who collects the ball can charge upfield and leave the goal empty, and it only bites on a player who was on the right side of it a moment ago, so coming home from midfield is a run rather than a teleport. the AI keeper never leaves its area, so none of this changes how it plays.
+
 ## music
 
 A rock song, synthesised note by note. Nothing is sampled, so it costs no

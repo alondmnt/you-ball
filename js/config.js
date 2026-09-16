@@ -282,6 +282,7 @@ const CONFIG = {
                          // while it runs. Measured, 550-800 all behave the
                          // same, so this is picked for feel inside that band.
   twoPlayer: false,      // true = WASD drives a second human on the away team
+  inGoal: false,         // true = player one keeps goal instead of playing out
 
   /* ─── Formation ─── */
   /*

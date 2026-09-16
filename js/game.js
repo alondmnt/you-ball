@@ -31,6 +31,7 @@ const Game = (() => {
     _progress = Storage.loadProgress();
     CONFIG.difficulty = _progress.difficulty || CONFIG.difficulty;
     CONFIG.twoPlayer = !!_progress.twoPlayer;
+    CONFIG.inGoal = !!_progress.inGoal;
     Audio.setMuted(!!_progress.muted);
 
     Pitch.init({
@@ -158,6 +159,7 @@ const Game = (() => {
 
     CONFIG.difficulty = _progress.difficulty || 'normal';
     CONFIG.twoPlayer = !!_progress.twoPlayer;
+    CONFIG.inGoal = !!_progress.inGoal;
     /* Both halves of a scene at once: how it plays, then how it looks. */
     Pitch.setScene(CONFIG.applyScene(_progress.scene));
 
@@ -168,8 +170,11 @@ const Game = (() => {
     _world = Physics.createWorld();
     _match = Match.create();
     _intents = _world.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
-    _seats = [{ team: 0, playerId: 1 }];
-    if (CONFIG.twoPlayer) _seats.push({ team: 1, playerId: 5 });
+    /* Player index 0 of each team is its keeper; see Physics.createWorld. A
+       keeper seat is pinned, because the whole point of choosing to play in
+       goal is that control does not wander off to whoever is near the ball. */
+    _seats = [{ team: 0, playerId: CONFIG.inGoal ? 0 : 1, keeper: !!CONFIG.inGoal }];
+    if (CONFIG.twoPlayer) _seats.push({ team: 1, playerId: 5, keeper: false });
     _humanKey = '';
     _switchTimer = 0;
 
@@ -235,6 +240,7 @@ const Game = (() => {
     const holder = Physics.carrier(_world);
     const taken = new Set();
     for (const seat of _seats) {
+      if (seat.keeper) { taken.add(seat.playerId); continue; }
       if (holder && holder.team === seat.team && holder.role !== 'gk') {
         seat.playerId = holder.id;
       } else if (reconsider) {
@@ -288,7 +294,7 @@ const Game = (() => {
          so holding still to charge never leaves you stuck on the wrong player. */
       if (s.tapRequest || (s.shootRequest && s.shootRequest.held && !hasBall)) {
         if (hasBall) it.pass = true;
-        else {
+        else if (!seat.keeper) {
           const taken = new Set(_seats.filter(x => x !== seat).map(x => x.playerId));
           const pick = _nearestField(seat.team, taken);
           if (pick) seat.playerId = pick.id;

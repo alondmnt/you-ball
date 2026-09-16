@@ -439,6 +439,33 @@ const Editor = (() => {
     }
     playersGroup.appendChild(playerRow);
 
+    /*
+     * Where player one stands. A separate choice from how many are playing,
+     * because it is a different question - and in goal is a real place to
+     * play here, not a novelty: a shot arrives at your goal every twelve
+     * seconds and an opponent gets into your third every seven.
+     */
+    const placeGroup = _section(host, 'your place');
+    const placeRow = document.createElement('div');
+    placeRow.className = 'ed__extras';
+    for (const [keeper, icon, word] of [[false, '\u26bd', 'out field'], [true, '\ud83e\udde4', 'in goal']]) {
+      const on = keeper === !!_progress.inGoal;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ed__toggle ed__toggle--named' + (on ? ' ed__toggle--on' : '');
+      b.innerHTML = `<span class="ed__toggle-icon">${icon}</span><span class="ed__toggle-word">${word}</span>`;
+      b.setAttribute('aria-label', keeper ? 'play in goal' : 'play out field');
+      b.addEventListener('click', () => {
+        _progress.inGoal = keeper;
+        CONFIG.inGoal = keeper;
+        Storage.saveProgress(_progress);
+        Audio.play('tap');
+        render();
+      });
+      placeRow.appendChild(b);
+    }
+    placeGroup.appendChild(placeRow);
+
     /* The keys, right under the choice that turns the second set on. Player
        two's row is dimmed until it is switched on, which is also the clearest
        way to say what that choice does. */

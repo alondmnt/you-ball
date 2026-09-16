@@ -173,6 +173,38 @@ console.log('\n-- the wind-up --');
      shoot(1).power + ' vs ' + shoot(0).power);
 }
 
+console.log('\n-- the keeper on its line --');
+{
+  const setup = (carrying) => {
+    const w = Physics.createWorld();
+    const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+    const gk = w.players[0];
+    if (carrying) { w.ball.carrier = gk.id; w.ball.x = gk.x; w.ball.y = gk.y; }
+    else w.ball.carrier = null;
+    its[gk.id].mx = 1;                      /* run flat out up the pitch */
+    for (let i = 0; i < 180; i++) Physics.step(w, its, DT);
+    return w.players[0].x;
+  };
+  const penned = setup(false), free = setup(true);
+  ok('a keeper with no ball is held on its line',
+     penned <= Physics.ownGoalX(0) + CONFIG.gkReach + 1, penned.toFixed(0));
+  ok('a keeper carrying the ball can leave it',
+     free > Physics.ownGoalX(0) + CONFIG.gkReach + 200, free.toFixed(0));
+}
+{
+  /* Coming home from midfield is a run, not a teleport: the line is a wall
+     from the inside, so a keeper outside it is never snapped back. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  const gk = w.players[0];
+  gk.x = CONFIG.pitchW / 2;
+  w.ball.carrier = null; w.ball.x = 50; w.ball.y = 50;
+  const before = gk.x;
+  Physics.step(w, its, DT);
+  ok('a keeper caught upfield is not snapped home',
+     Math.abs(w.players[0].x - before) < 5, w.players[0].x.toFixed(0));
+}
+
 console.log('\n-- clock --');
 {
   const w = Physics.createWorld();

@@ -274,6 +274,7 @@ const Physics = (() => {
         p.vx *= f; p.vy *= f;
       }
 
+      const wasX = p.x, wasY = p.y;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
@@ -288,14 +289,25 @@ const Physics = (() => {
       p.x = Math.max(R, Math.min(CONFIG.pitchW - R, p.x));
       p.y = Math.max(R, Math.min(CONFIG.pitchH - R, p.y));
 
-      if (p.role === 'gk') {
-        /* Keepers hold their line: near their own goal, inside the mouth's reach. */
+      /*
+       * Keepers hold their line: near their own goal, inside the mouth's reach.
+       *
+       * Two things this is deliberately not. It lets go entirely while the
+       * keeper is carrying, so one who has collected the ball can charge
+       * upfield and leave the goal empty - a real risk, and the first thing a
+       * child will try. And it is a wall from the inside rather than a leash:
+       * it only bites on a player who was on the right side of it a moment
+       * ago, so a keeper coming home from midfield runs back rather than being
+       * snapped there. The AI keeper never leaves, so for it nothing changed.
+       */
+      if (p.role === 'gk' && world.ball.carrier !== p.id) {
         const goal = ownGoalX(p.team);
-        const lo = Math.min(goal + CONFIG.gkReach, goal - CONFIG.gkReach);
-        const hi = Math.max(goal + CONFIG.gkReach, goal - CONFIG.gkReach);
-        p.x = Math.max(Math.max(R, lo), Math.min(Math.min(CONFIG.pitchW - R, hi), p.x));
+        const lo = Math.max(R, Math.min(goal + CONFIG.gkReach, goal - CONFIG.gkReach));
+        const hi = Math.min(CONFIG.pitchW - R, Math.max(goal + CONFIG.gkReach, goal - CONFIG.gkReach));
+        if (wasX >= lo && wasX <= hi) p.x = Math.max(lo, Math.min(hi, p.x));
         const spread = CONFIG.goalMouth * 0.95;
-        p.y = Math.max(CONFIG.pitchH / 2 - spread, Math.min(CONFIG.pitchH / 2 + spread, p.y));
+        const yLo = CONFIG.pitchH / 2 - spread, yHi = CONFIG.pitchH / 2 + spread;
+        if (wasY >= yLo && wasY <= yHi) p.y = Math.max(yLo, Math.min(yHi, p.y));
       }
     }
   }
