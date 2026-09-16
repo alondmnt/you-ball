@@ -255,11 +255,29 @@ const Editor = (() => {
     _sizePreview();   /* the extra chips can change how tall the stage is */
   }
 
+  /**
+   * Put a heading above a group of controls.
+   *
+   * These were icons with no words on purpose, for a reader who could not read
+   * yet. That is no longer true, and four unlabelled rows of emoji is a puzzle
+   * rather than a menu once you can read the answer.
+   *
+   * @param {HTMLElement} host
+   * @param {string} text - lower case, because that is what a new reader reads
+   */
+  function _section(host, text) {
+    const h = document.createElement('div');
+    h.className = 'ed__label';
+    h.textContent = text;
+    host.appendChild(h);
+  }
+
   /** The two team strips, the colour pickers, the ball, and the match settings. */
   function _renderTeams() {
     const host = document.getElementById('ed-teams');
     host.innerHTML = '';
 
+    _section(host, 'teams');
     for (let t = 0; t < 2; t++) {
       const team = _progress.teams[t];
       const row = document.createElement('div');
@@ -301,30 +319,40 @@ const Editor = (() => {
       host.appendChild(row);
     }
 
-    const extras = document.createElement('div');
-    extras.className = 'ed__extras';
-
+    /* The ball. It used to be one small picture at the head of a row of
+       difficulty faces, which said nothing about what it was or that it could
+       be changed at all. It now has the row to itself, with the word. */
+    _section(host, 'ball');
+    const ballRow = document.createElement('div');
+    ballRow.className = 'ed__extras';
     const ball = document.createElement('button');
     ball.type = 'button';
     ball.className = 'ed__ball';
-    ball.setAttribute('aria-label', 'the ball');
+    ball.setAttribute('aria-label', 'change the ball');
     const ballImg = document.createElement('img');
     ballImg.src = _urls[Storage.partKey(BALL_ID, 'ball')] || Assets.defaultBall();
     ballImg.alt = '';
     ball.appendChild(ballImg);
     ball.addEventListener('click', () => _pickFor('ball', BALL_ID));
-    extras.appendChild(ball);
+    ballRow.appendChild(ball);
+    const ballHint = document.createElement('span');
+    ballHint.className = 'ed__hint';
+    ballHint.textContent = _progress.ballCustom ? 'tap to change it' : 'tap to use your own picture';
+    ballRow.appendChild(ballHint);
+    host.appendChild(ballRow);
 
-    /* Where you are playing. Four buttons, no words - the stage behind the
-       character changes as soon as you tap one, which is the explanation. */
-    const scenes = [['grass', '🌱'], ['moon', '🌙'], ['pool', '🏊'], ['ballpit', '🔴']];
+    /* Where you are playing. The stage behind the character changes as soon as
+       you tap one, which is the other half of the explanation. */
+    _section(host, 'field');
+    const scenes = [['grass', '🌱', 'grass'], ['moon', '🌙', 'moon'],
+                    ['pool', '🏊', 'pool'], ['ballpit', '🔴', 'ball pool']];
     const sceneRow = document.createElement('div');
     sceneRow.className = 'ed__extras';
-    for (const [key, icon] of scenes) {
+    for (const [key, icon, word] of scenes) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'ed__toggle' + (_currentScene() === key ? ' ed__toggle--on' : '');
-      b.textContent = icon;
+      b.className = 'ed__toggle ed__toggle--named' + (_currentScene() === key ? ' ed__toggle--on' : '');
+      b.innerHTML = `<span class="ed__toggle-icon">${icon}</span><span class="ed__toggle-word">${word}</span>`;
       b.setAttribute('aria-label', key);
       b.addEventListener('click', () => {
         _progress.scene = key;
@@ -336,13 +364,15 @@ const Editor = (() => {
     }
     host.appendChild(sceneRow);
 
-    /* Difficulty: three faces, no words. */
-    const diffs = [['easy', '🙂'], ['normal', '😀'], ['hard', '😈']];
-    for (const [key, icon] of diffs) {
+    _section(host, 'opponent');
+    const diffRow = document.createElement('div');
+    diffRow.className = 'ed__extras';
+    const diffs = [['easy', '🙂', 'easy'], ['normal', '😀', 'normal'], ['hard', '😈', 'hard']];
+    for (const [key, icon, word] of diffs) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'ed__toggle' + (_progress.difficulty === key ? ' ed__toggle--on' : '');
-      b.textContent = icon;
+      b.className = 'ed__toggle ed__toggle--named' + (_progress.difficulty === key ? ' ed__toggle--on' : '');
+      b.innerHTML = `<span class="ed__toggle-icon">${icon}</span><span class="ed__toggle-word">${word}</span>`;
       b.setAttribute('aria-label', key);
       b.addEventListener('click', () => {
         _progress.difficulty = key;
@@ -351,29 +381,35 @@ const Editor = (() => {
         Audio.play('tap');
         render();
       });
-      extras.appendChild(b);
+      diffRow.appendChild(b);
     }
+    host.appendChild(diffRow);
 
     /* Two-player: one on the screen, one on the keyboard. */
-    const two = document.createElement('button');
-    two.type = 'button';
-    two.className = 'ed__toggle ed__toggle--wide' + (_progress.twoPlayer ? ' ed__toggle--on' : '');
-    two.textContent = _progress.twoPlayer ? '👤👤' : '👤';
-    two.setAttribute('aria-label', 'two players');
-    two.addEventListener('click', () => {
-      _progress.twoPlayer = !_progress.twoPlayer;
-      CONFIG.twoPlayer = _progress.twoPlayer;
-      Storage.saveProgress(_progress);
-      Audio.play('tap');
-      render();
-    });
-    extras.appendChild(two);
+    _section(host, 'players');
+    const playerRow = document.createElement('div');
+    playerRow.className = 'ed__extras';
+    for (const [n, icon, word] of [[1, '👤', 'one'], [2, '👤👤', 'two']]) {
+      const on = (n === 2) === !!_progress.twoPlayer;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ed__toggle ed__toggle--named' + (on ? ' ed__toggle--on' : '');
+      b.innerHTML = `<span class="ed__toggle-icon">${icon}</span><span class="ed__toggle-word">${word}</span>`;
+      b.setAttribute('aria-label', word + (n === 1 ? ' player' : ' players'));
+      b.addEventListener('click', () => {
+        _progress.twoPlayer = n === 2;
+        CONFIG.twoPlayer = _progress.twoPlayer;
+        Storage.saveProgress(_progress);
+        Audio.play('tap');
+        render();
+      });
+      playerRow.appendChild(b);
+    }
+    host.appendChild(playerRow);
 
-    host.appendChild(extras);
-
-    /* The keys, right under the toggle that turns the second set on. Player
+    /* The keys, right under the choice that turns the second set on. Player
        two's row is dimmed until it is switched on, which is also the clearest
-       way to say what that toggle does. */
+       way to say what that choice does. */
     const keys = document.createElement('div');
     keys.className = 'ed__keys';
     keys.innerHTML =

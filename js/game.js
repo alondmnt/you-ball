@@ -406,7 +406,7 @@ const Game = (() => {
       switch (e.type) {
         case 'goal':
           Render.goalBurst(e.team, e.x, e.y);
-          Render.banner('GOAL!');
+          Render.banner('GOAL!', true);
           /* Which end it went in decides which motif plays. The sad slide
              that used to follow every goal played when you scored too. */
           Audio.play('goal', e.team === 0 ? 'home' : 'away');

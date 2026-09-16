@@ -588,11 +588,13 @@ const Render = (() => {
   /**
    * Show the big banner.
    * @param {string|null} text - null hides it
+   * @param {boolean} [boom] - draw it as a comic book starburst, for a goal
    */
-  function banner(text) {
+  function banner(text, boom) {
     if (!_els.banner) return;
     if (!text) { _els.banner.classList.add('banner--hidden'); return; }
     _els.bannerText.textContent = text;
+    _els.banner.classList.toggle('banner--boom', !!boom);
     _els.banner.classList.remove('banner--hidden');
     /* Restart the pop-in even if the banner was already up. */
     _els.bannerText.style.animation = 'none';

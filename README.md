@@ -48,6 +48,8 @@ on the moon, players kick up dust when they run and throw a cloud of it when the
 
 a pool rather than an ocean, because the game is a walled pitch and the ball bounces off the edges. an ocean has no walls.
 
+when a goal goes in, the word arrives on a starburst, drawn the way BOOM is drawn in a comic.
+
 ## the music
 
 a rock song, synthesised note by note like every other sound, that follows the ball.
@@ -84,7 +86,9 @@ the pencil opens the editor.
 4. **✏️ paper** turns the white page behind a crayon drawing transparent. leave it off for photos
 5. tap the character to cycle its three faces and watch them
 6. tap a place in a team row and pick a face for it. the round place on the left is the goalkeeper, and every face is shown in that team's colours so you can see how they will look. **–** leaves the place to a built-in player, **+** makes a new character and puts them straight in
-7. the ball is a picture slot too
+7. the ball is a picture slot too - it has its own row, labelled, because a small picture of a ball sitting in a row of other buttons did not say that it could be changed
+
+below the characters the settings are grouped and named - **teams**, **ball**, **field**, **opponent**, **players** - and every choice shows a picture with the word under it. they were pictures alone to begin with, for a player who could not read yet.
 
 anything you do not fill in stays as a built-in cartoon part, so a character is playable the moment you make it. a face on a default body is the usual case.
 

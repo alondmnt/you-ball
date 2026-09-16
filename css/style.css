@@ -156,6 +156,66 @@ img { -webkit-user-drag: none; user-select: none; }
   100% { transform: scale(1) rotate(0deg); }
 }
 
+/* ===== GOAL! =====
+   A goal gets the comic book treatment - the word on a starburst, the way BOOM
+   is drawn - rather than the same calm plate as "kick off". The outline is
+   eight offset shadows instead of -webkit-text-stroke, because a centred
+   stroke eats into the letterform at this weight, and they are in em so the
+   whole thing scales with the clamped font size. */
+.banner--boom span {
+  position: relative;
+  background: none;
+  padding: 0.12em 0.34em;
+  color: #ffd166;
+  font-style: italic;
+  font-size: clamp(2.4rem, 12vw, 6.4rem);
+  letter-spacing: 0.01em;
+  transform: rotate(-5deg);
+  text-shadow:
+    -0.045em -0.045em 0 #10231a, 0.045em -0.045em 0 #10231a,
+    -0.045em 0.045em 0 #10231a, 0.045em 0.045em 0 #10231a,
+    0 -0.05em 0 #10231a, 0 0.05em 0 #10231a,
+    -0.05em 0 0 #10231a, 0.05em 0 0 #10231a,
+    0 0.1em 0 #e8622c, 0 0.15em 0.02em rgba(0, 0, 0, 0.45);
+  animation:
+    boom-in 0.42s cubic-bezier(0.2, 1.9, 0.35, 1),
+    boom-shake 0.5s 0.42s ease-in-out;
+}
+.banner--boom span::before {
+  content: '';
+  position: absolute;
+  inset: -0.34em -0.5em;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 45%, #ffe29a 0%, #f4913d 45%, #e8622c 100%);
+  clip-path: polygon(50.0% 0.0%, 56.9% 19.8%, 71.7% 5.0%, 69.3% 25.8%, 89.1% 18.8%, 77.9% 36.5%, 98.7% 38.9%, 81.0% 50.0%, 98.7% 61.1%, 77.9% 63.5%, 89.1% 81.2%, 69.3% 74.2%, 71.7% 95.0%, 56.9% 80.2%, 50.0% 100.0%, 43.1% 80.2%, 28.3% 95.0%, 30.7% 74.2%, 10.9% 81.2%, 22.1% 63.5%, 1.3% 61.1%, 19.0% 50.0%, 1.3% 38.9%, 22.1% 36.5%, 10.9% 18.8%, 30.7% 25.8%, 28.3% 5.0%, 43.1% 19.8%);
+  animation: boom-star 0.42s cubic-bezier(0.2, 1.9, 0.35, 1), boom-spin 9s linear 0.42s infinite;
+}
+@keyframes boom-in {
+  0%   { transform: scale(0.15) rotate(-24deg); opacity: 0; }
+  65%  { transform: scale(1.18) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-5deg); }
+}
+@keyframes boom-star {
+  0%   { transform: scale(0.1) rotate(-40deg); opacity: 0; }
+  60%  { transform: scale(1.14) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes boom-shake {
+  0%, 100% { transform: scale(1) rotate(-5deg); }
+  25%      { transform: scale(1.03) rotate(-2.5deg); }
+  60%      { transform: scale(1.01) rotate(-7deg); }
+}
+@keyframes boom-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+/* Anyone who would rather the screen sat still keeps the word and loses the
+   spin and the wobble. */
+@media (prefers-reduced-motion: reduce) {
+  .banner--boom span,
+  .banner--boom span::before { animation: none; }
+}
+
 /* ===== Overlays ===== */
 .overlay {
   position: fixed; inset: 0;
@@ -443,6 +503,25 @@ img { -webkit-user-drag: none; user-select: none; }
   font-size: 1.2rem; cursor: pointer; padding: 0 8px;
 }
 .ed__toggle--on { border-color: #ffd166; background: rgba(255, 209, 102, 0.18); }
+/* A named toggle stacks the word under the picture. The icon alone was a
+   riddle for anyone who can read, and the word alone is slower to scan than
+   the picture, so both. */
+.ed__toggle--named {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; height: auto; min-height: 42px; padding: 4px 9px; line-height: 1.05;
+}
+.ed__toggle-icon { font-size: 1.1rem; line-height: 1; }
+.ed__toggle-word { font-size: 0.76rem; letter-spacing: 0.01em; opacity: 0.9; }
+.ed__toggle--on .ed__toggle-word { opacity: 1; }
+/* Section headings. Lower case: that is the letterform a new reader meets
+   first, and it matches the rest of the game's voice. */
+.ed__label {
+  font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: #b7e8ca; margin: 5px 0 0;
+}
+.ed__label:first-child { margin-top: 0; }
+.ed__hint { font-size: 0.78rem; color: #cfe6d8; opacity: 0.85; }
 .ed__warn {
   font-size: 0.75rem; color: #ffb3c1; opacity: 0.9;
 }
@@ -474,6 +553,10 @@ img { -webkit-user-drag: none; user-select: none; }
 @media (max-height: 430px) {
   .ed__slots { width: 118px; }
   .ed__slotcell, .ed__ball, .ed__toggle { width: 34px; height: 34px; }
+  .ed__toggle--named { width: auto; height: auto; min-height: 34px; padding: 2px 7px; }
+  .ed__toggle-word { font-size: 0.66rem; }
+  .ed__label { font-size: 0.72rem; margin: 2px 0 -1px; }
+  .ed__hint { font-size: 0.68rem; }
 }
 
 /* ===== Keyboard legend =====
