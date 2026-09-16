@@ -99,7 +99,24 @@ a wind-up that finds no ball to kick falls back to being a tap, and taps switch 
 
 **the charge only runs while you have the ball.** without that gate the whole thing is defeated by holding the key down: you walk onto the ball already at full power and the meter never means anything. measured, leaning on the shoot key for seventy seconds: twelve fireballs before the gate, one after. `Input.setCharging(i, on, now)` is how game.js says so, and it restarts the clock, so gaining the ball mid-hold starts you at zero. input still knows nothing about teams or possession - only that this seat may charge now, which is the same shape as `setEnabled`.
 
-`holdMaxMs` (900ms) is deliberately about double `stealImmunityMs` (500ms). below the immunity window a full charge would be free, because nobody can touch you while you wind up; at 900 you have to survive roughly 400ms of being tackleable, and that exposure is the cost. of 3221 measured carries, 23% last that long, 33% reach 700ms, and 83% reach 500ms - the cliff sits exactly where immunity lapses. a live sweep of the constant could not separate 500 from 900 over seventy-second runs (3 to 8 fireballs at the same setting), so the dial is set from the immunity argument, not from that.
+### picking holdMaxMs
+
+the charge clock and the steal immunity both start when you gain the ball, so they run together, and the share of carries that fill the meter is not a slope but three plateaus. measured over 30 matches a field:
+
+| holdMaxMs | 450 | 500 | 550 | 600 | 650 | 700 | 750 | 800 | 850 | 900 | 1000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| grass | 91% | 83% | 36% | 35% | 34% | 33% | 33% | 32% | 24% | 23% | 21% |
+| moon | 87% | 79% | 27% | 25% | 23% | 22% | 22% | 21% | 15% | 14% | 13% |
+| pool | 91% | 86% | 48% | 48% | 47% | 47% | 46% | 46% | 41% | 41% | 40% |
+| ballpit | 95% | 87% | 33% | 31% | 30% | 29% | 28% | 27% | 23% | 22% | 21% |
+
+at or under `stealImmunityMs` (500) a wind-up is **free**: nobody can touch you while it runs, so there is no mechanic. 500 to 550 is a 47 point cliff - that is the immunity wall. 550 to 800 is dead flat, one point per 50ms, so the constant moves freely inside it. 850 and up is a second plateau ten points lower.
+
+so the choice is which plateau, not which number. 650 sits in the middle of the flat band: 150ms of being tackleable, which is what the wind-up costs, and clear of both cliff edges rather than perched on one. it was 900, which was on the low plateau for no benefit.
+
+a live sweep of the constant could not separate 500 from 900 over seventy-second runs (3 to 8 fireballs at the same setting), so none of this comes from that.
+
+the fields are not equal - a fireball is three times as likely in the pool as on the moon - and `holdMaxMs` is deliberately **not** a scene value. the difficulty of charging already tracks what a charge is worth: the pool has the ball dying on its way (`ballFriction` 0.968) and `shootRange` 560, so power is the scarce thing there, while the moon has `shootRange` 1100 and a ball that slides forever, so you can score without ever winding up. flattening it would cost four numbers to keep in sync and remove a difference the scenes exist to create.
 
 ### the meter
 

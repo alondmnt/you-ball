@@ -274,7 +274,11 @@ const CONFIG = {
   // keeps a wind-up and a tap apart - under it a finger is still just a tap,
   // so tap-to-pass survives a child who is slow letting go.
   windUpMs: 240,         // held this long before a wind-up arms at all
-  holdMaxMs: 900,        // …and this long, from first touch, for full power
+  holdMaxMs: 650,        // …and this long, from first contact, for full power.
+                         // Has to stay clear of stealImmunityMs (500) or a
+                         // wind-up is free, nobody being able to tackle you
+                         // while it runs. Measured, 550-800 all behave the
+                         // same, so this is picked for feel inside that band.
   twoPlayer: false,      // true = WASD drives a second human on the away team
 
   /* ─── Formation ─── */
