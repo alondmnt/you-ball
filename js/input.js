@@ -10,6 +10,14 @@
  *   drag  -> relative joystick from wherever the finger went down
  *   flick -> shoot along the flick, power from how fast it left
  *   tap   -> pass if you have the ball, otherwise switch to whoever is nearest it
+ *   hold  -> wind a power kick up, and shoot it on release
+ *
+ * The wind-up is the one accumulator both hands share: the shoot key on a
+ * keyboard, a finger held still on a screen. "Still" means inside the dead
+ * zone, so a finger that steered and came back to where it started counts -
+ * you do not have to lift and press again to wind up. It also means you are
+ * not steering while you wind up, which is the whole cost of the gesture, and
+ * it is what stops a child who rests their thumb mid-run charging by accident.
  *
  * The joystick direction is converted through the pitch projection, so the
  * player runs toward where the finger is pointing on screen rather than toward
@@ -18,6 +26,7 @@
 const Input = (() => {
   const JOY_RADIUS = 72;      /* finger travel, in px, for full tilt */
   const SAMPLE_MS = 120;      /* flick velocity is measured over this window */
+  const HOLD_POWER_FLOOR = 0.3;  /* the shot an uncharged stab still gets */
 
   /** One per seat. */
   function _seat() {
@@ -27,9 +36,32 @@ const Input = (() => {
       passRequest: false,
       tapRequest: false,      /* pass or switch, game.js decides which */
       keys: Object.create(null),
-      shootDownAt: 0,
+      shootDownAt: 0,       /* timeStamp the shoot key went down, 0 when up */
     };
   }
+
+  /**
+   * How far a hold has wound the kick up, 0..1.
+   *
+   * Zero until windUpMs so that a stab of the key, or a slow tap, is still the
+   * quick shot it has always been. Full at holdMaxMs measured from first
+   * contact, so holdMaxMs is the one number that says how long a power kick
+   * takes however you are playing.
+   * @param {number} heldMs - how long the control has been down
+   * @returns {number} 0..1
+   */
+  function _charge(heldMs) {
+    const span = Math.max(1, CONFIG.holdMaxMs - CONFIG.windUpMs);
+    return Math.max(0, Math.min(1, (heldMs - CONFIG.windUpMs) / span));
+  }
+
+  /**
+   * The shot a charge buys. A stab is never nothing and a full wind-up is
+   * everything, so the floor is what makes tapping shoot worth doing at all.
+   * @param {number} c - charge, 0..1
+   * @returns {number} power, 0..1
+   */
+  function _holdPower(c) { return HOLD_POWER_FLOOR + (1 - HOLD_POWER_FLOOR) * c; }
 
   const seats = [_seat(), _seat()];
 
@@ -38,6 +70,8 @@ const Input = (() => {
   let _origin = null;         /* {x, y, t} where the finger went down */
   let _samples = [];          /* recent {x, y, t} for flick detection */
   let _dragged = false;
+  let _stillSince = null;     /* timeStamp the finger last settled in the dead
+                                 zone, null while it is out steering */
   let _enabled = true;
 
   /**
@@ -64,6 +98,7 @@ const Input = (() => {
   /** Drop all held state. */
   function reset() {
     _pointerId = null; _origin = null; _samples = []; _dragged = false;
+    _stillSince = null;
     for (const s of seats) {
       s.mx = 0; s.my = 0;
       s.shootRequest = null; s.passRequest = false; s.tapRequest = false;
@@ -80,6 +115,7 @@ const Input = (() => {
     _origin = { x: e.clientX, y: e.clientY, t: e.timeStamp };
     _samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
     _dragged = false;
+    _stillSince = e.timeStamp;
     if (e.currentTarget.setPointerCapture) {
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     }
@@ -93,9 +129,16 @@ const Input = (() => {
     const dx = e.clientX - _origin.x;
     const dy = e.clientY - _origin.y;
     const px = Math.hypot(dx, dy);
-    if (px < CONFIG.dragDeadZonePx) { seats[0].mx = 0; seats[0].my = 0; return; }
+    if (px < CONFIG.dragDeadZonePx) {
+      seats[0].mx = 0; seats[0].my = 0;
+      /* Back in the dead zone: the wind-up starts now, not when the finger
+         first went down, so steering away from a charge really does drop it. */
+      if (_stillSince == null) _stillSince = e.timeStamp;
+      return;
+    }
 
     _dragged = true;
+    _stillSince = null;
     const tilt = Math.min(1, px / JOY_RADIUS);
     const w = Pitch.screenToWorldDelta(dx, dy);
     const wlen = Math.hypot(w.dx, w.dy) || 1;
@@ -122,11 +165,18 @@ const Input = (() => {
         dy: w.dy / wlen,
         power: Math.max(0.25, Math.min(1, (speed - 380) / 2400)),
       };
+    } else if (_stillSince != null && e.timeStamp - _stillSince >= CONFIG.windUpMs) {
+      /* A wind-up: held still long enough to mean it. Direction comes from
+         nothing, because a still finger is not pointing anywhere - game.js
+         falls back to the player's facing. */
+      const c = _charge(e.timeStamp - _stillSince);
+      s.shootRequest = { dx: 0, dy: 0, power: _holdPower(c), charge: c, held: true };
     } else if (!_dragged) {
       s.tapRequest = true;
     }
 
     _pointerId = null; _origin = null; _samples = []; _dragged = false;
+    _stillSince = null;
     /* Fall back to whatever keys are still held rather than zeroing outright. */
     _syncKeyAxes(s);
   }
@@ -134,6 +184,7 @@ const Input = (() => {
   function _onCancel(e) {
     if (e.pointerId !== _pointerId) return;
     _pointerId = null; _origin = null; _samples = []; _dragged = false;
+    _stillSince = null;
     _syncKeyAxes(seats[0]);
   }
 
@@ -187,7 +238,7 @@ const Input = (() => {
     const l = LEGEND[i];
     if (!l) return '';
     return `<kbd>${l.move}</kbd> run` +
-           ` <kbd>${l.shoot}</kbd> shoot` +
+           ` <kbd>${l.shoot}</kbd> shoot (hold it)` +
            ` <kbd>${l.pass}</kbd> pass`;
   }
 
@@ -213,10 +264,8 @@ const Input = (() => {
       const held = e.timeStamp - s.shootDownAt;
       s.shootDownAt = 0;
       /* Direction comes from whatever is held; zero means "use facing". */
-      s.shootRequest = {
-        dx: s.mx, dy: s.my,
-        power: Math.max(0.3, Math.min(1, held / CONFIG.holdMaxMs)),
-      };
+      const c = _charge(held);
+      s.shootRequest = { dx: s.mx, dy: s.my, power: _holdPower(c), charge: c, held: true };
     }
     _syncKeyAxes(s);
   }
@@ -244,6 +293,26 @@ const Input = (() => {
    */
   function seat(i) { return seats[i]; }
 
+  /**
+   * How far a seat has wound its kick up right now, 0..1.
+   *
+   * Live, unlike shootRequest, which only exists for the one frame after a
+   * release - this is what the ball's charge ring reads every frame while the
+   * player is still holding on. It does not know whether the seat has the ball
+   * to kick; the caller decides whether a charge is worth drawing.
+   * @param {number} i - seat index
+   * @param {number} now - performance.now(), the clock pointer events use
+   * @returns {number} 0..1
+   */
+  function charge(i, now) {
+    const s = seats[i];
+    if (!s) return 0;
+    if (s.shootDownAt) return _charge(now - s.shootDownAt);
+    /* Only seat 0 has a finger; seat 1 is keyboard by definition. */
+    if (i === 0 && _pointerId !== null && _stillSince != null) return _charge(now - _stillSince);
+    return 0;
+  }
+
   /** Clear a seat's one-shot requests after the game has acted on them. */
   function clearRequests(i) {
     const s = seats[i];
@@ -255,5 +324,5 @@ const Input = (() => {
   /** How many seats are live. Two only when two-player is switched on. */
   function seatCount() { return CONFIG.twoPlayer ? 2 : 1; }
 
-  return { init, setEnabled, reset, seat, clearRequests, seatCount, legendHtml };
+  return { init, setEnabled, reset, seat, charge, clearRequests, seatCount, legendHtml };
 })();

@@ -89,6 +89,16 @@ a tackle **knocks the dispossessed player clear and stuns them** for `tackleStun
 
 `carrierSpeedMult` (0.93) keeps a chase from being hopeless. the separation radius has to stay under `stealDist`, or contact could never happen at all.
 
+## the wind-up
+
+a power kick is one accumulator with two ways to start it: the shoot key down on a keyboard, a finger held still on a screen. "still" means inside `dragDeadZonePx`, so a finger that steered away and came back counts - you never have to lift and press again. it also means you are not steering while you wind up, and that is the whole cost of the gesture.
+
+`windUpMs` is what keeps a wind-up and a tap apart. under it a finger is still just a tap, so tap-to-pass survives a child who is slow letting go. `holdMaxMs` is time-to-full measured from first contact, whichever hand you are playing with, so one number tunes both.
+
+a wind-up that finds no ball to kick falls back to being a tap, and taps switch players. without that, holding still a beat too long would leave you stuck on the wrong player with nothing to show for it.
+
+the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
+
 ## music
 
 A rock song, synthesised note by note. Nothing is sampled, so it costs no
@@ -380,7 +390,7 @@ a standing consequence: **every formation slot sits in its own defensive half**,
 | `pitch.js` | CONFIG | players, the ball, the score |
 | `physics.js` | CONFIG | the DOM, the match phase |
 | `ai.js` | CONFIG, Physics | the DOM, who is human |
-| `input.js` | CONFIG, Pitch | players, teams, possession |
+| `input.js` | CONFIG, Pitch | players, teams, possession, whether a charge has a ball to kick |
 | `match.js` | CONFIG, Physics | the DOM |
 | `audio.js` | CONFIG | the world, the score bar, who is human |
 | `render.js` | everything above | input, the loop |

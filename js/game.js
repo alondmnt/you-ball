@@ -275,8 +275,10 @@ const Game = (() => {
       it.mx = s.mx; it.my = s.my;
       it.shoot = null; it.pass = false;
 
-      /* A tap passes if you have the ball, and switches players if you do not. */
-      if (s.tapRequest) {
+      /* A tap passes if you have the ball, and switches players if you do not.
+         A wind-up that found no ball to kick is only a tap that took its time,
+         so holding still to charge never leaves you stuck on the wrong player. */
+      if (s.tapRequest || (s.shootRequest && s.shootRequest.held && !hasBall)) {
         if (hasBall) it.pass = true;
         else {
           const taken = new Set(_seats.filter(x => x !== seat).map(x => x.playerId));
@@ -286,9 +288,9 @@ const Game = (() => {
       }
       if (s.passRequest && hasBall) it.pass = true;
       if (s.shootRequest && hasBall) {
-        let { dx, dy, power } = s.shootRequest;
+        let { dx, dy, power, charge } = s.shootRequest;
         if (!dx && !dy) { dx = p.facing; dy = 0; }   /* no direction held - shoot ahead */
-        it.shoot = { dx, dy, power };
+        it.shoot = { dx, dy, power, charge: charge || 0 };
       }
       Input.clearRequests(i);
     }

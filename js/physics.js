@@ -178,7 +178,7 @@ const Physics = (() => {
    * Advance the world one step.
    * @param {object} world
    * @param {Array<object|null>} intents - one per player id:
-   *   { mx, my, shoot: {dx, dy, power}|null, pass: boolean }
+   *   { mx, my, shoot: {dx, dy, power, charge}|null, pass: boolean }
    * @param {number} dt - seconds, already clamped by the caller
    * @returns {Array<object>} events produced this step
    */
@@ -212,7 +212,10 @@ const Physics = (() => {
         (CONFIG.shootPowerMax - CONFIG.shootPowerMin) * Math.max(0, Math.min(1, s.power));
       _release(world, p, s.dx / len * power, s.dy / len * power);
       p.kickAt = world.t;
-      events.push({ type: 'kick', id: p.id, power, x: b.x, y: b.y });
+      /* charge rides along untouched: physics has no use for it, but it is the
+         only thing that tells a wound-up kick from an AI clearance, and both
+         arrive here at the same power. */
+      events.push({ type: 'kick', id: p.id, power, x: b.x, y: b.y, charge: s.charge || 0 });
       return;
     }
 

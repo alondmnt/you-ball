@@ -151,6 +151,28 @@ console.log('\n-- possession --');
   ok('the shooter cannot instantly re-collect', reclaimed === -1 || reclaimed >= CONFIG.looseBallMs / 1000);
 }
 
+console.log('\n-- the wind-up --');
+{
+  /* A charged kick and an AI clearance arrive at physics at the same power.
+     The charge is the only thing that tells them apart, so it has to survive
+     the trip out to the kick event or the ball can never catch fire. */
+  const shoot = (charge) => {
+    const w = Physics.createWorld();
+    const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+    const p = w.players[3];
+    w.ball.carrier = p.id; w.ball.x = p.x; w.ball.y = p.y;
+    its[p.id].shoot = { dx: 1, dy: 0, power: 1, charge };
+    return Physics.step(w, its, DT).find(e => e.type === 'kick');
+  };
+  ok('a wound-up kick reports its charge', shoot(1).charge === 1, JSON.stringify(shoot(1)));
+  ok('a half charge survives the trip', shoot(0.5).charge === 0.5, shoot(0.5).charge);
+  ok('an uncharged shot reports zero, never undefined', shoot(undefined).charge === 0,
+     String(shoot(undefined).charge));
+  ok('the charge does not change how hard the ball goes',
+     Math.abs(shoot(1).power - shoot(0).power) < 1e-9,
+     shoot(1).power + ' vs ' + shoot(0).power);
+}
+
 console.log('\n-- clock --');
 {
   const w = Physics.createWorld();
