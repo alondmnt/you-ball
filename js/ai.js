@@ -87,7 +87,7 @@ const AI = (() => {
     for (const p of world.players) {
       if (humans.has(p.id)) continue;
       const intent = intents[p.id] || (intents[p.id] = { mx: 0, my: 0, shoot: null, pass: false });
-      intent.mx = 0; intent.my = 0; intent.shoot = null; intent.pass = false;
+      intent.mx = 0; intent.my = 0; intent.shoot = null; intent.pass = false; intent.dive = false;
 
       if (!p.ai) p.ai = { nextDecideAt: 0, jx: 0, jy: 0 };
       if (world.t >= p.ai.nextDecideAt) {
@@ -244,10 +244,11 @@ const AI = (() => {
         const span = CONFIG.pitchH;
         aimY = Math.abs(((aimY % (2 * span)) + 2 * span) % (2 * span));
         if (aimY > span) aimY = 2 * span - aimY;
-        if (speed > 520 && tt < 0.55 && Math.abs(aimY - p.y) > 45) {
-          p.diveUntil = world.t + 0.42;
-          p.diveDir = aimY > p.y ? 1 : -1;
-        }
+        /* Ask for the dive rather than setting it: physics owns when a
+           keeper is airborne, and it cannot tell this apart from a child
+           pressing the button. _steer below points the intent at aimY, which
+           is where the dive direction comes from. */
+        if (speed > 520 && tt < 0.55 && Math.abs(aimY - p.y) > 45) intent.dive = true;
       }
     }
 

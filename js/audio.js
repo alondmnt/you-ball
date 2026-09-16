@@ -159,6 +159,12 @@ const Audio = (() => {
       _note(300, 0, 0.07, 'triangle', 0.07, 420);
     },
 
+    /** A keeper throws themselves - the rush of air, and the landing. */
+    dive() {
+      _noise(0, 0.17, 900, 0.055, 'bandpass', 2200);
+      _note(150, 0.13, 0.09, 'sine', 0.06, 90);
+    },
+
     /** The keeper gets a hand to it. */
     save() {
       _noise(0, 0.13, 700, 0.11);

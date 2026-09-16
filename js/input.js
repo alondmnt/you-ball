@@ -37,6 +37,7 @@ const Input = (() => {
     return {
       mx: 0, my: 0,
       shootRequest: null,     /* {dx, dy, power} - dx/dy may be 0, meaning "use facing" */
+      shootPressed: false,    /* the shoot control went down this frame */
       passRequest: false,
       tapRequest: false,      /* pass or switch, game.js decides which */
       keys: Object.create(null),
@@ -127,7 +128,8 @@ const Input = (() => {
     _stillSince = null;
     for (const s of seats) {
       s.mx = 0; s.my = 0;
-      s.shootRequest = null; s.passRequest = false; s.tapRequest = false;
+      s.shootRequest = null; s.shootPressed = false;
+      s.passRequest = false; s.tapRequest = false;
       s.keys = Object.create(null);
       s.shootDownAt = 0;
       s.canCharge = false; s.chargeFrom = 0;
@@ -259,13 +261,14 @@ const Input = (() => {
    * editor. Keeping this here rather than in each screen is what stops the two
    * legends drifting apart from each other or from the bindings.
    * @param {number} i - seat index
+   * @param {boolean} [keeper] - this seat is keeping goal, so shoot dives
    * @returns {string} HTML
    */
-  function legendHtml(i) {
+  function legendHtml(i, keeper) {
     const l = LEGEND[i];
     if (!l) return '';
     return `<kbd>${l.move}</kbd> run` +
-           ` <kbd>${l.shoot}</kbd> shoot (hold it)` +
+           (keeper ? ` <kbd>${l.shoot}</kbd> dive` : ` <kbd>${l.shoot}</kbd> shoot (hold it)`) +
            ` <kbd>${l.pass}</kbd> pass`;
   }
 
@@ -277,7 +280,9 @@ const Input = (() => {
     const s = seats[hit.seat];
     if (s.keys[hit.action]) return;          /* ignore auto-repeat */
     s.keys[hit.action] = true;
-    if (hit.action === 'shoot') s.shootDownAt = e.timeStamp;
+    /* The press matters on its own, not just the release: a keeper dives on it,
+       and a shot is on the goal line in well under half a second. */
+    if (hit.action === 'shoot') { s.shootDownAt = e.timeStamp; s.shootPressed = true; }
     if (hit.action === 'pass') s.passRequest = true;
     _syncKeyAxes(s);
   }
@@ -368,6 +373,7 @@ const Input = (() => {
   function clearRequests(i) {
     const s = seats[i];
     s.shootRequest = null;
+    s.shootPressed = false;
     s.passRequest = false;
     s.tapRequest = false;
   }

@@ -92,11 +92,11 @@ const Game = (() => {
     const host = document.getElementById('splash-keys');
     if (!host) return;
     if (!CONFIG.twoPlayer) {
-      host.innerHTML = `<div class="splash__keyrow">${Input.legendHtml(0)}</div>`;
+      host.innerHTML = `<div class="splash__keyrow">${Input.legendHtml(0, CONFIG.inGoal)}</div>`;
       return;
     }
     host.innerHTML =
-      `<div class="splash__keyrow"><span class="who">1</span>${Input.legendHtml(0)}</div>` +
+      `<div class="splash__keyrow"><span class="who">1</span>${Input.legendHtml(0, CONFIG.inGoal)}</div>` +
       `<div class="splash__keyrow"><span class="who who--2">2</span>${Input.legendHtml(1)}</div>`;
   }
 
@@ -287,7 +287,7 @@ const Game = (() => {
       if (hasBall) charge = Math.max(charge, Input.charge(i, now));
 
       it.mx = s.mx; it.my = s.my;
-      it.shoot = null; it.pass = false;
+      it.shoot = null; it.pass = false; it.dive = false;
 
       /* A tap passes if you have the ball, and switches players if you do not.
          A wind-up that found no ball to kick is only a tap that took its time,
@@ -301,6 +301,20 @@ const Game = (() => {
         }
       }
       if (s.passRequest && hasBall) it.pass = true;
+      /*
+       * A keeper with no ball dives instead of shooting. On a keyboard the
+       * press is what counts, because waiting for the key to come back up
+       * would spend most of the 457ms a shot takes to arrive. On a screen a
+       * flick dives the way you flicked and a tap dives at the ball, which is
+       * as much control as a child needs with one finger.
+       */
+      if (p.role === 'gk' && !hasBall) {
+        if (s.shootPressed || s.shootRequest || s.tapRequest) it.dive = true;
+        if (s.shootRequest && (s.shootRequest.dx || s.shootRequest.dy)) {
+          it.mx = s.shootRequest.dx; it.my = s.shootRequest.dy;
+        }
+      }
+
       if (s.shootRequest && hasBall) {
         let { dx, dy, power, charge } = s.shootRequest;
         if (!dx && !dy) { dx = p.facing; dy = 0; }   /* no direction held - shoot ahead */
@@ -394,6 +408,9 @@ const Game = (() => {
   function _react(worldEvents, matchEvents) {
     for (const e of worldEvents) {
       switch (e.type) {
+        case 'dive':
+          Audio.play('dive');
+          break;
         case 'kick':
           Audio.play('kick', e.power / CONFIG.shootPowerMax);
           Render.sceneFx('kick', e.x, e.y, e.power / CONFIG.shootPowerMax);

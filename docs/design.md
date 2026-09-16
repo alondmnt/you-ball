@@ -138,6 +138,16 @@ the obvious design - hand the child the keeper the moment a shot comes in - was 
 
 the fear that standing in goal would be boring is the other way round: a shot arrives at your goal every 12 seconds and an opponent enters your third every 7.
 
+### the dive
+
+the dive is the whole reason choosing the position works. it was AI-only: `ai.js` wrote `p.diveUntil` and `p.diveDir` straight onto the player, which is the one place the seam leaked - physics is supposed to be unable to tell an AI from a child. now both ask for it the same way, with `intent.dive`, and physics owns when a keeper is airborne.
+
+it fires on the **press**, never the release: a shot is on the line in 457ms, and waiting for a key to come back up would spend most of that. on a screen a flick dives the way you flicked and a tap dives at the ball, which is as much control as one finger needs.
+
+a dive with nothing held carries the direction it launched in, so a tap is enough on a screen where there is no stick left to hold. hold a direction and you steer it as usual - **taking that away cost 12% more goals conceded**, measured, because the keeper could no longer correct a prediction that had moved while the ball was in the air.
+
+`gkRecoverMs` is the cost. without it the dive is a free speed button and the answer is always to hold it down: a child is then simply a fast keeper, flopping about for half the match. 400ms at `gkRecoverMult` of keeper pace afterwards makes when to dive a decision, and it costs the AI keeper nothing (2.4 goals a minute conceded before and after).
+
 the keeper's line is a **wall from the inside, not a leash**. it lets go entirely while the keeper is carrying, so a child who collects the ball can charge upfield and leave the goal empty, and it only bites on a player who was on the right side of it a moment ago, so coming home from midfield is a run rather than a teleport. the AI keeper never leaves its area, so none of this changes how it plays.
 
 ## music

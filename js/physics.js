@@ -178,7 +178,7 @@ const Physics = (() => {
    * Advance the world one step.
    * @param {object} world
    * @param {Array<object|null>} intents - one per player id:
-   *   { mx, my, shoot: {dx, dy, power, charge}|null, pass: boolean }
+   *   { mx, my, shoot: {dx, dy, power, charge}|null, pass: boolean, dive: boolean }
    * @param {number} dt - seconds, already clamped by the caller
    * @returns {Array<object>} events produced this step
    */
@@ -187,6 +187,7 @@ const Physics = (() => {
     world.t += dt;
 
     _applyBallIntents(world, intents, dt, events);
+    _applyDives(world, intents, events);
     _movePlayers(world, intents, dt);
     _separatePlayers(world);
     _moveBall(world, dt, events);
@@ -236,6 +237,31 @@ const Physics = (() => {
     }
   }
 
+  /**
+   * A keeper lunges.
+   *
+   * Fires the moment the intent says so, never on a release: a shot is on the
+   * line in well under half a second, so waiting for a key to come back up
+   * would spend the whole window. You cannot dive while already diving, which
+   * is the only limit it needs - the commitment below is the real cost.
+   * @param {object} world
+   * @param {Array<object|null>} intents
+   * @param {Array<object>} events - appended to
+   */
+  function _applyDives(world, intents, events) {
+    for (const p of world.players) {
+      if (p.role !== 'gk' || p.diveUntil > world.t) continue;
+      const intent = intents[p.id];
+      if (!intent || !intent.dive) continue;
+      p.diveUntil = world.t + CONFIG.gkDiveMs / 1000;
+      /* Nothing held: go at the ball. Pressing dive has to do something or a
+         child stops pressing it, and on a screen there is no stick to hold. */
+      const dy = intent.my || (world.ball.y - p.y);
+      p.diveDir = dy >= 0 ? 1 : -1;
+      events.push({ type: 'dive', id: p.id, x: p.x, y: p.y });
+    }
+  }
+
   /** Let go of the ball with a velocity, and stop anyone re-collecting it at once. */
   function _release(world, p, vx, vy) {
     const b = world.ball;
@@ -257,15 +283,34 @@ const Physics = (() => {
 
       /* Keepers move at their own pace, and faster again while diving. */
       let base = CONFIG.playerSpeed;
-      if (p.role === 'gk') base = p.diveUntil > world.t ? CONFIG.gkDiveSpeed : CONFIG.gkTrackSpeed;
+      if (p.role === 'gk') {
+        /* Airborne, then picking yourself up off the floor, then back to pace.
+           The recovery is what makes when to dive a decision: without it the
+           dive is a free speed button and the answer is always press it. */
+        if (p.diveUntil > world.t) base = CONFIG.gkDiveSpeed;
+        else if (world.t < p.diveUntil + CONFIG.gkRecoverMs / 1000) {
+          base = CONFIG.gkTrackSpeed * CONFIG.gkRecoverMult;
+        } else base = CONFIG.gkTrackSpeed;
+      }
       if (world.ball.carrier === p.id) base *= CONFIG.carrierSpeedMult;
       const speed = base * (p.speedMult || 1);
 
       const stunned = p.stunUntil > world.t;
-      if (mag > 0.01 && !stunned) {
+      const diving = p.role === 'gk' && p.diveUntil > world.t && !stunned;
+      const steering = mag > 0.01 && !stunned;
+      if (steering || diving) {
         /* Normalise so diagonal input is not faster than straight. */
-        const nx = mx / Math.max(1, mag), ny = my / Math.max(1, mag);
-        const tvx = nx * speed, tvy = ny * speed;
+        const scale = Math.max(1, mag);
+        const tvx = steering ? mx / scale * speed : 0;
+        /*
+         * A dive with nothing held still goes, carrying the direction it was
+         * launched in. That is what makes a tap control enough on a screen,
+         * where there is no stick left to hold once the finger has gone. Hold
+         * a direction and you steer the dive as usual - taking that away was
+         * measured at 12% more goals conceded, because the keeper could no
+         * longer correct a prediction that had moved.
+         */
+        const tvy = steering ? my / scale * speed : p.diveDir * speed;
         const step = CONFIG.playerAccel * dt;
         p.vx += Math.max(-step, Math.min(step, tvx - p.vx));
         p.vy += Math.max(-step, Math.min(step, tvy - p.vy));

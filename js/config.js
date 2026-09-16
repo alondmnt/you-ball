@@ -95,6 +95,11 @@ const CONFIG = {
   aiPointBlank: 340,     // this close to goal, shoot whatever is in the way
   shootNoise: 0.10,      // radians of aim error on an AI shot
   gkReach: 190,          // how far a keeper will stray from its line
+  gkDiveMs: 420,         // how long a dive lasts - matches the pose in the CSS
+  gkRecoverMs: 400,      // …and how long getting up off the floor takes after
+  gkRecoverMult: 0.35,   // …at this fraction of keeper pace. Without a cost a
+                         // child just holds the dive key down and is simply a
+                         // fast keeper, flopping about for half the match.
 
   /* ─── Difficulty presets (multiply the values above) ─── */
   /*

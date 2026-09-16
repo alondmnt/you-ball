@@ -474,7 +474,7 @@ const Editor = (() => {
     const keys = document.createElement('div');
     keys.className = 'ed__keys';
     keys.innerHTML =
-      `<div class="ed__keyrow"><span class="who">1</span>${Input.legendHtml(0)}</div>` +
+      `<div class="ed__keyrow"><span class="who">1</span>${Input.legendHtml(0, _progress.inGoal)}</div>` +
       `<div class="ed__keyrow${_progress.twoPlayer ? '' : ' ed__keyrow--off'}">` +
       `<span class="who who--2">2</span>${Input.legendHtml(1)}</div>`;
     keysGroup.appendChild(keys);
