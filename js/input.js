@@ -19,6 +19,10 @@
  * not steering while you wind up, which is the whole cost of the gesture, and
  * it is what stops a child who rests their thumb mid-run charging by accident.
  *
+ * windUpMs belongs to the finger alone. A screen cannot tell a tap from a hold
+ * until some time has passed, so it waits; a dedicated shoot key has nothing
+ * to disambiguate and charges from the first frame.
+ *
  * The joystick direction is converted through the pitch projection, so the
  * player runs toward where the finger is pointing on screen rather than toward
  * a world direction that looks wrong under the depth squash.
@@ -45,16 +49,18 @@ const Input = (() => {
   /**
    * How far a hold has wound the kick up, 0..1.
    *
-   * Zero until windUpMs so that a stab of the key, or a slow tap, is still the
-   * quick shot it has always been. Full at holdMaxMs measured from first
-   * contact, so holdMaxMs is the one number that says how long a power kick
+   * Straight from first contact, with no arming delay in it: windUpMs is only
+   * the touch discriminator and has no business in the ramp. Leaving it here
+   * meant the meter showed nothing for the first 240ms - over a third of the
+   * hold - which is exactly the part a child needs to see to learn that
+   * holding does anything at all. Both hands now reach the same power for the
+   * same hold, and holdMaxMs is the one number that says how long a power kick
    * takes however you are playing.
    * @param {number} heldMs - how long the control has been down
    * @returns {number} 0..1
    */
   function _charge(heldMs) {
-    const span = Math.max(1, CONFIG.holdMaxMs - CONFIG.windUpMs);
-    return Math.max(0, Math.min(1, (heldMs - CONFIG.windUpMs) / span));
+    return Math.max(0, Math.min(1, heldMs / Math.max(1, CONFIG.holdMaxMs)));
   }
 
   /**
@@ -81,14 +87,6 @@ const Input = (() => {
   function _chargeAt(s, from, now) {
     if (!s.canCharge || from == null) return 0;
     return _charge(now - Math.max(from, s.chargeFrom));
-  }
-
-  /** When the current hold began for a seat, or null if nothing is held. */
-  function _holdStart(s, i) {
-    if (s.shootDownAt) return s.shootDownAt;
-    /* Only seat 0 has a finger; seat 1 is keyboard by definition. */
-    if (i === 0 && _pointerId !== null && _stillSince != null) return _stillSince;
-    return null;
   }
 
   const seats = [_seat(), _seat()];
@@ -327,15 +325,24 @@ const Input = (() => {
    *
    * Live, unlike shootRequest, which only exists for the one frame after a
    * release - this is what the ball's charge ring reads every frame while the
-   * player is still holding on. It does not know whether the seat has the ball
-   * to kick; the caller decides whether a charge is worth drawing.
+   * player is still holding on, so it reports only what the player would
+   * actually get if they let go now.
    * @param {number} i - seat index
    * @param {number} now - performance.now(), the clock pointer events use
    * @returns {number} 0..1
    */
   function charge(i, now) {
     const s = seats[i];
-    return s ? _chargeAt(s, _holdStart(s, i), now) : 0;
+    if (!s) return 0;
+    if (s.shootDownAt) return _chargeAt(s, s.shootDownAt, now);
+    /* Only seat 0 has a finger; seat 1 is keyboard by definition. A finger
+       that has not passed windUpMs might still be a tap, so there is no charge
+       to promise and the meter stays dark - it would be showing power the
+       player is about to not get. What the gesture shoots once it does commit
+       still counts from first contact; see _onUp. */
+    if (i === 0 && _pointerId !== null && _stillSince != null &&
+        now - _stillSince >= CONFIG.windUpMs) return _chargeAt(s, _stillSince, now);
+    return 0;
   }
 
   /**

@@ -270,10 +270,12 @@ const CONFIG = {
   flickMaxMs: 220,       // a release within this long of the last move is a flick
   flickMinPx: 24,        // …and over this far, in the last few frames
   // Winding a kick up is one accumulator with two ways to start it: the shoot
-  // key on a keyboard, a finger held still on a touch screen. windUpMs is what
-  // keeps a wind-up and a tap apart - under it a finger is still just a tap,
-  // so tap-to-pass survives a child who is slow letting go.
-  windUpMs: 240,         // held this long before a wind-up arms at all
+  // key on a keyboard, a finger held still on a touch screen. windUpMs keeps a
+  // wind-up and a tap apart - under it a finger is still just a tap, so
+  // tap-to-pass survives a child who is slow letting go. It belongs to the
+  // finger alone and is no part of the ramp: a shoot key has nothing to
+  // disambiguate, so the meter moves from the first frame you press it.
+  windUpMs: 240,         // touch: held this long before it counts as a wind-up
   holdMaxMs: 650,        // …and this long, from first contact, for full power.
                          // Has to stay clear of stealImmunityMs (500) or a
                          // wind-up is free, nobody being able to tackle you

@@ -93,7 +93,11 @@ a tackle **knocks the dispossessed player clear and stuns them** for `tackleStun
 
 a power kick is one accumulator with two ways to start it: the shoot key down on a keyboard, a finger held still on a screen. "still" means inside `dragDeadZonePx`, so a finger that steered away and came back counts - you never have to lift and press again. it also means you are not steering while you wind up, and that is the whole cost of the gesture.
 
-`windUpMs` is what keeps a wind-up and a tap apart. under it a finger is still just a tap, so tap-to-pass survives a child who is slow letting go. `holdMaxMs` is time-to-full measured from first contact, whichever hand you are playing with, so one number tunes both.
+`windUpMs` is what keeps a wind-up and a tap apart. under it a finger is still just a tap, so tap-to-pass survives a child who is slow letting go. it **belongs to the finger alone and is no part of the ramp**. a dedicated shoot key has nothing to disambiguate, so its meter moves from the first frame you press. a finger's meter stays dark until the gesture commits, because until then the reading would be power the player is about to not get - and then it appears at whatever it has already accumulated (0.37 at 240ms of a 650ms hold) rather than starting over.
+
+it was in the ramp to begin with, which meant the first 240ms of every hold - over a third of it, once `holdMaxMs` came down - drew nothing at all on either hand, and that is exactly the part a child needs to see to learn that holding does anything.
+
+`holdMaxMs` is time-to-full measured from first contact, whichever hand you are playing with, so one number tunes both and the same hold buys the same shot either way.
 
 a wind-up that finds no ball to kick falls back to being a tap, and taps switch players. without that, holding still a beat too long would leave you stuck on the wrong player with nothing to show for it.
 
@@ -122,7 +126,7 @@ the fields are not equal - a fireball is three times as likely in the pool as on
 
 the ball is the meter. a ring round it fills as the wind-up goes, and at the top the ball catches fire and stays alight for `ballFireMs` after the kick. one mechanism says both how much you have and that you have all of it, which is the only way a child who cannot read a number knows the kick is ready, and it sits where their eyes already are.
 
-`Render.setCharge` is the only writer of the charge and `Render.ballFire` the only way to light it after the kick. while nothing is winding up the whole thing costs one comparison a frame. the fill is a custom property, which repaints, so it is only written when it has moved 2% - at 6x CPU throttle the ramp costs 0.8ms a frame for the 660ms it lasts, and the flame, being a transform animation, costs nothing measurable at all.
+`Render.setCharge` is the only writer of the charge and `Render.ballFire` the only way to light it after the kick. while nothing is winding up the whole thing costs one comparison a frame. the fill is a custom property, which repaints, so it is only written when it has moved 2% - at 6x CPU throttle the ramp costs 0.8ms a frame for as long as it lasts, and the flame, being a transform animation, costs nothing measurable at all.
 
 the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
 
