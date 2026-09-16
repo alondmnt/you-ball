@@ -146,6 +146,20 @@ else is the oldest way there is of making a line stick. The first version moved
 by step through the pentatonic with the same rhythm in every bar: singable, and
 nothing. No leap, no repeat, no high point.
 
+**The long notes are long enough to reach the next one**, including across a
+barline. A held note is a rest in a melody; silence is a break. The version
+after that one left two full beats of nothing between statements, which turned
+one arc into a row of fragments - the notes were right and the line was not
+there. The only gap left in the whole part is an eighth note before the
+statement returns, which is a breath and is meant to be heard as one.
+
+A note may run past its own bar. Nothing downstream cares, because by the time
+it reaches the voice a length is just seconds, but the next bar must not start
+before it ends or the lead plays two notes at once. The validator checks that,
+and checks the largest silence in the line, because "is this one line or four
+fragments" is exactly the kind of thing that is obvious by ear and invisible in
+a table of notes.
+
 It plays on a **lead voice**: a detuned sawtooth pair driven into its own
 overdrive, rolled off like a speaker cabinet, with vibrato that fades in on any
 note held long enough to want it. That started as a pair of clean triangles,

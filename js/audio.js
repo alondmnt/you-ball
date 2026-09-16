@@ -485,41 +485,49 @@ const Audio = (() => {
        * "da-da-DAAA" - answered each time by a fall back down. Bars 10 and 11
        * are the same shape a third higher, which is the oldest way there is of
        * making a line stick: say it, then say it again from somewhere else.
+       * Over the eight bars it climbs from E4 to E5 and comes back down.
        *
-       * The first version moved by step through the pentatonic with the same
-       * rhythm in every bar. It was singable and it was nothing: no leap, no
-       * repeat, no high point.
+       * The long notes are long enough to reach the next one, including over
+       * a barline: a held note is a rest in a melody, silence is a break. An
+       * earlier version let the line stop for two full beats between
+       * statements, which turned one arc into a row of fragments. The only
+       * gaps left are an eighth note before a statement returns, which is a
+       * breath and is meant to be heard as one.
+       *
+       * A note may run past its own bar. Nothing downstream cares - the length
+       * is just seconds by the time it reaches the voice - but the next bar
+       * must not start before it ends, or the lead plays two notes at once.
        */
       a: {
-        8: [[4, 'E4', 2], [6, 'G4', 2], [8, 'B4', 8]],      /* the figure */
-        9: [[0, 'B4', 4], [4, 'A4', 2], [6, 'G4', 6]],      /* the answer */
-        10: [[4, 'G4', 2], [6, 'B4', 2], [8, 'D5', 8]],     /* again, higher */
-        11: [[0, 'D5', 4], [4, 'B4', 2], [6, 'A4', 6]],
-        12: [[0, 'E5', 3], [3, 'D5', 3], [6, 'B4', 2], [8, 'A4', 8]],  /* top, then down */
-        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 8]],
-        14: [[4, 'A4', 2], [6, 'G4', 2], [8, 'E4', 8]],     /* the figure, home */
-        15: [[0, 'D4', 4], [4, 'E4', 12]],
+        8: [[4, 'E4', 2], [6, 'G4', 2], [8, 'B4', 8]],          /* the figure */
+        9: [[0, 'B4', 4], [4, 'A4', 2], [6, 'G4', 14]],         /* answers, ties over */
+        10: [[4, 'G4', 2], [6, 'B4', 2], [8, 'D5', 8]],         /* again, a third up */
+        11: [[0, 'D5', 4], [4, 'B4', 2], [6, 'A4', 10]],
+        12: [[0, 'E5', 3], [3, 'D5', 3], [6, 'B4', 2], [8, 'A4', 8]],  /* the top */
+        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 14]],        /* ties over */
+        14: [[4, 'A4', 2], [6, 'G4', 2], [8, 'E4', 8]],         /* the figure, home */
+        15: [[0, 'D4', 4], [4, 'E4', 14]],                      /* into part B */
       },
       /* Part B takes the same figure up an octave's worth of attitude: it
-         reaches E5 in the first bar instead of building to it, which is what
+         reaches E5 in its first bar instead of building to it, which is what
          makes it the chorus rather than more verse. */
       b: {
         0: [[4, 'A4', 2], [6, 'C5', 2], [8, 'E5', 8]],
-        1: [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 6]],
+        1: [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 14]],
         2: [[4, 'B4', 2], [6, 'D5', 2], [8, 'E5', 8]],
-        3: [[0, 'E5', 4], [4, 'D5', 2], [6, 'B4', 6]],
+        3: [[0, 'E5', 4], [4, 'D5', 2], [6, 'B4', 10]],
         4: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'G4', 8]],
-        5: [[0, 'G4', 4], [4, 'A4', 2], [6, 'C5', 6]],
+        5: [[0, 'G4', 4], [4, 'A4', 2], [6, 'C5', 14]],
         6: [[4, 'D5', 2], [6, 'E5', 2], [8, 'D5', 8]],
-        7: [[0, 'D5', 4], [4, 'B4', 2], [6, 'A4', 6]],
+        7: [[0, 'D5', 4], [4, 'B4', 2], [6, 'A4', 12]],         /* breath here */
         8: [[4, 'A4', 2], [6, 'C5', 2], [8, 'E5', 8]],
-        9: [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 6]],
+        9: [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 14]],
         10: [[4, 'B4', 2], [6, 'D5', 2], [8, 'E5', 8]],
-        11: [[0, 'E5', 4], [4, 'D5', 2], [6, 'B4', 6]],
+        11: [[0, 'E5', 4], [4, 'D5', 2], [6, 'B4', 10]],
         12: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'G4', 8]],
-        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 6]],
+        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 14]],
         14: [[4, 'A4', 2], [6, 'B4', 2], [8, 'D5', 8]],
-        15: [[0, 'D5', 4], [4, 'B4', 2], [6, 'E4', 8]],
+        15: [[0, 'D5', 4], [4, 'B4', 2], [6, 'E4', 10]],
       },
     },
   };
