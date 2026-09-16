@@ -172,9 +172,34 @@ amp for both is what a band actually does, but a shaper distorts the sum of
 whatever reaches it, so the melody's level would bend the rhythm guitar's tone
 every time the tune moved.
 
-Away has no melody, the same way it has no hook: your team gets a tune, theirs
-gets a riff and a drone. The melody keys off the *key* and not only the texture,
-so no line ever plays over chords it was not written for.
+**Both keys carry a melody**, and that was a correction. The first version gave
+the tune to home only - your team has a song, theirs has a riff and a drone -
+which reads well as a design sentence and fails in play. Possession turns over
+every few seconds in this game; a melody that belongs to one team is a melody
+you hear for a fifth of a match. Measured: 15% of playing time, against a
+ceiling of 61%, arriving in scattered fragments. Nothing is memorable on those
+terms.
+
+So a tackle now changes the tune instead of removing it, and the change is the
+drama. Away's line uses the same figure, so it is recognisably the same song,
+but where home's figure climbs a major third away's stays put, and it leans on
+the F natural that home never touches. Putting that flat second in the melody
+says the away idea far louder than the chords underneath ever did.
+
+Measured out of the synth rather than read off the tables: home's figure climbs
+4.2 semitones and away's moves -0.3; away's line sits 2.6 semitones lower on
+average and 15% of its notes are the F, against none of home's. The overall
+proportion of rising intervals is the same in both (37% and 36%), so "away
+falls where home climbs" was an overstatement of mine - it does not fall, it
+refuses to climb.
+
+One rule while writing it, and the validator enforces it: no B over an F chord.
+B against F is a tritone, which is a different kind of nasty from the one that
+theme wants.
+
+The verse keeps the tune too. Stripping the band back is the point of a verse;
+stripping the voice out as well was a misreading of the loud-quiet-loud this is
+modelled on, where the quiet part is a vocal over a bass riff.
 
 The guitar plays root and fifth with no third in it, so the chord roots are
 modeless. The mode comes from the bass line and from the notes the hook picks

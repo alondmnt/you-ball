@@ -317,7 +317,8 @@ const Audio = (() => {
    * The guitar plays root and fifth with no third in it, so the chord roots
    * are modeless. The mode comes from the bass line and from the notes the
    * hook picks out, which is why home and away can share roots and still
-   * sound nothing like each other.
+   * sound nothing like each other. Both keys carry a melody, so a tackle
+   * changes the tune rather than taking it away.
    */
   const PHRASE = {
     home: {
@@ -530,6 +531,53 @@ const Audio = (() => {
         15: [[0, 'D5', 4], [4, 'B4', 2], [6, 'E4', 10]],
       },
     },
+    /*
+     * The away tune. Possession turns over every few seconds - that is the
+     * nature of this game - and a melody that belongs to one team is therefore
+     * a melody you hear about a fifth of the time, which is not enough to
+     * remember anything by. So both keys carry a line, and a tackle switches
+     * the tune instead of removing it. The change is the drama.
+     *
+     * Same figure - two short notes into a long one - so it is recognisably
+     * the same song, but where home's figure climbs a major third this one
+     * stays put (measured: home +4.2 semitones, away -0.3), and it leans on
+     * the F natural that home never touches. That flat second against E is the
+     * whole away idea, and putting it in the tune says it far louder than the
+     * chords underneath ever did.
+     *
+     * One rule while writing it: no B over an F chord. B against F is a
+     * tritone, which is a different kind of nasty from the one we want.
+     */
+    away: {
+      a: {
+        8: [[4, 'B4', 2], [6, 'A4', 2], [8, 'E4', 8]],          /* falls to the root */
+        9: [[0, 'E4', 4], [4, 'F4', 2], [6, 'A4', 14]],         /* the flat second */
+        10: [[4, 'A4', 2], [6, 'G4', 2], [8, 'E4', 8]],
+        11: [[0, 'E4', 4], [4, 'F4', 2], [6, 'C5', 10]],
+        12: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'G4', 8]],
+        13: [[0, 'A4', 4], [4, 'G4', 2], [6, 'F4', 14]],
+        14: [[4, 'F4', 2], [6, 'E4', 2], [8, 'F4', 8]],         /* F against E */
+        15: [[0, 'F4', 4], [4, 'E4', 14]],                      /* Phrygian cadence */
+      },
+      b: {
+        0: [[4, 'G4', 2], [6, 'A4', 2], [8, 'C5', 8]],
+        1: [[0, 'C5', 4], [4, 'B4', 2], [6, 'G4', 14]],
+        2: [[4, 'A4', 2], [6, 'C5', 2], [8, 'D5', 8]],
+        3: [[0, 'D5', 4], [4, 'C5', 2], [6, 'A4', 10]],
+        4: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'E4', 8]],
+        5: [[0, 'E4', 4], [4, 'G4', 2], [6, 'A4', 14]],
+        6: [[4, 'C5', 2], [6, 'A4', 2], [8, 'F4', 8]],
+        7: [[0, 'F4', 4], [4, 'E4', 2], [6, 'F4', 12]],         /* breath */
+        8: [[4, 'G4', 2], [6, 'A4', 2], [8, 'C5', 8]],
+        9: [[0, 'C5', 4], [4, 'B4', 2], [6, 'G4', 14]],
+        10: [[4, 'A4', 2], [6, 'C5', 2], [8, 'D5', 8]],
+        11: [[0, 'D5', 4], [4, 'C5', 2], [6, 'A4', 10]],
+        12: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'G4', 8]],
+        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 14]],
+        14: [[4, 'A4', 2], [6, 'G4', 2], [8, 'F4', 8]],
+        15: [[0, 'F4', 4], [4, 'E4', 10]],
+      },
+    },
   };
 
   /* Which sixteenths each drum pattern lands on. */
@@ -617,9 +665,14 @@ const Audio = (() => {
           guitar: 'stab', hook: true, melody: true, chant: true, drone: false }
       : theme === 'away'
         ? { kick: 'half', snare: 'half', hat: 'quarters', bass: 'full',
-            guitar: 'chug', hook: false, melody: false, chant: false, drone: true }
+            guitar: 'chug', hook: false, melody: true, chant: false, drone: true }
+        /* The verse keeps the tune. Stripping the band back is the point of
+           it; stripping the voice out as well left the melody sounding for
+           fifteen per cent of a match, which is not enough to remember
+           anything by - and a quiet verse under a vocal is what the loud-
+           quiet-loud this is modelled on actually does. */
         : { kick: 'sparse', snare: null, hat: 'eighths', bass: 'sparse',
-            guitar: 'hold', hook: false, melody: false, chant: false, drone: false };
+            guitar: 'hold', hook: false, melody: true, chant: false, drone: false };
 
     layers.shine = diff > 0;
     if (diff < 0) layers.hat = HAT_UP[layers.hat];

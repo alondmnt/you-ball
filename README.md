@@ -56,14 +56,14 @@ it is written in sixteen-bar parts - four four-bar phrases with an arc through t
 
 each part has its own rhythm, played by the bass and the guitar together. home drives in eighths; away is heavier and leaves gaps, under a half-time drum beat. every fourth bar turns - a different figure and a snare fill - so you can hear the seams.
 
-over the top there is a tune, played on a lead guitar. it does not start straight away: the first half of a part is riff with an answering hook, then the lead comes in and carries the second half and the whole of the other part. it is one short figure said four times, twice from a higher note, which is what makes a line stick. the long notes hold until the next one arrives, so it reads as one line rather than four fragments. the other team's music has no tune in it at all - just the riff and a drone.
+over the top there is a tune, played on a lead guitar. it does not start straight away: the first half of a part is riff with an answering hook, then the lead comes in and carries the second half and the whole of the other part. it is one short figure said four times, twice from a higher note, which is what makes a line stick. the long notes hold until the next one arrives, so it reads as one line rather than four fragments. the other team has its own tune, so a tackle changes the melody rather than taking it away: where yours climbs theirs stays put, sits lower, and leans on a note yours never touches.
 
 three textures play over whichever part is running:
 
 | | what you hear |
 |---|---|
 | your team has it | full kit, power chord stabs, the hook, a crowd shout |
-| the other team has it | half time drums, a chugging guitar, a drone, no hook |
+| the other team has it | half time drums, a chugging guitar, a drone, their darker tune |
 | nobody has it | the same harmony with most of the notes taken out. this is the verse, and it is what makes the rest land |
 
 the scoreline colours whoever is carrying: a team in front gains an octave on the chords, a team behind gets double time hats. a goal ducks the music so the motif and the crowd have the room, and it comes back up under the KICK OFF banner.
