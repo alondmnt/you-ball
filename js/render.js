@@ -19,6 +19,11 @@ const Render = (() => {
   const BALL_BASE = CONFIG.ballDrawD;
   const SHADOW_W = CONFIG.ballDrawD * 0.8;
   const SHADOW_H = CONFIG.ballDrawD * 0.26;
+  const HEAT_BASE = CONFIG.ballDrawD * 2;   /* the ring and the flames are drawn
+                                               on a square this wide, centred on
+                                               the ball, so the fire has room to
+                                               lick past it */
+  const FILL_STEP = 0.02;     /* smallest change in the ring worth a repaint */
   const PIT_BASE = 30;
 
   /** Write z-index only when it changes; it is a paint, not a free property. */
@@ -29,7 +34,13 @@ const Render = (() => {
   }
 
   let _rigs = [];       /* one per player id */
-  let _ball = null;     /* { el, shadow } */
+  let _ball = null;     /* { el, shadow, heat } */
+  let _charge = 0;      /* 0..1, how far a human has wound the current kick up */
+  let _fill = -1;       /* the fill last written to the ring, to skip repaints */
+  let _heatOn = false;  /* whether the ring/flames are currently drawn at all */
+  let _burnUntil = -99; /* world time the ball stops burning after a kick */
+  let _t = 0;           /* world time at the last frame, so ballFire() has a clock */
+  let _lastBallZ = 0;   /* the ball's depth this frame; the fire shares it */
   let _teams = null;    /* [{ colour, chars: [record x4] }, …] */
   let _urls = {};
   let _els = {};        /* cached UI elements */
@@ -91,9 +102,17 @@ const Render = (() => {
     shadow.className = 'ball__shadow';
     shadow.style.width = SHADOW_W + 'px';
     shadow.style.height = SHADOW_H + 'px';
+    /* Behind the ball in DOM order and at the same z, so the child's own ball
+       picture stays readable with the fire around it rather than over it. */
+    const heat = document.createElement('div');
+    heat.className = 'ball-heat';
+    heat.style.width = HEAT_BASE + 'px';
+    heat.style.height = HEAT_BASE + 'px';
     layer.appendChild(shadow);
+    layer.appendChild(heat);
     layer.appendChild(el);
-    _ball = { el, shadow };
+    _ball = { el, shadow, heat };
+    _charge = 0; _fill = -1; _heatOn = false; _burnUntil = -99; _lastBallZ = 0;
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
@@ -130,7 +149,7 @@ const Render = (() => {
     for (const b of _pit) b.el.remove();
     _pit = [];
     _pitWatch = null;
-    if (_ball) { _ball.el.remove(); _ball.shadow.remove(); _ball = null; }
+    if (_ball) { _ball.el.remove(); _ball.shadow.remove(); _ball.heat.remove(); _ball = null; }
     const fx = Pitch.fxLayer();
     if (fx) fx.innerHTML = '';
   }
@@ -228,15 +247,73 @@ const Render = (() => {
       `translate3d(${q.sx - SHADOW_W / 2}px,${q.sy - SHADOW_H / 2}px,0) scale(${k})`;
     _setZ(_ball.el, q.z + 1);
     _setZ(_ball.shadow, q.z);
+    _lastBallZ = q.z + 1;
+
+    _heat(q.sx, cy, k, world.t);
 
     /* A trail on a hard shot - a few fading clones behind the ball. */
     const speed = Math.hypot(b.vx, b.vy);
     if (speed > CONFIG.trailMinSpeed && world.t - _trailAt > 0.03) {
       _trailAt = world.t;
-      _spawnTrail(q.sx, q.sy - size * 0.92, size);
+      _spawnTrail(q.sx, q.sy - size * 0.92, size, world.t < _burnUntil);
     }
 
     _scoreBar(match);
+  }
+
+  /**
+   * How far the human has wound the current kick up, 0..1.
+   *
+   * Called every step by game.js, which is the only module that knows a human
+   * exists. Render just draws the number.
+   * @param {number} v - 0..1
+   */
+  function setCharge(v) { _charge = Math.max(0, Math.min(1, v || 0)); }
+
+  /**
+   * Keep the ball alight for ballFireMs - a fully wound kick has just left.
+   *
+   * The fire is not a property of how fast the ball is going. The AI shoots at
+   * near-full power as a matter of course, so anything keyed on speed would
+   * have every clearance in the game burning, and the one thing the child
+   * actually did would stop meaning anything.
+   */
+  function ballFire() { _burnUntil = _t + CONFIG.ballFireMs / 1000; }
+
+  /**
+   * Draw the charge ring and the fire, both centred on the ball.
+   *
+   * Costs nothing while nobody is winding up: the element keeps its last
+   * transform and the function leaves after one comparison. The ring's fill is
+   * a custom property, which repaints, so it is only written when it has moved
+   * far enough to see.
+   * @param {number} cx - ball centre, screen px
+   * @param {number} cy - ball centre, screen px
+   * @param {number} k - the ball's depth scale
+   * @param {number} t - world time
+   */
+  function _heat(cx, cy, k, t) {
+    _t = t;
+    const alight = _charge >= 1 || t < _burnUntil;
+    if (!_charge && !alight) {
+      if (_heatOn) {
+        _heatOn = false;
+        _ball.heat.classList.remove('ball-heat--on', 'ball-heat--fire');
+      }
+      return;
+    }
+    if (!_heatOn) { _heatOn = true; _ball.heat.classList.add('ball-heat--on'); }
+    _ball.heat.classList.toggle('ball-heat--fire', alight);
+    _ball.heat.style.transform =
+      `translate3d(${cx - HEAT_BASE / 2}px,${cy - HEAT_BASE / 2}px,0) scale(${k})`;
+    _setZ(_ball.heat, _lastBallZ);
+    /* Once alight the ring is full and stays full, so a burning ball in flight
+       never shows a meter draining back down. */
+    const fill = alight ? 1 : _charge;
+    if (Math.abs(fill - _fill) >= FILL_STEP || fill === 1 || fill === 0) {
+      _fill = fill;
+      _ball.heat.style.setProperty('--fill', fill.toFixed(2));
+    }
   }
 
   /** Update the score bar only when something in it changed. */
@@ -657,12 +734,18 @@ const Render = (() => {
     }
   }
 
-  /** One fading clone of the ball, left behind on a hard shot. */
-  function _spawnTrail(x, y, size) {
+  /**
+   * One fading clone of the ball, left behind on a hard shot.
+   * @param {number} x - screen px
+   * @param {number} y - screen px
+   * @param {number} size - the ball's drawn width right now
+   * @param {boolean} [fire] - the ball is alight, so leave embers not vapour
+   */
+  function _spawnTrail(x, y, size, fire) {
     const fx = Pitch.fxLayer();
     if (!fx) return;
     const el = document.createElement('div');
-    el.className = 'ball-trail';
+    el.className = fire ? 'ball-trail ball-trail--fire' : 'ball-trail';
     el.style.left = (x - size / 2) + 'px';
     el.style.top = y + 'px';
     el.style.width = size + 'px';
@@ -695,7 +778,7 @@ const Render = (() => {
   }
 
   return {
-    mount, unmount, frame, animFor, sceneFx, tackleBurst,
+    mount, unmount, frame, animFor, sceneFx, tackleBurst, setCharge, ballFire,
     banner, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();

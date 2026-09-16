@@ -23,6 +23,7 @@ const Game = (() => {
   let _raf = null, _lastFrame = 0, _acc = 0, _paused = false;
   let _switchTimer = 0;
   let _humanKey = '';
+  let _charge = 0;      /* last wind-up reading, so the ignite sound fires once */
 
   /* ─── Bootstrap ─── */
 
@@ -148,6 +149,7 @@ const Game = (() => {
    */
   async function startMatch() {
     _stopLoop();
+    _charge = 0;          /* or a match that ended mid-wind-up swallows the next ignite */
     Render.unmount();
     Render.hideFullTime();
     Storage.revokeAll();
@@ -265,12 +267,18 @@ const Game = (() => {
 
     AI.think(_world, humans, _intents);
 
+    const now = performance.now();
+    let charge = 0;
     for (let i = 0; i < _seats.length; i++) {
       const seat = _seats[i];
       const s = Input.seat(i);
       const p = _world.players[seat.playerId];
       const it = _intents[seat.playerId];
       const hasBall = _world.ball.carrier === seat.playerId;
+
+      /* You can only wind a kick up round a ball you actually have. */
+      Input.setCharging(i, hasBall, now);
+      if (hasBall) charge = Math.max(charge, Input.charge(i, now));
 
       it.mx = s.mx; it.my = s.my;
       it.shoot = null; it.pass = false;
@@ -294,6 +302,12 @@ const Game = (() => {
       }
       Input.clearRequests(i);
     }
+
+    /* The ball is the meter and there is one of it, so two seats can never
+       both be charging and the max above is a pick rather than a blend. */
+    if (charge >= 1 && _charge < 1) Audio.play('ignite');
+    _charge = charge;
+    Render.setCharge(charge);
   }
 
   /* ─── Loop ─── */
@@ -377,6 +391,9 @@ const Game = (() => {
         case 'kick':
           Audio.play('kick', e.power / CONFIG.shootPowerMax);
           Render.sceneFx('kick', e.x, e.y, e.power / CONFIG.shootPowerMax);
+          /* Only a kick the player wound all the way up burns on. The AI shoots
+             at near-full power constantly, so speed is no guide at all. */
+          if (e.charge >= 1) Render.ballFire();
           break;
         case 'pass':
           Audio.play('pass');

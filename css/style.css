@@ -364,6 +364,74 @@ img { -webkit-user-drag: none; user-select: none; }
   pointer-events: none;
 }
 
+/* ===== Power kick =====
+   The ball is the meter. A ring round it fills as you wind a kick up, and at
+   the top the ball catches fire and stays alight into the flight. One thing
+   says both how much you have and that you have all of it, which is the only
+   way a child who cannot read a number knows the kick is ready.
+
+   --fill is a plain number, 0..1, so it can drive both the sweep (x 100%) and
+   the haze's radius. A percentage could only do the first. */
+.ball-heat {
+  --fill: 0;
+  position: absolute; left: 0; top: 0;
+  pointer-events: none;
+  opacity: 0;
+  /* The heat haze, widening as the meter fills. */
+  background: radial-gradient(closest-side,
+    rgba(255, 186, 60, 0.42) 0%,
+    rgba(255, 120, 0, 0) calc(24% + var(--fill) * 26%));
+}
+.ball-heat--on { opacity: 1; }
+
+/* The ring, on its own element because the mask that hollows it out would
+   otherwise eat the flame as well - a mask applies to an element's
+   pseudo-elements too, which is how the first flame came out invisible. */
+.ball-heat::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: conic-gradient(from 180deg,
+    #ffe36b 0,
+    #ffab2e calc(var(--fill) * 55%),
+    #ff4d1f calc(var(--fill) * 100%),
+    rgba(0, 0, 0, 0) calc(var(--fill) * 100%));
+  -webkit-mask: radial-gradient(closest-side, transparent 0 71%, #000 74% 97%, transparent 99%);
+  mask: radial-gradient(closest-side, transparent 0 71%, #000 74% 97%, transparent 99%);
+}
+
+/* The flame, hidden until the meter is full. A silhouette rather than a blur,
+   so it sits in the same comic world as the GOAL! starburst. */
+.ball-heat::after {
+  content: '';
+  position: absolute;
+  left: 18%; bottom: 36%;
+  width: 64%; height: 104%;
+  background: linear-gradient(#fffbe0 0%, #ffd23d 24%, #ff8a18 58%, #ff3d00 100%);
+  clip-path: polygon(50% 0%, 60% 18%, 57% 31%, 68% 24%, 72% 43%, 84% 40%,
+                     80% 62%, 92% 75%, 74% 87%, 60% 100%, 40% 100%, 26% 87%,
+                     8% 75%, 20% 62%, 16% 40%, 28% 43%, 32% 24%, 43% 31%, 40% 18%);
+  transform-origin: 50% 100%;
+  opacity: 0;
+}
+.ball-heat--fire::after {
+  opacity: 1;
+  animation: ball-flame 0.22s linear infinite;
+}
+/* Once it is alight the meter has said what it had to say. The ring goes, so
+   the flame owns the moment and a ball burning through the air is not dragging
+   a gauge along behind it. */
+.ball-heat--fire::before { opacity: 0; }
+@keyframes ball-flame {
+  0%   { transform: scale(1, 1) }
+  33%  { transform: scale(0.9, 1.14) }
+  66%  { transform: scale(1.1, 0.93) }
+  100% { transform: scale(1, 1) }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ball-heat--fire::after { animation: none; }
+}
+
 /* ===== Juice ===== */
 /* Ball trail: a fading clone dropped every few frames on a hard shot. */
 .ball-trail {
@@ -377,6 +445,8 @@ img { -webkit-user-drag: none; user-select: none; }
   from { opacity: 0.5; transform: scale(0.9); }
   to   { opacity: 0; transform: scale(0.4); }
 }
+/* Behind a burning ball the clones are embers, not vapour. */
+.ball-trail--fire { background: rgba(255, 150, 40, 0.6); }
 
 /* Fireworks: --dx/--dy carry each spark's direction. */
 .spark {

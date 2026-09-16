@@ -97,6 +97,16 @@ a power kick is one accumulator with two ways to start it: the shoot key down on
 
 a wind-up that finds no ball to kick falls back to being a tap, and taps switch players. without that, holding still a beat too long would leave you stuck on the wrong player with nothing to show for it.
 
+**the charge only runs while you have the ball.** without that gate the whole thing is defeated by holding the key down: you walk onto the ball already at full power and the meter never means anything. measured, leaning on the shoot key for seventy seconds: twelve fireballs before the gate, one after. `Input.setCharging(i, on, now)` is how game.js says so, and it restarts the clock, so gaining the ball mid-hold starts you at zero. input still knows nothing about teams or possession - only that this seat may charge now, which is the same shape as `setEnabled`.
+
+`holdMaxMs` (900ms) is deliberately about double `stealImmunityMs` (500ms). below the immunity window a full charge would be free, because nobody can touch you while you wind up; at 900 you have to survive roughly 400ms of being tackleable, and that exposure is the cost. of 3221 measured carries, 23% last that long, 33% reach 700ms, and 83% reach 500ms - the cliff sits exactly where immunity lapses. a live sweep of the constant could not separate 500 from 900 over seventy-second runs (3 to 8 fireballs at the same setting), so the dial is set from the immunity argument, not from that.
+
+### the meter
+
+the ball is the meter. a ring round it fills as the wind-up goes, and at the top the ball catches fire and stays alight for `ballFireMs` after the kick. one mechanism says both how much you have and that you have all of it, which is the only way a child who cannot read a number knows the kick is ready, and it sits where their eyes already are.
+
+`Render.setCharge` is the only writer of the charge and `Render.ballFire` the only way to light it after the kick. while nothing is winding up the whole thing costs one comparison a frame. the fill is a custom property, which repaints, so it is only written when it has moved 2% - at 6x CPU throttle the ramp costs 0.8ms a frame for the 660ms it lasts, and the flame, being a transform animation, costs nothing measurable at all.
+
 the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
 
 ## music

@@ -71,6 +71,7 @@ const CONFIG = {
   wallBounce: 0.7,
   bounceScatter: 0,      // radians of random deflection off a wall. 0 is a
                          // clean reflection; the ball pool scene turns it up
+  ballFireMs: 1100,      // how long a fully wound kick leaves the ball alight
   stealImmunityMs: 500,  // a fresh carrier cannot be robbed for this long
   looseBallMs: 180,      // after a shot/pass, nobody can pick the ball up
   carrierSpeedMult: 0.93,// carrying the ball slows you slightly, so a chase is

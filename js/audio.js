@@ -123,6 +123,20 @@ const Audio = (() => {
       _noise(0, 0.05, 2600, 0.09 * p, 'bandpass');
     },
 
+    /**
+     * The ball catches fire: the wind-up has reached full power.
+     *
+     * A whoomph of air and a rise from E to the octave, because the anthem is
+     * in E minor and a ready signal that sits outside the key sounds like a
+     * fault. It has to carry without looking - the child is watching the
+     * defender, not the meter.
+     */
+    ignite() {
+      _noise(0, 0.26, 420, 0.075, 'bandpass', 2600);
+      _note(330, 0, 0.2, 'triangle', 0.075, 659);
+      _note(494, 0.07, 0.18, 'sine', 0.045, 988);
+    },
+
     /** Ball off a wall - a short wooden bonk. */
     wall() {
       _note(240, 0, 0.07, 'triangle', 0.09, 150);

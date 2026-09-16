@@ -37,6 +37,8 @@ const Input = (() => {
       tapRequest: false,      /* pass or switch, game.js decides which */
       keys: Object.create(null),
       shootDownAt: 0,       /* timeStamp the shoot key went down, 0 when up */
+      canCharge: false,     /* whether a wind-up may accumulate at all */
+      chargeFrom: 0,        /* timeStamp it was last allowed to start */
     };
   }
 
@@ -62,6 +64,32 @@ const Input = (() => {
    * @returns {number} power, 0..1
    */
   function _holdPower(c) { return HOLD_POWER_FLOOR + (1 - HOLD_POWER_FLOOR) * c; }
+
+  /**
+   * The charge a hold that began at `from` has reached, or 0 if this seat is
+   * not allowed to wind up at all.
+   *
+   * chargeFrom is what stops a hold that started before the seat was allowed
+   * counting toward the kick. Without it, holding the key down permanently
+   * would arrive at the ball already at full power and the meter would mean
+   * nothing.
+   * @param {object} s - the seat
+   * @param {number|null} from - timeStamp the hold began
+   * @param {number} now - performance.now()
+   * @returns {number} 0..1
+   */
+  function _chargeAt(s, from, now) {
+    if (!s.canCharge || from == null) return 0;
+    return _charge(now - Math.max(from, s.chargeFrom));
+  }
+
+  /** When the current hold began for a seat, or null if nothing is held. */
+  function _holdStart(s, i) {
+    if (s.shootDownAt) return s.shootDownAt;
+    /* Only seat 0 has a finger; seat 1 is keyboard by definition. */
+    if (i === 0 && _pointerId !== null && _stillSince != null) return _stillSince;
+    return null;
+  }
 
   const seats = [_seat(), _seat()];
 
@@ -104,6 +132,7 @@ const Input = (() => {
       s.shootRequest = null; s.passRequest = false; s.tapRequest = false;
       s.keys = Object.create(null);
       s.shootDownAt = 0;
+      s.canCharge = false; s.chargeFrom = 0;
     }
   }
 
@@ -169,7 +198,7 @@ const Input = (() => {
       /* A wind-up: held still long enough to mean it. Direction comes from
          nothing, because a still finger is not pointing anywhere - game.js
          falls back to the player's facing. */
-      const c = _charge(e.timeStamp - _stillSince);
+      const c = _chargeAt(s, _stillSince, e.timeStamp);
       s.shootRequest = { dx: 0, dy: 0, power: _holdPower(c), charge: c, held: true };
     } else if (!_dragged) {
       s.tapRequest = true;
@@ -264,7 +293,7 @@ const Input = (() => {
       const held = e.timeStamp - s.shootDownAt;
       s.shootDownAt = 0;
       /* Direction comes from whatever is held; zero means "use facing". */
-      const c = _charge(held);
+      const c = _chargeAt(s, e.timeStamp - held, e.timeStamp);
       s.shootRequest = { dx: s.mx, dy: s.my, power: _holdPower(c), charge: c, held: true };
     }
     _syncKeyAxes(s);
@@ -306,11 +335,26 @@ const Input = (() => {
    */
   function charge(i, now) {
     const s = seats[i];
-    if (!s) return 0;
-    if (s.shootDownAt) return _charge(now - s.shootDownAt);
-    /* Only seat 0 has a finger; seat 1 is keyboard by definition. */
-    if (i === 0 && _pointerId !== null && _stillSince != null) return _charge(now - _stillSince);
-    return 0;
+    return s ? _chargeAt(s, _holdStart(s, i), now) : 0;
+  }
+
+  /**
+   * Whether a seat may wind a kick up at all.
+   *
+   * game.js calls this every step with whether the seat has the ball. Input
+   * still knows nothing about teams or possession - only that this seat may
+   * charge now, which is the same shape as setEnabled. Turning it on restarts
+   * the clock, so walking onto the ball with the key already down buys you
+   * nothing and the wind-up stays a thing you spend possession on.
+   * @param {number} i - seat index
+   * @param {boolean} on
+   * @param {number} now - performance.now()
+   */
+  function setCharging(i, on, now) {
+    const s = seats[i];
+    if (!s || s.canCharge === on) return;
+    s.canCharge = on;
+    if (on) s.chargeFrom = now;
   }
 
   /** Clear a seat's one-shot requests after the game has acted on them. */
@@ -324,5 +368,5 @@ const Input = (() => {
   /** How many seats are live. Two only when two-player is switched on. */
   function seatCount() { return CONFIG.twoPlayer ? 2 : 1; }
 
-  return { init, setEnabled, reset, seat, charge, clearRequests, seatCount, legendHtml };
+  return { init, setEnabled, reset, seat, charge, setCharging, clearRequests, seatCount, legendHtml };
 })();
