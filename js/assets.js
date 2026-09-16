@@ -26,17 +26,16 @@ const Assets = (() => {
     torso:     { w: 40, h: 52, icon: '👕', label: 'body' },
     arm:       { w: 14, h: 44, icon: '💪', label: 'arms' },
     leg:       { w: 16, h: 48, icon: '🦵', label: 'legs' },
-    arm_l:     { w: 14, h: 44, icon: '💪', label: 'left arm',  fallback: 'arm', extra: true },
-    arm_r:     { w: 14, h: 44, icon: '💪', label: 'right arm', fallback: 'arm', extra: true },
-    leg_l:     { w: 16, h: 48, icon: '🦵', label: 'left leg',  fallback: 'leg', extra: true },
-    leg_r:     { w: 16, h: 48, icon: '🦵', label: 'right leg', fallback: 'leg', extra: true },
     ball:      { w: 40, h: 40, icon: '⚽', label: 'the ball' },
   };
 
   /** The slots the editor offers by default. The `extra: true` ones are the
    *  asymmetric overrides, shown only when the player asks for them. */
-  const MAIN_SLOTS = ['head_idle', 'head_goal', 'head_sad', 'torso', 'arm', 'leg'];
-  const EXTRA_SLOTS = ['arm_l', 'arm_r', 'leg_l', 'leg_r'];
+  /* Every slot you can put a picture in, in the order the editor shows them.
+     One arm picture is used for both arms and one leg for both legs. There
+     were per-side overrides behind a toggle; nobody wanted a mismatched pair
+     badly enough to justify four more identical looking buttons. */
+  const SLOT_ORDER = ['head_idle', 'head_goal', 'head_sad', 'torso', 'arm', 'leg'];
 
   /*
    * The paper doll, in character-local pixels. The character box is 100 x 140
@@ -55,11 +54,11 @@ const Assets = (() => {
    */
   const CHAR_W = 100, CHAR_H = 140;
   const RIG = [
-    { part: 'leg_l', slot: 'leg_l', x: 32, y: 92, w: 16, h: 48, z: 1, origin: '50% 0%' },
-    { part: 'leg_r', slot: 'leg_r', x: 52, y: 92, w: 16, h: 48, z: 2, origin: '50% 0%' },
-    { part: 'arm_l', slot: 'arm_l', x: 25, y: 48, w: 14, h: 44, z: 1, origin: '50% 0%' },
+    { part: 'leg_l', slot: 'leg', x: 32, y: 92, w: 16, h: 48, z: 1, origin: '50% 0%' },
+    { part: 'leg_r', slot: 'leg', x: 52, y: 92, w: 16, h: 48, z: 2, origin: '50% 0%' },
+    { part: 'arm_l', slot: 'arm', x: 25, y: 48, w: 14, h: 44, z: 1, origin: '50% 0%' },
     { part: 'torso', slot: 'torso', x: 30, y: 42, w: 40, h: 52, z: 3, origin: '50% 100%' },
-    { part: 'arm_r', slot: 'arm_r', x: 61, y: 48, w: 14, h: 44, z: 4, origin: '50% 0%' },
+    { part: 'arm_r', slot: 'arm', x: 61, y: 48, w: 14, h: 44, z: 4, origin: '50% 0%' },
     /* The head is three stacked images - one per face. CSS shows one at a time,
        so a goal never waits on an image decode to change expression. */
     { part: 'head', slot: 'head_idle', x: 28, y: 0, w: 44, h: 44, z: 5, origin: '50% 100%',
@@ -378,7 +377,7 @@ const Assets = (() => {
   }
 
   return {
-    SLOTS, MAIN_SLOTS, EXTRA_SLOTS, RIG, CHAR_W, CHAR_H, HEAD_VARIANTS,
+    SLOTS, SLOT_ORDER, RIG, CHAR_W, CHAR_H, HEAD_VARIANTS,
     resolveSlot, allSlotKeys,
     defaultHead, defaultTorso, defaultArm, defaultLeg, defaultBall, defaultPart,
     loadImage, frameSize, fitView, renderCrop, applyPaperMode, toBlob,

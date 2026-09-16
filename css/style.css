@@ -475,14 +475,19 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 .ed__slots {
   flex: none;
-  width: 150px;
+  width: 170px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   align-content: start;
   overflow-y: auto;
 }
-.ed__chip { position: relative; }
+.ed__chip { position: relative; display: flex; flex-direction: column; gap: 2px; }
+.ed__chip-word {
+  font-size: 0.66rem; text-align: center; color: #cfe6d8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ed__chip--set .ed__chip-word { color: #f2f7f3; }
 .ed__chip-btn {
   width: 100%; aspect-ratio: 1;
   border-radius: 14px;
@@ -503,14 +508,6 @@ img { -webkit-user-drag: none; user-select: none; }
   font-size: 0.7rem; line-height: 1; cursor: pointer;
   padding: 0;
 }
-.ed__more {
-  width: 100%; aspect-ratio: 1;
-  border-radius: 14px; border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: #f2f7f3; font-size: 1.3rem; cursor: pointer;
-}
-.ed__more--on { background: rgba(255, 209, 102, 0.22); }
-
 /* Teams, ball and settings.
    The groups sit next to each other and wrap, rather than stacking five deep.
    Stacked, they left most of the width empty and pushed the key legend off a
@@ -607,7 +604,8 @@ img { -webkit-user-drag: none; user-select: none; }
 
 /* Portrait phones: stack the preview above the slots so neither gets squeezed. */
 @media (max-height: 430px) {
-  .ed__slots { width: 118px; }
+  .ed__slots { width: 126px; }
+  .ed__chip-word { font-size: 0.6rem; }
   .ed__slotcell, .ed__ball, .ed__toggle { width: 34px; height: 34px; }
   .ed__toggle--named { width: auto; height: auto; min-height: 34px; padding: 2px 7px; }
   .ed__toggle-word { font-size: 0.66rem; }

@@ -16,7 +16,6 @@ const Editor = (() => {
   let _progress = null;
   let _urls = {};
   let _selected = null;       /* roster character id being edited */
-  let _showExtras = false;
   let _preview = null;        /* the live-running rig */
   let _onPlay = null;
   let _pendingSlot = null;    /* slot awaiting a file pick */
@@ -211,8 +210,7 @@ const Editor = (() => {
     const record = _find(_selected);
     if (!record) return;
 
-    const slots = Assets.MAIN_SLOTS.concat(_showExtras ? Assets.EXTRA_SLOTS : []);
-    for (const slot of slots) {
+    for (const slot of Assets.SLOT_ORDER) {
       const def = Assets.SLOTS[slot];
       const has = !!record.slots[slot];
       const chip = document.createElement('div');
@@ -242,17 +240,17 @@ const Editor = (() => {
         });
         chip.appendChild(clear);
       }
+
+      /* The word, not just the picture. A title attribute is the only other
+         label these had, and a tablet has no way to show one. */
+      const word = document.createElement('span');
+      word.className = 'ed__chip-word';
+      word.textContent = def.label;
+      chip.appendChild(word);
       host.appendChild(chip);
     }
 
-    const more = document.createElement('button');
-    more.type = 'button';
-    more.className = 'ed__more' + (_showExtras ? ' ed__more--on' : '');
-    more.textContent = _showExtras ? '−' : '…';
-    more.setAttribute('aria-label', 'left and right parts separately');
-    more.addEventListener('click', () => { _showExtras = !_showExtras; _renderSlots(); });
-    host.appendChild(more);
-    _sizePreview();   /* the extra chips can change how tall the stage is */
+    _sizePreview();
   }
 
   /**
