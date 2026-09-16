@@ -139,11 +139,24 @@ all of part B. That gives it somewhere to arrive, and it means the hook and the
 melody never compete for the top - the hook answers the riff on bars 3 and 7,
 then hands over.
 
-It is pentatonic with the C from the chords, mostly stepwise, spanning nine
-semitones in part A and ten in part B - singable, which is the test that matters
-for this audience. It plays on a pair of detuned triangles straight into the
-music bus rather than through the guitar amp, so it stays clear of the
-distortion.
+The tune is one figure stated four times - two short notes into a long one,
+answered each time by a fall back down - with bars 10 and 11 repeating the
+figure a third higher. Saying a thing and then saying it again from somewhere
+else is the oldest way there is of making a line stick. The first version moved
+by step through the pentatonic with the same rhythm in every bar: singable, and
+nothing. No leap, no repeat, no high point.
+
+It plays on a **lead voice**: a detuned sawtooth pair driven into its own
+overdrive, rolled off like a speaker cabinet, with vibrato that fades in on any
+note held long enough to want it. That started as a pair of clean triangles,
+which was too polite to be remembered - it sat inside the band instead of on
+top of it. Drive, sustain and pitch that is never completely still are what
+separate a lead line from a beep.
+
+The lead has its own waveshaper rather than sharing the rhythm guitar's. One
+amp for both is what a band actually does, but a shaper distorts the sum of
+whatever reaches it, so the melody's level would bend the rhythm guitar's tone
+every time the tune moved.
 
 Away has no melody, the same way it has no hook: your team gets a tune, theirs
 gets a riff and a drone. The melody keys off the *key* and not only the texture,

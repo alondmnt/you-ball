@@ -56,7 +56,7 @@ it is written in sixteen-bar parts - four four-bar phrases with an arc through t
 
 each part has its own rhythm, played by the bass and the guitar together. home drives in eighths; away is heavier and leaves gaps, under a half-time drum beat. every fourth bar turns - a different figure and a snare fill - so you can hear the seams.
 
-over the top there is a tune. it does not start straight away: the first half of a part is riff with an answering hook, then the melody comes in and carries the second half and the whole of the other part. it is written to be singable by the kid holding the tablet. the other team's music has no tune in it at all - just the riff and a drone.
+over the top there is a tune, played on a lead guitar. it does not start straight away: the first half of a part is riff with an answering hook, then the lead comes in and carries the second half and the whole of the other part. it is one short figure said four times, twice from a higher note, which is what makes a line stick. the other team's music has no tune in it at all - just the riff and a drone.
 
 three textures play over whichever part is running:
 

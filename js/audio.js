@@ -473,43 +473,53 @@ const Audio = (() => {
    * nine and then owns all of part B. Under it the riff stays square, so the
    * two are counterweights rather than competitors.
    *
-   * Pentatonic (E G A B D) with the C from the chords, mostly stepwise, inside
-   * an octave and a bit - singable by a five year old, which is the test that
-   * matters here. Away has no melody at all, the same way it has no hook: your
-   * team gets a tune, theirs gets a riff and a drone.
+   * Pentatonic (E G A B D) with the C from the chords, inside an octave and a
+   * bit, and built on one repeated figure rather than a walk through the
+   * scale - see the tables. Away has no melody at all, the same way it has no
+   * hook: your team gets a tune, theirs gets a riff and a drone.
    */
   const MELODY = {
     home: {
-      /* Enters on the lift to Am, climbs to the top of its range at bar 13,
-         and comes down to rest on E. */
+      /*
+       * One figure, stated four times. Two short notes into a long one -
+       * "da-da-DAAA" - answered each time by a fall back down. Bars 10 and 11
+       * are the same shape a third higher, which is the oldest way there is of
+       * making a line stick: say it, then say it again from somewhere else.
+       *
+       * The first version moved by step through the pentatonic with the same
+       * rhythm in every bar. It was singable and it was nothing: no leap, no
+       * repeat, no high point.
+       */
       a: {
-        8: [[0, 'A4', 6], [8, 'G4', 3], [12, 'E4', 4]],
-        9: [[0, 'E4', 6], [8, 'G4', 3], [12, 'A4', 4]],
-        10: [[0, 'G4', 4], [4, 'A4', 2], [6, 'G4', 2], [8, 'E4', 6]],
-        11: [[0, 'D4', 14]],
-        12: [[0, 'E4', 6], [8, 'G4', 3], [12, 'B4', 4]],
-        13: [[0, 'B4', 6], [8, 'A4', 3], [12, 'G4', 4]],
-        14: [[0, 'A4', 4], [4, 'G4', 2], [6, 'E4', 2], [8, 'D4', 6]],
-        15: [[0, 'E4', 14]],
+        8: [[4, 'E4', 2], [6, 'G4', 2], [8, 'B4', 8]],      /* the figure */
+        9: [[0, 'B4', 4], [4, 'A4', 2], [6, 'G4', 6]],      /* the answer */
+        10: [[4, 'G4', 2], [6, 'B4', 2], [8, 'D5', 8]],     /* again, higher */
+        11: [[0, 'D5', 4], [4, 'B4', 2], [6, 'A4', 6]],
+        12: [[0, 'E5', 3], [3, 'D5', 3], [6, 'B4', 2], [8, 'A4', 8]],  /* top, then down */
+        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 8]],
+        14: [[4, 'A4', 2], [6, 'G4', 2], [8, 'E4', 8]],     /* the figure, home */
+        15: [[0, 'D4', 4], [4, 'E4', 12]],
       },
-      /* Part B sits higher and holds longer - the chorus to part A's verse. */
+      /* Part B takes the same figure up an octave's worth of attitude: it
+         reaches E5 in the first bar instead of building to it, which is what
+         makes it the chorus rather than more verse. */
       b: {
-        0: [[0, 'C5', 6], [8, 'B4', 6]],
-        1: [[0, 'A4', 10], [12, 'B4', 4]],
-        2: [[0, 'B4', 6], [8, 'G4', 6]],
-        3: [[0, 'E4', 14]],
-        4: [[0, 'G4', 6], [8, 'A4', 6]],
-        5: [[0, 'B4', 10], [12, 'C5', 4]],
-        6: [[0, 'D5', 6], [8, 'B4', 6]],
-        7: [[0, 'A4', 14]],
-        8: [[0, 'C5', 6], [8, 'B4', 6]],
-        9: [[0, 'A4', 10], [12, 'G4', 4]],
-        10: [[0, 'E4', 6], [8, 'G4', 6]],
-        11: [[0, 'A4', 14]],
-        12: [[0, 'B4', 6], [8, 'C5', 6]],
-        13: [[0, 'D5', 10], [12, 'B4', 4]],
-        14: [[0, 'A4', 6], [8, 'G4', 6]],
-        15: [[0, 'E4', 14]],
+        0: [[4, 'A4', 2], [6, 'C5', 2], [8, 'E5', 8]],
+        1: [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 6]],
+        2: [[4, 'B4', 2], [6, 'D5', 2], [8, 'E5', 8]],
+        3: [[0, 'E5', 4], [4, 'D5', 2], [6, 'B4', 6]],
+        4: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'G4', 8]],
+        5: [[0, 'G4', 4], [4, 'A4', 2], [6, 'C5', 6]],
+        6: [[4, 'D5', 2], [6, 'E5', 2], [8, 'D5', 8]],
+        7: [[0, 'D5', 4], [4, 'B4', 2], [6, 'A4', 6]],
+        8: [[4, 'A4', 2], [6, 'C5', 2], [8, 'E5', 8]],
+        9: [[0, 'E5', 4], [4, 'D5', 2], [6, 'C5', 6]],
+        10: [[4, 'B4', 2], [6, 'D5', 2], [8, 'E5', 8]],
+        11: [[0, 'E5', 4], [4, 'D5', 2], [6, 'B4', 6]],
+        12: [[0, 'C5', 3], [3, 'B4', 3], [6, 'A4', 2], [8, 'G4', 8]],
+        13: [[0, 'G4', 4], [4, 'A4', 2], [6, 'B4', 6]],
+        14: [[4, 'A4', 2], [6, 'B4', 2], [8, 'D5', 8]],
+        15: [[0, 'D5', 4], [4, 'B4', 2], [6, 'E4', 8]],
       },
     },
   };
@@ -619,6 +629,7 @@ const Audio = (() => {
 
   let _mBus = null;      /* everything musical, so it can duck in one place */
   let _dist = null;      /* one shared amp: guitars distort into it together */
+  let _lead = null;      /* the lead's own amp, so it does not load theirs */
   let _mTimer = null;
   let _mOn = false;      /* the scheduler is running */
   let _mWanted = false;  /* the game wants music, even if mute says otherwise */
@@ -666,6 +677,17 @@ const Audio = (() => {
     const amp = ctx.createGain();
     amp.gain.value = 0.5;   /* the shaper sums every guitar note, so pad it */
     _dist.connect(amp).connect(_mBus);
+
+    /* The lead: less drive than the rhythm guitar, so it stays a singing tone
+       rather than a wall, then a lowpass standing in for a speaker cabinet. */
+    _lead = ctx.createWaveShaper();
+    _lead.curve = _distCurve(4.5);
+    _lead.oversample = '2x';
+    const cab = ctx.createBiquadFilter();
+    cab.type = 'lowpass';
+    cab.frequency.value = 3400;
+    cab.Q.value = 1.1;
+    _lead.connect(cab).connect(_mBus);
   }
 
   /** Seconds per sixteenth at the configured tempo. */
@@ -716,27 +738,53 @@ const Audio = (() => {
   }
 
   /**
-   * The melody voice: two triangles a few cents apart through a gentle
-   * lowpass. Triangle because it has to sing over a distorted guitar without
-   * fighting it, and the detune is what stops it sounding like a test tone.
+   * The lead voice. A detuned sawtooth pair, driven into its own overdrive and
+   * then rolled off like a speaker cabinet, with vibrato that fades in on any
+   * note held long enough to need it.
+   *
+   * This started as a pair of triangles through a gentle lowpass, which was
+   * too polite to be remembered: it sat inside the band instead of on top of
+   * it. A tune that has to stick needs the three things a lead player does -
+   * drive, sustain, and pitch that is never completely still.
+   *
+   * It runs through its own shaper rather than the rhythm guitar's. One amp
+   * for both is what a band actually does, but the shaper sums whatever
+   * reaches it, so the lead's level would bend the rhythm guitar's distortion
+   * every time the melody moved.
    */
-  function _melodyVoice(freq, t, dur, vol) {
-    const lp = ctx.createBiquadFilter();
+  function _leadVoice(freq, t, dur, vol) {
     const gain = ctx.createGain();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(2600, t);
     gain.gain.setValueAtTime(0.001, t);
-    gain.gain.linearRampToValueAtTime(vol, t + 0.03);
-    gain.gain.setValueAtTime(vol, t + dur * 0.7);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.018);
+    gain.gain.setValueAtTime(vol, t + dur * 0.78);
     gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    lp.connect(gain).connect(_mBus);
-    for (const f of [freq, freq * 1.004]) {
+    gain.connect(_lead);
+
+    const oscs = [];
+    for (const det of [1, 1.0055]) {
       const osc = ctx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(f, t);
-      osc.connect(lp);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq * det, t);
+      osc.connect(gain);
       osc.start(t);
       osc.stop(t + dur);
+      oscs.push(osc);
+    }
+
+    /* Only on held notes: vibrato on a passing eighth is a warble, not a
+       lead. It fades in, the way a player leans into a note they are sitting
+       on rather than shaking it from the moment it sounds. */
+    if (dur > 0.3) {
+      const lfo = ctx.createOscillator();
+      const depth = ctx.createGain();
+      lfo.type = 'sine';
+      lfo.frequency.setValueAtTime(5.5, t);
+      depth.gain.setValueAtTime(0, t);
+      depth.gain.linearRampToValueAtTime(freq * 0.013, t + dur * 0.6);
+      lfo.connect(depth);
+      for (const osc of oscs) depth.connect(osc.frequency);
+      lfo.start(t);
+      lfo.stop(t + dur);
     }
   }
 
@@ -850,7 +898,7 @@ const Audio = (() => {
     const tune = lay.melody && MELODY[_mKey] && MELODY[_mKey][_mPart];
     if (tune && tune[bar]) {
       for (const [step16, note, len] of tune[bar]) {
-        if (step16 === s) _melodyVoice(HZ[note], at, sixteenth * len * 0.95, L.melody);
+        if (step16 === s) _leadVoice(HZ[note], at, sixteenth * len * 0.95, L.melody);
       }
     }
     if (lay.chant && s === 0 && CHANT.indexOf(bar) >= 0) {
