@@ -59,13 +59,34 @@ const Pitch = (() => {
     _pitch.className = 'scene-' + name;
   }
 
+  let _wide = false;    /* the keeper's view: the whole pitch, no chasing */
+
+  /** How much of the world is on screen, in world units. */
+  function viewW() { return _wide ? CONFIG.keeperViewW : CONFIG.cameraViewW; }
+
+  /**
+   * Pull the camera back to take in the whole pitch, or let it chase again.
+   *
+   * A camera that follows the ball is right for an outfield player, who is
+   * always near it, and useless for a keeper, who is not: measured over 70s in
+   * goal, the child's own player was on screen 0% of the time. Widening the
+   * view is the only way to hold a fixed point and the ball at once - clamping
+   * the camera instead would keep the keeper but lose the ball.
+   * @param {boolean} on
+   */
+  function setWideView(on) {
+    if (_wide === !!on) return;
+    _wide = !!on;
+    resize();
+  }
+
   /** Recompute the layout and rebuild the markings at the new size. */
   function resize() {
     if (!_viewport) return;
     const r = _viewport.getBoundingClientRect();
     L.viewW = r.width;
     L.viewH = r.height;
-    L.zoom = L.viewW / CONFIG.cameraViewW;
+    L.zoom = L.viewW / viewW();
 
     /* Bands: crowd strip, headroom for far players, the pitch, a small skirt. */
     const crowdH = Math.round(L.viewH * 0.13);
@@ -122,8 +143,8 @@ const Pitch = (() => {
        line, so a camera clamped exactly to the pitch never shows them. */
     const over = CONFIG.goalDepth * 1.5;
     const minCam = -over;
-    const maxCam = Math.max(minCam, CONFIG.pitchW - CONFIG.cameraViewW + over);
-    const target = Math.max(minCam, Math.min(maxCam, ballX - CONFIG.cameraViewW / 2));
+    const maxCam = Math.max(minCam, CONFIG.pitchW - viewW() + over);
+    const target = Math.max(minCam, Math.min(maxCam, ballX - viewW() / 2));
     _camX = snap ? target : _camX + (target - _camX) * CONFIG.camLerp;
   }
 
@@ -246,7 +267,7 @@ const Pitch = (() => {
   function layout() { return L; }
 
   return {
-    init, resize, setScene, project, screenToWorldDelta,
+    init, resize, setScene, setWideView, project, screenToWorldDelta,
     follow, camX, toViewport, punch, shake, stepFeel,
     worldLayer, fxLayer, layout,
   };

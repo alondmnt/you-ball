@@ -138,6 +138,12 @@ the obvious design - hand the child the keeper the moment a shot comes in - was 
 
 the fear that standing in goal would be boring is the other way round: a shot arrives at your goal every 12 seconds and an opponent enters your third every 7.
 
+### the camera
+
+a camera that chases the ball is right for an outfield player, who is always near it, and useless for a keeper, who is not. measured over 70s of playing in goal, the player the child was driving was on screen **0% of the time** - it sat at about screen x -500 the whole match, because `cameraViewW` is 1500 of a 2400 pitch and the camera only reaches the goal line when the ball is in the defensive third.
+
+so `Pitch.setWideView` pulls the view out to `keeperViewW` (2610: the whole pitch and both nets) while you are in goal. that is the only way to hold a fixed point and the ball at once - clamping the camera to keep the keeper would have lost the ball instead. it costs zoom, 0.39 against 0.68, and buys **99%** on screen.
+
 ### the dive
 
 the dive is the whole reason choosing the position works. it was AI-only: `ai.js` wrote `p.diveUntil` and `p.diveDir` straight onto the player, which is the one place the seam leaked - physics is supposed to be unable to tell an AI from a child. now both ask for it the same way, with `intent.dive`, and physics owns when a keeper is airborne.

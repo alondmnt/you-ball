@@ -22,6 +22,11 @@ const CONFIG = {
   goalDepth: 70,         // how far the net sits behind the goal line
   depthShrink: 0.15,     // a player on the far touchline is 15% smaller
   cameraViewW: 1500,     // world units visible across the screen at zoom 1
+  keeperViewW: 2610,     // …and while you are the keeper, which is the whole
+                         // pitch and both nets. A camera that chases the ball
+                         // leaves a keeper off the side of the screen: measured
+                         // over 70s of playing in goal, the player the child was
+                         // driving was in shot 0% of the time.
 
   /* ─── Match ─── */
   goalsToWin: 3,

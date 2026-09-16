@@ -155,6 +155,9 @@ const Game = (() => {
     Render.hideFullTime();
     Storage.revokeAll();
     _show('match');
+    /* Before the resize, so the zoom is computed once at the width this match
+       will actually use. */
+    Pitch.setWideView(!!_progress.inGoal);
     Pitch.resize();       /* the viewport had no size while it was hidden */
 
     CONFIG.difficulty = _progress.difficulty || 'normal';

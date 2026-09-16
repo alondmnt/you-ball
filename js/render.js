@@ -708,9 +708,10 @@ const Render = (() => {
     if (!fx) return;
     const L = Pitch.layout();
     const colours = ['#ffd166', '#ef476f', '#06d6a0', '#5bc0eb'];
-    const centre = aroundX == null ? Pitch.camX() + CONFIG.cameraViewW / 2 : aroundX;
+    const view = Pitch.layout().viewW / Pitch.layout().zoom;
+    const centre = aroundX == null ? Pitch.camX() + view / 2 : aroundX;
     for (let burst = 0; burst < 5; burst++) {
-      const bx = (centre + (Math.random() - 0.5) * CONFIG.cameraViewW * 0.8) * L.zoom;
+      const bx = (centre + (Math.random() - 0.5) * view * 0.8) * L.zoom;
       const by = L.pitchTop * (0.15 + Math.random() * 0.7);
       const colour = colours[burst % colours.length];
       setTimeout(() => _burst(fx, bx, by, colour), burst * 170);
