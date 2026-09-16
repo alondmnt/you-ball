@@ -17,8 +17,14 @@ const Editor = (() => {
   let _urls = {};
   let _selected = null;       /* roster character id being edited */
   let _preview = null;        /* the live-running rig */
+  let _moodTimer = null;
   let _onPlay = null;
   let _pendingSlot = null;    /* slot awaiting a file pick */
+
+  /* The poses the preview cycles through, one per face slot. Each pose already
+     names the face it wears, so this order is the order the faces appear in. */
+  const MOODS = ['run', 'celebrate', 'sad-dance'];
+  const MOOD_MS = 1900;
   let _picking = null;        /* { team, place } the picker is choosing for */
 
   /* Adjust-overlay state. */
@@ -168,24 +174,47 @@ const Editor = (() => {
     const stage = document.getElementById('ed-stage');
     stage.className = 'ed__stage scene-' + _currentScene();
     stage.innerHTML = '';
+    if (_moodTimer) { clearInterval(_moodTimer); _moodTimer = null; }
     const record = _find(_selected);
     if (!record) return;
     _preview = Character.create({
       record, colour: _teamColourOf(record.id), urls: _urls, badge: false,
     });
-    _preview.setAnim('run');
     stage.appendChild(_preview.el);
 
-    /* Tapping the preview cycles the face, so the three faces are discoverable
-       without any text telling the kid they exist. */
-    const faces = ['idle', 'goal', 'sad'];
-    let fi = 0;
-    stage.addEventListener('click', () => {
-      fi = (fi + 1) % faces.length;
-      _preview.setFace(faces[fi]);
-      _preview.setAnim(faces[fi] === 'goal' ? 'celebrate' : faces[fi] === 'sad' ? 'sad-dance' : 'run');
-      Audio.play('tap');
-    });
+    /*
+     * The preview plays each mood in turn rather than waiting to be tapped.
+     * There are three face slots and no way to tell from the slots alone which
+     * picture is used when; watching the player run, celebrate and then sulk
+     * answers that without a word of explanation, and it shows off the faces a
+     * kid has just drawn.
+     *
+     * setAnim alone is enough: every pose already names the face it wears.
+     * setFace is deliberately not used - it pins the face until something
+     * unpins it, which is why the old tap handler had to set both.
+     */
+    let mood = 0;
+    const show = i => {
+      mood = (i + MOODS.length) % MOODS.length;
+      _preview.setAnim(MOODS[mood]);
+    };
+    show(0);
+    _moodTimer = setInterval(() => {
+      /* A hidden screen is display:none, which leaves offsetParent null. That
+         is the cheapest way for this to notice it is no longer wanted, and it
+         leaves nothing for anyone to remember to call on the way out. */
+      if (!_preview || !stage.isConnected || stage.offsetParent === null) {
+        clearInterval(_moodTimer);
+        _moodTimer = null;
+        return;
+      }
+      show(mood + 1);
+    }, MOOD_MS);
+
+    /* A tap skips ahead, for anyone who does not want to wait. Assigned rather
+       than added: the stage element outlives every render, so listeners piled
+       up on it and one tap eventually jumped several moods. */
+    stage.onclick = () => { show(mood + 1); Audio.play('tap'); };
   }
 
   /**

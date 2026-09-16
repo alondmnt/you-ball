@@ -81,10 +81,10 @@ it is inspired by the loud-quiet-loud of terrace rock, but the riff is ours - no
 the pencil opens the editor.
 
 1. tap **+** for a new character, or tap one you already made
-2. tap a slot - face, GOAL face, sad face, body, arms, legs - and pick a picture. on a tablet that offers the camera
+2. tap a part - face, GOAL face, sad face, body, arms, legs, named in a row under the preview - and pick a picture. on a tablet that offers the camera
 3. drag to move it and pinch or scroll to size it, then tap the tick
 4. **✏️ paper** turns the white page behind a crayon drawing transparent. leave it off for photos
-5. tap the character to cycle its three faces and watch them
+5. the preview plays each mood in turn - running, celebrating, sulking - so you can see which of the three faces is used when without being told. tap it to skip ahead
 6. tap a place in a team row and pick a face for it. the round place on the left is the goalkeeper, and every face is shown in that team's colours so you can see how they will look. **–** leaves the place to a built-in player, **+** makes a new character and puts them straight in
 7. the ball is a picture slot too - it has its own row, labelled, because a small picture of a ball sitting in a row of other buttons did not say that it could be changed
 
