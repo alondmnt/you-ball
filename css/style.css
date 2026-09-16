@@ -209,11 +209,53 @@ img { -webkit-user-drag: none; user-select: none; }
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
-/* Anyone who would rather the screen sat still keeps the word and loses the
+/* ===== kick off =====
+   The other half of the comic vocabulary: a caption plate rather than an
+   impact. Cream newsprint, a hard ink border offset into a shadow the way a
+   comic panel is inked, and speed lines either side so it arrives rather than
+   simply appearing. Dark text here because the plate itself is light. */
+.banner--panel span {
+  position: relative;
+  background: #fbf0d3;
+  color: #16241a;
+  border: 0.055em solid #10231a;
+  border-radius: 0.05em;
+  box-shadow: 0.085em 0.085em 0 #10231a, 0.17em 0.17em 0 rgba(0, 0, 0, 0.3);
+  font-size: clamp(1.5rem, 6.2vw, 3.4rem);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: none;
+  padding: 0.12em 0.45em;
+  transform: rotate(-2deg);
+  animation: panel-in 0.42s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+.banner--panel span::before,
+.banner--panel span::after {
+  content: '';
+  position: absolute;
+  top: 16%; bottom: 16%;
+  width: 0.85em;
+  background:
+    linear-gradient(#10231a, #10231a) left 22% / 100% 0.075em no-repeat,
+    linear-gradient(#10231a, #10231a) left 50% / 78% 0.075em no-repeat,
+    linear-gradient(#10231a, #10231a) left 78% / 55% 0.075em no-repeat;
+}
+.banner--panel span::before { right: 100%; margin-right: 0.3em; transform: scaleX(-1); }
+.banner--panel span::after { left: 100%; margin-left: 0.3em; }
+@keyframes panel-in {
+  0%   { transform: translateX(-0.7em) rotate(-9deg) scale(0.78); opacity: 0; }
+  65%  { transform: translateX(0.06em) rotate(1.5deg) scale(1.05); opacity: 1; }
+  100% { transform: translateX(0) rotate(-2deg) scale(1); }
+}
+
+/* Anyone who would rather the screen sat still keeps the words and loses the
    spin and the wobble. */
 @media (prefers-reduced-motion: reduce) {
   .banner--boom span,
-  .banner--boom span::before { animation: none; }
+  .banner--boom span::before,
+  .banner--panel span { animation: none; }
 }
 
 /* ===== Overlays ===== */
@@ -469,8 +511,19 @@ img { -webkit-user-drag: none; user-select: none; }
 }
 .ed__more--on { background: rgba(255, 209, 102, 0.22); }
 
-/* Teams, ball and settings */
-.ed__teams { flex: none; display: flex; flex-direction: column; gap: 6px; }
+/* Teams, ball and settings.
+   The groups sit next to each other and wrap, rather than stacking five deep.
+   Stacked, they left most of the width empty and pushed the key legend off a
+   short screen; packed, a wide screen shows the lot at once and a narrow one
+   falls back to a column by itself. */
+.ed__teams {
+  flex: none;
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  gap: 6px 20px;
+}
+.ed__group { display: flex; flex-direction: column; gap: 4px; }
+/* The team strips and the key legend want the whole line to themselves. */
+.ed__group--full { flex-basis: 100%; }
 .ed__team { display: flex; align-items: center; gap: 5px; }
 .ed__swatch {
   width: 17px; height: 17px; border-radius: 50%;
@@ -500,6 +553,10 @@ img { -webkit-user-drag: none; user-select: none; }
   min-width: 42px; height: 42px;
   border-radius: 10px; border: 2px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.07);
+  /* A button does not inherit the page colour: without this the browser's own
+     black lands on a near-black panel. It went unnoticed while these held
+     nothing but emoji, which carry their own colour. */
+  color: #f2f7f3;
   font-size: 1.2rem; cursor: pointer; padding: 0 8px;
 }
 .ed__toggle--on { border-color: #ffd166; background: rgba(255, 209, 102, 0.18); }

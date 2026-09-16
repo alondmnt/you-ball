@@ -262,14 +262,23 @@ const Editor = (() => {
    * yet. That is no longer true, and four unlabelled rows of emoji is a puzzle
    * rather than a menu once you can read the answer.
    *
+   * Each group is its own box so the row of them can wrap across the width
+   * rather than stacking five deep down a narrow screen.
+   *
    * @param {HTMLElement} host
    * @param {string} text - lower case, because that is what a new reader reads
+   * @param {boolean} [full] - give the group a line of its own
+   * @returns {HTMLElement} the group, to append the controls to
    */
-  function _section(host, text) {
+  function _section(host, text, full) {
+    const g = document.createElement('div');
+    g.className = 'ed__group' + (full ? ' ed__group--full' : '');
     const h = document.createElement('div');
     h.className = 'ed__label';
     h.textContent = text;
-    host.appendChild(h);
+    g.appendChild(h);
+    host.appendChild(g);
+    return g;
   }
 
   /** The two team strips, the colour pickers, the ball, and the match settings. */
@@ -277,7 +286,7 @@ const Editor = (() => {
     const host = document.getElementById('ed-teams');
     host.innerHTML = '';
 
-    _section(host, 'teams');
+    const teamsGroup = _section(host, 'teams', true);
     for (let t = 0; t < 2; t++) {
       const team = _progress.teams[t];
       const row = document.createElement('div');
@@ -316,13 +325,13 @@ const Editor = (() => {
         cell.addEventListener('click', () => _openPicker(t, i));
         row.appendChild(cell);
       }
-      host.appendChild(row);
+      teamsGroup.appendChild(row);
     }
 
     /* The ball. It used to be one small picture at the head of a row of
        difficulty faces, which said nothing about what it was or that it could
        be changed at all. It now has the row to itself, with the word. */
-    _section(host, 'ball');
+    const ballGroup = _section(host, 'ball');
     const ballRow = document.createElement('div');
     ballRow.className = 'ed__extras';
     const ball = document.createElement('button');
@@ -339,11 +348,11 @@ const Editor = (() => {
     ballHint.className = 'ed__hint';
     ballHint.textContent = _progress.ballCustom ? 'tap to change it' : 'tap to use your own picture';
     ballRow.appendChild(ballHint);
-    host.appendChild(ballRow);
+    ballGroup.appendChild(ballRow);
 
     /* Where you are playing. The stage behind the character changes as soon as
        you tap one, which is the other half of the explanation. */
-    _section(host, 'field');
+    const fieldGroup = _section(host, 'field');
     const scenes = [['grass', '🌱', 'grass'], ['moon', '🌙', 'moon'],
                     ['pool', '🏊', 'pool'], ['ballpit', '🔴', 'ball pool']];
     const sceneRow = document.createElement('div');
@@ -362,9 +371,9 @@ const Editor = (() => {
       });
       sceneRow.appendChild(b);
     }
-    host.appendChild(sceneRow);
+    fieldGroup.appendChild(sceneRow);
 
-    _section(host, 'opponent');
+    const opponentGroup = _section(host, 'opponent');
     const diffRow = document.createElement('div');
     diffRow.className = 'ed__extras';
     const diffs = [['easy', '🙂', 'easy'], ['normal', '😀', 'normal'], ['hard', '😈', 'hard']];
@@ -383,10 +392,10 @@ const Editor = (() => {
       });
       diffRow.appendChild(b);
     }
-    host.appendChild(diffRow);
+    opponentGroup.appendChild(diffRow);
 
     /* Two-player: one on the screen, one on the keyboard. */
-    _section(host, 'players');
+    const playersGroup = _section(host, 'players');
     const playerRow = document.createElement('div');
     playerRow.className = 'ed__extras';
     for (const [n, icon, word] of [[1, '👤', 'one'], [2, '👤👤', 'two']]) {
@@ -405,18 +414,21 @@ const Editor = (() => {
       });
       playerRow.appendChild(b);
     }
-    host.appendChild(playerRow);
+    playersGroup.appendChild(playerRow);
 
     /* The keys, right under the choice that turns the second set on. Player
        two's row is dimmed until it is switched on, which is also the clearest
        way to say what that choice does. */
+    const keysGroup = document.createElement('div');
+    keysGroup.className = 'ed__group ed__group--full';
     const keys = document.createElement('div');
     keys.className = 'ed__keys';
     keys.innerHTML =
       `<div class="ed__keyrow"><span class="who">1</span>${Input.legendHtml(0)}</div>` +
       `<div class="ed__keyrow${_progress.twoPlayer ? '' : ' ed__keyrow--off'}">` +
       `<span class="who who--2">2</span>${Input.legendHtml(1)}</div>`;
-    host.appendChild(keys);
+    keysGroup.appendChild(keys);
+    host.appendChild(keysGroup);
 
     if (Storage.partsUnavailable()) {
       const warn = document.createElement('div');

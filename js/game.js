@@ -177,7 +177,7 @@ const Game = (() => {
     Match.begin(_match, _world, 0);
 
     Render.mount(_world, _teams, _urls, _ballSrc);
-    Render.banner('kick off');
+    Render.banner('kick off', 'panel');
     Pitch.follow(_world.ball.x, true);
     Input.reset();
     Input.setEnabled(false);
@@ -406,7 +406,7 @@ const Game = (() => {
       switch (e.type) {
         case 'goal':
           Render.goalBurst(e.team, e.x, e.y);
-          Render.banner('GOAL!', true);
+          Render.banner('GOAL!', 'boom');
           /* Which end it went in decides which motif plays. The sad slide
              that used to follow every goal played when you scored too. */
           Audio.play('goal', e.team === 0 ? 'home' : 'away');
@@ -417,7 +417,7 @@ const Game = (() => {
           Render.fireworks(_world.ball.x);
           break;
         case 'kickoff':
-          Render.banner('kick off');
+          Render.banner('kick off', 'panel');
           Pitch.follow(_world.ball.x, true);
           break;
         case 'whistle':
