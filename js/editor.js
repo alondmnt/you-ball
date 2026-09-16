@@ -329,8 +329,8 @@ const Editor = (() => {
     }
 
     /* The ball. It used to be one small picture at the head of a row of
-       difficulty faces, which said nothing about what it was or that it could
-       be changed at all. It now has the row to itself, with the word. */
+       difficulty faces, which said nothing about what it was. The word above
+       its own row is enough; it does not also need telling to tap it. */
     const ballGroup = _section(host, 'ball');
     const ballRow = document.createElement('div');
     ballRow.className = 'ed__extras';
@@ -344,10 +344,6 @@ const Editor = (() => {
     ball.appendChild(ballImg);
     ball.addEventListener('click', () => _pickFor('ball', BALL_ID));
     ballRow.appendChild(ball);
-    const ballHint = document.createElement('span');
-    ballHint.className = 'ed__hint';
-    ballHint.textContent = _progress.ballCustom ? 'tap to change it' : 'tap to use your own picture';
-    ballRow.appendChild(ballHint);
     ballGroup.appendChild(ballRow);
 
     /* Where you are playing. The stage behind the character changes as soon as

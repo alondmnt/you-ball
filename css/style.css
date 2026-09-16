@@ -578,7 +578,6 @@ img { -webkit-user-drag: none; user-select: none; }
   color: #b7e8ca; margin: 5px 0 0;
 }
 .ed__label:first-child { margin-top: 0; }
-.ed__hint { font-size: 0.78rem; color: #cfe6d8; opacity: 0.85; }
 .ed__warn {
   font-size: 0.75rem; color: #ffb3c1; opacity: 0.9;
 }
@@ -613,7 +612,6 @@ img { -webkit-user-drag: none; user-select: none; }
   .ed__toggle--named { width: auto; height: auto; min-height: 34px; padding: 2px 7px; }
   .ed__toggle-word { font-size: 0.66rem; }
   .ed__label { font-size: 0.72rem; margin: 2px 0 -1px; }
-  .ed__hint { font-size: 0.68rem; }
 }
 
 /* ===== Keyboard legend =====
