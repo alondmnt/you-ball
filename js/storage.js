@@ -42,7 +42,7 @@ const Storage = (() => {
       muted: false,
       difficulty: CONFIG.difficulty,
       twoPlayer: CONFIG.twoPlayer,
-      inGoal: CONFIG.inGoal,
+      inGoal: CONFIG.inGoal.slice(),
       scene: CONFIG.scene,
       nextId: 1,
     };
@@ -59,7 +59,13 @@ const Storage = (() => {
       if (!raw) return base;
       const data = JSON.parse(raw);
       if (!data || typeof data !== 'object') return base;
-      return Object.assign(base, data);
+      const out = Object.assign(base, data);
+      /* inGoal was a single boolean before player two could keep goal. An old
+         save still carries one, and a boolean read as an array is silently
+         false for everybody. */
+      if (!Array.isArray(out.inGoal)) out.inGoal = [!!out.inGoal, false];
+      out.inGoal = [!!out.inGoal[0], !!out.inGoal[1]];
+      return out;
     } catch {
       return base;   /* corrupt save - start fresh */
     }

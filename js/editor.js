@@ -440,29 +440,55 @@ const Editor = (() => {
     playersGroup.appendChild(playerRow);
 
     /*
-     * Where player one stands. A separate choice from how many are playing,
+     * Where each player stands. A separate choice from how many are playing,
      * because it is a different question - and in goal is a real place to
      * play here, not a novelty: a shot arrives at your goal every twelve
      * seconds and an opponent gets into your third every seven.
+     *
+     * One badged pair a seat, the way the key legend below is badged: two
+     * humans on opposite sides each pick their own place. The pairs sit in one
+     * wrapping row, so they run side by side where there is width for them and
+     * stack where there is not, instead of always costing a second line. Each
+     * pair is its own flex box so a wrap can only ever fall between players,
+     * never between a player and half their choice.
+     *
+     * The second pair only exists when there is a second player, so a stale
+     * choice cannot quietly apply to nobody.
      */
     const placeGroup = _section(host, 'your place');
+    const places = _progress.inGoal || [];
+    const seats = _progress.twoPlayer ? [0, 1] : [0];
     const placeRow = document.createElement('div');
     placeRow.className = 'ed__extras';
-    for (const [keeper, icon, word] of [[false, '\u26bd', 'out field'], [true, '\ud83e\udde4', 'in goal']]) {
-      const on = keeper === !!_progress.inGoal;
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'ed__toggle ed__toggle--named' + (on ? ' ed__toggle--on' : '');
-      b.innerHTML = `<span class="ed__toggle-icon">${icon}</span><span class="ed__toggle-word">${word}</span>`;
-      b.setAttribute('aria-label', keeper ? 'play in goal' : 'play out field');
-      b.addEventListener('click', () => {
-        _progress.inGoal = keeper;
-        CONFIG.inGoal = keeper;
-        Storage.saveProgress(_progress);
-        Audio.play('tap');
-        render();
-      });
-      placeRow.appendChild(b);
+    for (const seat of seats) {
+      const pair = document.createElement('div');
+      pair.className = 'ed__place';
+      if (_progress.twoPlayer) {
+        const who = document.createElement('span');
+        who.className = 'who' + (seat === 1 ? ' who--2' : '');
+        who.textContent = String(seat + 1);
+        pair.appendChild(who);
+      }
+      for (const [keeper, icon, word] of [[false, '\u26bd', 'out field'], [true, '\ud83e\udde4', 'in goal']]) {
+        const on = keeper === !!places[seat];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ed__toggle ed__toggle--named' + (on ? ' ed__toggle--on' : '');
+        b.innerHTML = `<span class="ed__toggle-icon">${icon}</span><span class="ed__toggle-word">${word}</span>`;
+        b.setAttribute('aria-label',
+          `player ${seat + 1} ${keeper ? 'in goal' : 'out field'}`);
+        b.addEventListener('click', () => {
+          const next = [!!places[0], !!places[1]];
+          next[seat] = keeper;
+          _progress.inGoal = next;
+          CONFIG.inGoal = next.slice();
+          Storage.saveProgress(_progress);
+          Audio.play('tap');
+          render();
+        });
+        pair.appendChild(b);
+      }
+      placeRow.appendChild(pair);
     }
     placeGroup.appendChild(placeRow);
 
@@ -474,9 +500,9 @@ const Editor = (() => {
     const keys = document.createElement('div');
     keys.className = 'ed__keys';
     keys.innerHTML =
-      `<div class="ed__keyrow"><span class="who">1</span>${Input.legendHtml(0, _progress.inGoal)}</div>` +
+      `<div class="ed__keyrow"><span class="who">1</span>${Input.legendHtml(0, places[0])}</div>` +
       `<div class="ed__keyrow${_progress.twoPlayer ? '' : ' ed__keyrow--off'}">` +
-      `<span class="who who--2">2</span>${Input.legendHtml(1)}</div>`;
+      `<span class="who who--2">2</span>${Input.legendHtml(1, places[1])}</div>`;
     keysGroup.appendChild(keys);
     host.appendChild(keysGroup);
 

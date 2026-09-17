@@ -31,7 +31,7 @@ const Game = (() => {
     _progress = Storage.loadProgress();
     CONFIG.difficulty = _progress.difficulty || CONFIG.difficulty;
     CONFIG.twoPlayer = !!_progress.twoPlayer;
-    CONFIG.inGoal = !!_progress.inGoal;
+    CONFIG.inGoal = _places();
     Audio.setMuted(!!_progress.muted);
 
     Pitch.init({
@@ -92,11 +92,11 @@ const Game = (() => {
     const host = document.getElementById('splash-keys');
     if (!host) return;
     if (!CONFIG.twoPlayer) {
-      host.innerHTML = `<div class="splash__keyrow">${Input.legendHtml(0, CONFIG.inGoal)}</div>`;
+      host.innerHTML = `<div class="splash__keyrow">${Input.legendHtml(0, CONFIG.inGoal[0])}</div>`;
       return;
     }
     host.innerHTML =
-      `<div class="splash__keyrow"><span class="who">1</span>${Input.legendHtml(0, CONFIG.inGoal)}</div>` +
+      `<div class="splash__keyrow"><span class="who">1</span>${Input.legendHtml(0, CONFIG.inGoal[0])}</div>` +
       `<div class="splash__keyrow"><span class="who who--2">2</span>${Input.legendHtml(1)}</div>`;
   }
 
@@ -157,12 +157,12 @@ const Game = (() => {
     _show('match');
     /* Before the resize, so the zoom is computed once at the width this match
        will actually use. */
-    Pitch.setWideView(!!_progress.inGoal);
+    Pitch.setWideView(_places().some(Boolean));
     Pitch.resize();       /* the viewport had no size while it was hidden */
 
     CONFIG.difficulty = _progress.difficulty || 'normal';
     CONFIG.twoPlayer = !!_progress.twoPlayer;
-    CONFIG.inGoal = !!_progress.inGoal;
+    CONFIG.inGoal = _places();
     /* Both halves of a scene at once: how it plays, then how it looks. */
     Pitch.setScene(CONFIG.applyScene(_progress.scene));
 
@@ -176,8 +176,9 @@ const Game = (() => {
     /* Player index 0 of each team is its keeper; see Physics.createWorld. A
        keeper seat is pinned, because the whole point of choosing to play in
        goal is that control does not wander off to whoever is near the ball. */
-    _seats = [{ team: 0, playerId: CONFIG.inGoal ? 0 : 1, keeper: !!CONFIG.inGoal }];
-    if (CONFIG.twoPlayer) _seats.push({ team: 1, playerId: 5, keeper: false });
+    const place = CONFIG.inGoal;
+    _seats = [{ team: 0, playerId: place[0] ? 0 : 1, keeper: !!place[0] }];
+    if (CONFIG.twoPlayer) _seats.push({ team: 1, playerId: place[1] ? 4 : 5, keeper: !!place[1] });
     _humanKey = '';
     _switchTimer = 0;
 
@@ -226,6 +227,20 @@ const Game = (() => {
   }
 
   /* ─── Control ─── */
+
+  /**
+   * Where each live seat is playing: true for in goal, one entry per seat.
+   *
+   * Reads _progress rather than CONFIG, because the camera has to know before
+   * the match has copied the settings across. A second entry only exists when
+   * two-player is on, so a stale choice for a player who is not on the pitch
+   * can never widen the camera or take over a keeper.
+   * @returns {Array<boolean>}
+   */
+  function _places() {
+    const g = _progress.inGoal || [];
+    return _progress.twoPlayer ? [!!g[0], !!g[1]] : [!!g[0]];
+  }
 
   /** The player ids a human is driving right now. */
   function _humanIds() { return new Set(_seats.map(s => s.playerId)); }

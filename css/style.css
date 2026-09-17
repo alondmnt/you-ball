@@ -614,6 +614,9 @@ img { -webkit-user-drag: none; user-select: none; }
 .ed__slotcell img { width: 100%; height: 100%; object-fit: contain; }
 .ed__slotcell--gk { border-radius: 50%; margin-right: 6px; }
 .ed__extras { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* One player's badge and their two choices, kept together: the row above may
+   wrap between players but never through the middle of one. */
+.ed__place { display: flex; align-items: center; gap: 6px; }
 .ed__ball {
   width: 42px; height: 42px; border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.3);

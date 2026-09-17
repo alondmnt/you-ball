@@ -132,7 +132,11 @@ the charge (0..1) rides on the shoot intent and out again on the kick event. phy
 
 ## playing in goal
 
-`inGoal` pins seat one to its keeper. `_autoSwitch` leaves a pinned seat alone and a tap will not switch off it, which is the whole point: you chose the position.
+`inGoal` is one entry a seat, and pins that seat to its team's keeper. `_autoSwitch` leaves a pinned seat alone and a tap will not switch off it, which is the whole point: you chose the position.
+
+it is per seat rather than one flag because the two humans in two-player are on opposite sides, so each picks their own place - and all four combinations are real, including both in goal, which is two children keeping while four AI play in front of them. only as many entries as there are live seats are ever read, so a choice left behind by a second player who is no longer playing cannot pin a keeper or widen the camera. an older save holds a single boolean, and `loadProgress` converts it: read as an array it would be silently false for everybody.
+
+there is one screen, so the camera goes wide if **either** seat keeps. an out-field player sharing with a keeper loses their close-up, and there is no way round that short of splitting the screen.
 
 the obvious design - hand the child the keeper the moment a shot comes in - was measured and dropped. over 40 matches a shot takes **457ms** from the foot to the goal line, and the keeper, having tracked the ball all along, still has a **157 unit** median gap to close in a 320 wide mouth. at tracking pace only 44% of those are reachable at all, with a median of **53ms too late**. the AI only copes because it dives at 720 units/s off its own prediction. a child's reaction time alone eats that window, so the switch would take control away at the worst moment and then let them concede. widening the trigger to "an opponent is in your third" buys 383ms more, no use either, because `shootRange` (700) is nearly as wide as a third (800) - they are in range almost as they arrive.
 
