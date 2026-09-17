@@ -108,11 +108,12 @@ const CONFIG = {
 
   /* ─── Difficulty presets (multiply the values above) ─── */
   /*
-   * Difficulty describes the OPPOSITION only - see AI.applyDifficulty. Your
-   * own teammates and keeper always play at full.
+   * Difficulty describes EVERY AI on the pitch - see AI.applyDifficulty. Only
+   * the player a human is driving is exempt, so both teams are always built to
+   * the same spec and the dial says how good everyone who is not you is.
    *
-   * These three numbers are how fast the other side runs, how fast their
-   * keeper tracks a shot, and how much aim error their shots carry. Simulation
+   * These three numbers are how fast an AI runs, how fast a keeper tracks a
+   * shot, and how much aim error its shots carry. Simulation
    * can tell us the dial moves monotonically; it cannot tell us where a real
    * child lands, because a slower AI is still a good player and a kid is not.
    * So these are set to be forgiving, and the last word is a real match.

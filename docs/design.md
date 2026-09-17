@@ -353,7 +353,24 @@ four behaviours, picked per player per step: keeper, carrier, chaser (one field 
 
 the carrier order is **settle, then shoot, then pass**, and a pass must gain `aiMinPassGain` up the pitch. checking pressure first - which is how plan.md words it - means passing on every touch, because a chaser is always inside `pressureDist`. the ball went round in a circle and no one ever reached shooting range.
 
-difficulty is three multipliers and nothing else: AI run speed, keeper tracking speed, shot aim noise.
+difficulty is three multipliers and nothing else: AI run speed, keeper tracking speed, shot aim noise. **they apply to every AI on the pitch**, and only the player a human is driving is exempt, so the two teams are always built to the same spec.
+
+it briefly described the opposition alone, exempting your whole side, and the gap that opened was not subtle. over 30 matches a row, playing in goal:
+
+| | your side | opposition | your possession |
+|---|---|---|---|
+| exempting your side, easy | 0.73 | **0.00** | 38% |
+| exempting your side, normal | 4.57 | **0.07** | 45% |
+| exempting your side, hard | 2.67 | 2.27 | 51% |
+| levelled, easy | 1.60 | 1.57 | 50% |
+| levelled, normal | 2.77 | 2.43 | 50% |
+| levelled, hard | 2.53 | 2.53 | 51% |
+
+two things in that table beyond the obvious. at hard the old rule was already nearly level, because `aiSpeed` is 1.00 there and `shootNoise` 0.8 actually made the opposition aim *better* than your side - so anything that still felt lopsided on hard was never this. and on easy your side had **less** of the ball than the opposition did, because opponents too slow to hold their formation end up bunched in their own box, where they block shots without ever threatening: the weakest setting produced the lowest conversion, 7% against 42% on normal.
+
+the rule was changed away from levelling once before, on the grounds that a levelled easy put your own keeper at 60% tracking and conceded more than the slower opponents saved. that does not reproduce: at easy the opposition scores 0.00 a match under either rule, because opponents that slow cannot shoot straight either, so nothing punishes a weak keeper. if it ever comes back, `gkTrack` is the dial, not this rule.
+
+a caveat on how any of this is measured: a simulated human is an AI player left at full, which models a keeper reasonably (a keeper's edge is tracking speed) and a striker badly (the exemption hands them clean aim while every AI on the pitch carries 1.5x error). the out-field rows of any such table are not worth reading.
 
 ## storage
 

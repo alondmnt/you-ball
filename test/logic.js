@@ -262,23 +262,32 @@ console.log('\n-- every scene is playable --');
 
 console.log('\n-- difficulty --');
 /*
- * Difficulty used to slow every AI player on the pitch, so turning it down
- * handicapped your own teammates and keeper as much as the opposition. These
- * check the rule directly rather than by scoreline.
+ * The dial applies to every AI on the pitch, whichever side it is on, and only
+ * the player a human is driving is exempt. It briefly described the opposition
+ * alone, which left your three teammates at full against an opposition held
+ * back - measured at 4.57 goals to 0.07 on normal. These check the rule
+ * directly rather than by scoreline.
  */
 {
   const w = Physics.createWorld();
+  const d = () => CONFIG.difficulties[CONFIG.difficulty];
+  const want = p => p.role === 'gk' ? d().gkTrack : d().aiSpeed;
+
   CONFIG.difficulty = 'easy';
   AI.applyDifficulty(w, new Set([1]));          /* a human on team 0 */
-  const ours = w.players.filter(p => p.team === 0);
-  const theirs = w.players.filter(p => p.team === 1);
-  ok('your own side is never handicapped by the difficulty',
-     ours.every(p => p.speedMult === 1),
-     ours.map(p => p.speedMult).join(','));
-  ok('the opposition is', theirs.every(p => p.speedMult < 1),
-     theirs.map(p => p.speedMult).join(','));
-  ok('and their aim is loosened, yours is not',
-     ours.every(p => p.aimNoise === CONFIG.shootNoise) && theirs.every(p => p.aimNoise > CONFIG.shootNoise));
+  ok('the player you are driving is exempt', w.players[1].speedMult === 1,
+     String(w.players[1].speedMult));
+  ok('every other player is on the dial, both sides alike',
+     w.players.every(p => p.id === 1 ? true : p.speedMult === want(p)),
+     w.players.map(p => p.speedMult).join(','));
+  ok('your teammates are handicapped exactly like the opposition',
+     w.players[2].speedMult === w.players[6].speedMult &&
+     w.players[0].speedMult === w.players[4].speedMult,
+     `${w.players[2].speedMult} vs ${w.players[6].speedMult}`);
+  ok('aim follows the same rule',
+     w.players[1].aimNoise === CONFIG.shootNoise &&
+     w.players[2].aimNoise === w.players[6].aimNoise &&
+     w.players[2].aimNoise > CONFIG.shootNoise);
 
   /* Harder than normal is the property that matters. Whether the opposition
      ends up above full speed is incidental and used to be asserted here,
@@ -288,21 +297,20 @@ console.log('\n-- difficulty --');
   const oppOnNormal = w.players[5].speedMult;
   CONFIG.difficulty = 'hard';
   AI.applyDifficulty(w, new Set([1]));
-  ok('hard makes the opposition quicker than normal does',
-     w.players[5].speedMult > oppOnNormal,
+  ok('hard makes every AI quicker than normal does',
+     w.players[5].speedMult > oppOnNormal && w.players[2].speedMult > oppOnNormal,
      oppOnNormal + ' -> ' + w.players[5].speedMult);
-  ok('your side is still untouched on hard',
-     w.players.filter(p => p.team === 0).every(p => p.speedMult === 1));
 
-  /* Two humans, one per side: nobody gets the multiplier. */
+  /* Two humans, one per side: those two, and only those two, are exempt. */
   AI.applyDifficulty(w, new Set([1, 5]));
-  ok('two players means an even match', w.players.every(p => p.speedMult === 1));
+  ok('two players means two exemptions, not two whole teams',
+     w.players[1].speedMult === 1 && w.players[5].speedMult === 1 &&
+     w.players.filter(p => p.id !== 1 && p.id !== 5).every(p => p.speedMult === want(p)),
+     w.players.map(p => p.speedMult).join(','));
 
-  /* No human at all, as in the scene checks above: both sides get it. */
+  /* No human at all, as in the scene checks above: everybody gets it. */
   AI.applyDifficulty(w, new Set());
-  const hard = CONFIG.difficulties.hard;
-  ok('with nobody human both sides get it',
-     w.players.every(p => p.speedMult === (p.role === 'gk' ? hard.gkTrack : hard.aiSpeed)));
+  ok('with nobody human everybody gets it', w.players.every(p => p.speedMult === want(p)));
 
   const tiers = ['easy', 'normal', 'hard'].map(t => { CONFIG.difficulty = t; return CONFIG.difficulties[t]; });
   ok('the dial only ever goes one way',

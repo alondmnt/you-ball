@@ -39,17 +39,27 @@ const AI = (() => {
   }
 
   /**
-   * Apply the difficulty to the side a human is playing against.
+   * Apply the difficulty to every AI on the pitch, whichever side it is on.
    *
-   * It used to slow every AI player on the pitch, which meant turning the
-   * difficulty down handicapped your own teammates and your own keeper by
-   * exactly as much as the opposition. Measured over 24 matches a side, easy
-   * came out as the *worst* setting to play on - a keeper at 65% tracking
-   * conceded more than the slower opponents saved you.
+   * Only the player a human is actually driving is exempt. The dial therefore
+   * says how good everyone who is not you is, and the two teams are always
+   * built to the same spec.
    *
-   * Difficulty now describes the opposition and nothing else. Your own side
-   * always plays at full. With no human on the pitch at all, as in the logic
-   * tests, both sides get it, so AI-vs-AI balance is unchanged.
+   * It briefly described the opposition alone, exempting your whole side. That
+   * left your three teammates at full against an opposition held back, and the
+   * gap was not subtle: over 30 matches a row, on normal, your side won 4.57
+   * to 0.07. On easy the opposition did not score at all, and your side had
+   * *less* of the ball than they did (38%), because opponents too slow to hold
+   * their formation end up bunched in their own box where they block shots
+   * without ever threatening. Levelled, the same runs come out 2.77 to 2.43 on
+   * normal and dead level on hard.
+   *
+   * The reason it was changed in the first place was that a levelled easy put
+   * your own keeper at 60% tracking, and that was measured to concede more
+   * than the slower opponents saved you. That does not reproduce: at easy the
+   * opposition scores 0.00 a match whichever rule is used, because opponents
+   * that slow cannot shoot straight either, so nothing punishes a weak keeper.
+   * If it ever does come back, gkTrack is the dial, not this rule.
    *
    * Call after createWorld and whenever the human roster changes.
    * @param {object} world
@@ -59,18 +69,11 @@ const AI = (() => {
     const humans = humanIds instanceof Set ? humanIds : new Set(humanIds || []);
     const d = _diff();
 
-    const humanTeams = new Set();
-    for (const id of humans) {
-      const p = world.players[id];
-      if (p) humanTeams.add(p.team);
-    }
-
     for (const p of world.players) {
       p.human = humans.has(p.id);
-      const opposed = !humanTeams.has(p.team);
-      p.speedMult = (p.human || !opposed) ? 1 : (p.role === 'gk' ? d.gkTrack : d.aiSpeed);
+      p.speedMult = p.human ? 1 : (p.role === 'gk' ? d.gkTrack : d.aiSpeed);
       /* Aim error is part of the difficulty too, so it follows the same rule. */
-      p.aimNoise = CONFIG.shootNoise * (opposed ? d.shootNoise : 1);
+      p.aimNoise = CONFIG.shootNoise * (p.human ? 1 : d.shootNoise);
     }
   }
 
