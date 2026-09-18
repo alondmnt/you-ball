@@ -36,8 +36,11 @@ const Render = (() => {
   let _rigs = [];       /* one per player id */
   let _ball = null;     /* { el, shadow, heat } */
   let _charge = 0;      /* 0..1, how far a human has wound the current kick up */
+  let _aimX = null;     /* where that shot would cross the goal line, world units */
+  let _aimY = 0;
   let _fill = -1;       /* the fill last written to the ring, to skip repaints */
   let _heatOn = false;  /* whether the ring/flames are currently drawn at all */
+  let _aimOn = false;   /* …and whether the target on the goal line is */
   let _lastBallZ = 0;   /* the ball's depth this frame; the fire shares it */
   let _teams = null;    /* [{ colour, chars: [record x4] }, …] */
   let _urls = {};
@@ -106,11 +109,16 @@ const Render = (() => {
     heat.className = 'ball-heat';
     heat.style.width = HEAT_BASE + 'px';
     heat.style.height = HEAT_BASE + 'px';
+    /* The target on the goal line. In the world layer so the camera carries it,
+       but above everything: it is an instruction, not part of the scene. */
+    const aim = document.createElement('div');
+    aim.className = 'aim-spot';
     layer.appendChild(shadow);
     layer.appendChild(heat);
     layer.appendChild(el);
-    _ball = { el, shadow, heat };
-    _charge = 0; _fill = -1; _heatOn = false; _lastBallZ = 0;
+    layer.appendChild(aim);
+    _ball = { el, shadow, heat, aim };
+    _charge = 0; _aimX = null; _fill = -1; _heatOn = false; _aimOn = false; _lastBallZ = 0;
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
@@ -147,7 +155,10 @@ const Render = (() => {
     for (const b of _pit) b.el.remove();
     _pit = [];
     _pitWatch = null;
-    if (_ball) { _ball.el.remove(); _ball.shadow.remove(); _ball.heat.remove(); _ball = null; }
+    if (_ball) {
+      _ball.el.remove(); _ball.shadow.remove(); _ball.heat.remove(); _ball.aim.remove();
+      _ball = null;
+    }
     const fx = Pitch.fxLayer();
     if (fx) fx.innerHTML = '';
   }
@@ -248,6 +259,7 @@ const Render = (() => {
     _lastBallZ = q.z + 1;
 
     _heat(q.sx, cy, k, world.t, b.fireUntil);
+    _aim(L);
 
     /* A trail on a hard shot - a few fading clones behind the ball. */
     const speed = Math.hypot(b.vx, b.vy);
@@ -260,13 +272,41 @@ const Render = (() => {
   }
 
   /**
-   * How far the human has wound the current kick up, 0..1.
+   * What the wind-up is doing: how far it has gone, and where it is pointed.
    *
    * Called every step by game.js, which is the only module that knows a human
-   * exists. Render just draws the number.
-   * @param {number} v - 0..1
+   * exists. Render just draws the numbers. The aim is where the shot would
+   * cross the goal line if it were let go now - a child cannot learn to place
+   * a shot they cannot see themselves placing.
+   * @param {number} v - charge, 0..1
+   * @param {number|null} [ax] - aim point, world units, or null for none
+   * @param {number} [ay]
    */
-  function setCharge(v) { _charge = Math.max(0, Math.min(1, v || 0)); }
+  function setWindUp(v, ax, ay) {
+    _charge = Math.max(0, Math.min(1, v || 0));
+    _aimX = ax == null ? null : ax;
+    _aimY = ay || 0;
+  }
+
+  /**
+   * Draw the target the wind-up is pointed at, on the goal line.
+   *
+   * Only while a shot is actually being wound up, so it never clutters normal
+   * play. Transform and a class, like everything else in this loop.
+   * @param {object} L - the current layout
+   */
+  function _aim(L) {
+    const on = _charge > 0 && _aimX != null;
+    if (!on) {
+      if (_aimOn) { _aimOn = false; _ball.aim.classList.remove('aim-spot--on'); }
+      return;
+    }
+    if (!_aimOn) { _aimOn = true; _ball.aim.classList.add('aim-spot--on'); }
+    const q = Pitch.project(_aimX, _aimY);
+    _ball.aim.style.transform =
+      `translate3d(${q.sx}px,${q.sy}px,0) scale(${L.zoom * q.scale})`;
+    _setZ(_ball.aim, q.z + 2);
+  }
 
   /**
    * Draw the charge ring and the fire, both centred on the ball.
@@ -768,7 +808,7 @@ const Render = (() => {
   }
 
   return {
-    mount, unmount, frame, animFor, sceneFx, tackleBurst, setCharge,
+    mount, unmount, frame, animFor, sceneFx, tackleBurst, setWindUp,
     banner, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();

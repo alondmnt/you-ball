@@ -190,6 +190,8 @@ what it is worth now, on normal, from a grid of positions and distances:
 | leans at random | 0% | 25% |
 | shoots across the keeper | 30% | 65% |
 
+while a shot is being wound up, a target sits on the goal line where it would cross, and moves as you lean. a child cannot learn to place a shot they cannot see themselves placing. it is only up during a wind-up, so it is never scenery, and it is always on screen when it matters: the camera shows 750 world units either side of the ball and `shootRange` is 700, so the goal is in frame whenever you are close enough to shoot at it.
+
 leaning at random is **worse than not leaning**, which is the sign that it is a skill and not a dice roll: the keeper is on your line, so a lean toward it is worse than none and a lean across it is much better. `aimReach` (0.85) is how near the post a full lean can place it - short of the post, so committing fully is not a miss.
 
 ## music

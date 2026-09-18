@@ -245,12 +245,28 @@ const Game = (() => {
    * @returns {{dx: number, dy: number}} a unit vector at the goal
    */
   function _aimAt(p, bias) {
-    const b = Math.max(-1, Math.min(1, bias || 0));
-    const gx = Physics.targetGoalX(p.team);
-    const gy = CONFIG.pitchH / 2 + b * (CONFIG.goalMouth / 2) * CONFIG.aimReach;
-    const dx = gx - p.x, dy = gy - p.y;
+    const at = _aimPoint(p, bias);
+    const dx = at.x - p.x, dy = at.y - p.y;
     const len = Math.hypot(dx, dy) || 1;
     return { dx: dx / len, dy: dy / len };
+  }
+
+  /**
+   * The point on the goal line a lean is pointing at.
+   *
+   * Split out from _aimAt because the renderer needs the point itself, to draw
+   * the target while the shot is still being wound up. A child cannot learn to
+   * place a shot they cannot see themselves placing.
+   * @param {object} p - the player shooting
+   * @param {number} bias - -1..1
+   * @returns {{x: number, y: number}} world units
+   */
+  function _aimPoint(p, bias) {
+    const b = Math.max(-1, Math.min(1, bias || 0));
+    return {
+      x: Physics.targetGoalX(p.team),
+      y: CONFIG.pitchH / 2 + b * (CONFIG.goalMouth / 2) * CONFIG.aimReach,
+    };
   }
 
   /**
@@ -317,7 +333,7 @@ const Game = (() => {
     AI.think(_world, humans, _intents);
 
     const now = performance.now();
-    let charge = 0;
+    let charge = 0, aimAt = null;
     for (let i = 0; i < _seats.length; i++) {
       const seat = _seats[i];
       const s = Input.seat(i);
@@ -327,7 +343,10 @@ const Game = (() => {
 
       /* You can only wind a kick up round a ball you actually have. */
       Input.setCharging(i, hasBall, now);
-      if (hasBall) charge = Math.max(charge, Input.charge(i, now));
+      if (hasBall) {
+        const c = Input.charge(i, now);
+        if (c > charge) { charge = c; aimAt = _aimPoint(p, s.my); }
+      }
 
       it.mx = s.mx; it.my = s.my;
       it.shoot = null; it.pass = false; it.dive = false;
@@ -370,7 +389,7 @@ const Game = (() => {
        both be charging and the max above is a pick rather than a blend. */
     if (charge >= 1 && _charge < 1) Audio.play('ignite');
     _charge = charge;
-    Render.setCharge(charge);
+    Render.setWindUp(charge, aimAt ? aimAt.x : null, aimAt ? aimAt.y : 0);
   }
 
   /* ─── Loop ─── */

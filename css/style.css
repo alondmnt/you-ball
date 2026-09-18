@@ -432,6 +432,34 @@ img { -webkit-user-drag: none; user-select: none; }
   .ball-heat--fire::after { animation: none; }
 }
 
+/* The target a wind-up is pointed at, on the goal line. Only up while a shot
+   is being wound up: it is an instruction, not scenery. */
+.aim-spot {
+  position: absolute; left: 0; top: 0;
+  width: 58px; height: 58px;
+  margin: -29px 0 0 -29px;
+  border-radius: 50%;
+  border: 5px solid #ffd23d;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.35), inset 0 0 0 3px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.aim-spot::after {
+  content: '';
+  position: absolute; inset: 32%;
+  border-radius: 50%;
+  background: #ff5722;
+}
+.aim-spot--on { opacity: 1; animation: aim-pulse 0.7s ease-in-out infinite; }
+@keyframes aim-pulse {
+  0%, 100% { opacity: 0.95; }
+  50%      { opacity: 0.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aim-spot--on { animation: none; }
+}
+
 /* ===== Juice ===== */
 /* Ball trail: a fading clone dropped every few frames on a hard shot. */
 .ball-trail {
