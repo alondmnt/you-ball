@@ -469,7 +469,11 @@ what makes them affordable is that a ball at rest is skipped entirely, no maths 
 
 they are all the same shape, a dome of shoulders with a head above, so a crowd reads as a crowd wherever you are; only the palette and the headgear change.
 
-**everything inside the tile is free.** the browser rasterises an SVG once at the tile size however much is drawn in it, unlike a gradient, where every extra person is another pass over the whole strip. the first version missed that and rationed itself to three evenly spaced figures a tile, which still read as wallpaper - mismatched tile sizes fix the alignment between the rows but not the repetition along one. the tiles now carry eight figures at irregular spacings, in three sizes and eight colours, at identical runtime cost.
+**everything inside the tile is free.** the browser rasterises an SVG once at the tile size however much is drawn in it, unlike a gradient, where every extra person is another pass over the whole strip. the first version missed that and rationed itself to three evenly spaced figures on a single row, which still read as wallpaper - mismatched tile sizes fix the alignment between the two layers but nothing about the repetition within one.
+
+a tile also has to hold **several rows, each shifted along**, not one. a tile repeats identically, so one row in a tile means every row of the stand starts at the same x and the figures stack into vertical columns - the crowd reads as rectangular blocks. the stagger has to live inside the tile. each tile now carries three rows of eight figures, shifted by different amounts and recoloured per row, in three sizes and eight colours. a figure that overruns the right edge is drawn a second time a tile-width to the left, so the seam joins.
+
+all of that is free. at 6x CPU throttle, moon - the heaviest, with seven layers - costs 1.0ms a frame with the crowd still and 1.3ms while it bounces, against 1.2 and 1.4 for the single-row version it replaced.
 
 raised arms were tried and dropped: at twenty pixels an arm is a detached stick beside a head, not a gesture. grass was four tiled radial gradients before, which drew four loose dots per tile: at that size a dot is not a person, and a grid of them is not a crowd.
 
@@ -477,7 +481,7 @@ the pool floats are the one thing that did get dropped rather than moved behind.
 
 it is now two tiled SVG rows of heads and shoulders. one tile is one row, so tiling it vertically stacks row behind row the way a stand does, and the back row is smaller, dimmer and on a **different tile size** - 71x19 against 93x24 - so the two never come back into step and the pattern stops reading as wallpaper. mismatched tile sizes are the whole trick; offsetting a matching tile does not work, because the columns still line up down the strip.
 
-it is also cheaper than what it replaced: on grass, three layers instead of five, and an SVG rasterises once however much is drawn inside it, where every extra gradient is another pass over the whole strip on each repaint. at 6x CPU throttle the frame costs 0.5ms with the crowd still and 0.7ms while it is bouncing, which is the only time the strip repaints at all. moon carries the most - seven layers, two of them spectators over Earth and a starfield - and comes in at 1.2ms and 1.4ms.
+it is also cheaper than what it replaced: on grass, three layers instead of five, and an SVG rasterises once however much is drawn inside it, where every extra gradient is another pass over the whole strip on each repaint. the strip only repaints while it is bouncing, which is the only time it costs anything at all.
 
 ### never animate a size
 
