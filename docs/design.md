@@ -463,6 +463,14 @@ a moving ball also nudges the ones around it, so a disturbance spreads instead o
 
 what makes them affordable is that a ball at rest is skipped entirely, no maths and no DOM write, and only moving balls are propagation sources.
 
+### the crowd
+
+grass is the only scene with an actual crowd - moon has a starfield, pool has floats and ballpit has netting overhead. it was four tiled radial gradients, which drew four loose dots per tile: at that size a dot is not a person, and a grid of them is not a crowd.
+
+it is now two tiled SVG rows of heads and shoulders. one tile is one row, so tiling it vertically stacks row behind row the way a stand does, and the back row is smaller, dimmer and on a **different tile size** - 71x19 against 93x24 - so the two never come back into step and the pattern stops reading as wallpaper. mismatched tile sizes are the whole trick; offsetting a matching tile does not work, because the columns still line up down the strip.
+
+it is also cheaper than what it replaced: three layers instead of five, and an SVG rasterises once however much is drawn inside it, where every extra gradient is another pass over the whole strip on each repaint. at 6x CPU throttle the frame costs 0.5ms with the crowd still and 0.7ms while it is bouncing, which is the only time the strip repaints at all.
+
 ### never animate a size
 
 depth is a `scale()` in the transform, never a width and a height. writing width/height per frame forces a layout per frame, and the first version of the loose balls did exactly that - along with the match ball and its shadow, which had done it in every scene since they were written. measured with chrome's cpu throttling at 6x, which is the closest stand-in available for an old tablet:

@@ -304,14 +304,23 @@ img { -webkit-user-drag: none; user-select: none; }
     repeating-linear-gradient(90deg, rgba(255,255,255,0.045) 0 64px, rgba(0,0,0,0.045) 64px 128px),
     linear-gradient(#2f7d4a 0%, #3f9459 45%, #4aa463 100%);
 }
+/*
+ * Two tiled rows of heads and shoulders rather than a field of loose dots.
+ *
+ * Each tile is one row of people, so tiling it vertically stacks row behind
+ * row the way a stand does. The back row is smaller, dimmer and offset half a
+ * person, which is what stops the grid reading as a grid. Two image layers
+ * instead of the four gradients it replaces: an SVG rasterises once however
+ * much is drawn in it, where every extra gradient is another pass over the
+ * whole strip on each repaint - and this strip repaints on every cheer.
+ */
 .scene-grass .crowd {
   background:
-    radial-gradient(circle at 12px 10px, #ffd166 0 4px, transparent 5px),
-    radial-gradient(circle at 34px 16px, #ef476f 0 4px, transparent 5px),
-    radial-gradient(circle at 56px 8px, #06d6a0 0 4px, transparent 5px),
-    radial-gradient(circle at 78px 18px, #118ab2 0 4px, transparent 5px),
-    linear-gradient(#20313f, #16232d);
-  background-size: 96px 28px, 96px 28px, 96px 28px, 96px 28px, 100% 100%;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='93' height='24'%3E%3Cg opacity='0.88'%3E %3Cpath d='M4 24a9 9 0 0 1 18 0z' fill='%23ef476f'/%3E%3Ccircle cx='13' cy='9' r='4.6' fill='%23f0c49b'/%3E %3Cpath d='M35 24a9 9 0 0 1 18 0z' fill='%23118ab2'/%3E%3Ccircle cx='44' cy='9' r='4.6' fill='%238d5a3b'/%3E %3Cpath d='M66 24a9 9 0 0 1 18 0z' fill='%23ffd166'/%3E%3Ccircle cx='75' cy='9' r='4.6' fill='%23d9a273'/%3E %3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='71' height='19'%3E %3Cg opacity='0.55'%3E %3Cpath d='M-7 19a7 7 0 0 1 14 0z' fill='%233f6f8a'/%3E%3Ccircle cx='0' cy='8' r='3.6' fill='%23c9a583'/%3E %3Cpath d='M17 19a7 7 0 0 1 14 0z' fill='%237a4a5e'/%3E%3Ccircle cx='24' cy='8' r='3.6' fill='%23a8785a'/%3E %3Cpath d='M40 19a7 7 0 0 1 14 0z' fill='%235c7f4a'/%3E%3Ccircle cx='47' cy='8' r='3.6' fill='%23c9a583'/%3E %3Cpath d='M64 19a7 7 0 0 1 14 0z' fill='%233f6f8a'/%3E%3Ccircle cx='71' cy='8' r='3.6' fill='%23c9a583'/%3E %3C/g%3E%3C/svg%3E"),
+    linear-gradient(#22333f, #131f28);
+  background-size: 93px 24px, 71px 19px, 100% 100%;
+  background-position: 0 0, 26px 9px, 0 0;
 }
 .scene-grass .pm__wall { background: linear-gradient(#f4f6f8, #c6ced6); }
 .scene-grass .pm__endwall { background: linear-gradient(90deg, #f4f6f8, #c6ced6); }
