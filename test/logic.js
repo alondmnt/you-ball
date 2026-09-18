@@ -172,6 +172,50 @@ console.log('\n-- the wind-up --');
      Math.abs(shoot(1).power - shoot(0).power) < 1e-9,
      shoot(1).power + ' vs ' + shoot(0).power);
 }
+{
+  /* Speed alone bought almost nothing against a keeper - 30% of shots to 33%
+     across the whole range - because it predicts the crossing point exactly.
+     What a full wind-up actually buys is a ball too hot to hold. */
+  const lit = (charge) => {
+    const w = Physics.createWorld();
+    const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+    const p = w.players[3];
+    w.ball.carrier = p.id; w.ball.x = p.x; w.ball.y = p.y;
+    its[p.id].shoot = { dx: 1, dy: 0, power: 1, charge };
+    Physics.step(w, its, DT);
+    return w.ball.fireUntil > w.t;
+  };
+  ok('a full wind-up sets the ball alight', lit(1));
+  ok('anything less does not', !lit(0.99) && !lit(0.5) && !lit(0));
+
+  /* A keeper meeting a ball, burning or not. */
+  const atKeeper = (burning) => {
+    const w = Physics.createWorld();
+    const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+    for (const q of w.players) { q.x = 60; q.y = 40; }
+    const gk = w.players[4];
+    gk.x = CONFIG.pitchW - 20; gk.y = CONFIG.pitchH / 2;
+    const b = w.ball;
+    b.carrier = null; b.x = gk.x - 40; b.y = gk.y;
+    b.vx = 1400; b.vy = 0; b.pickupLockUntil = 0;
+    if (burning) b.fireUntil = w.t + 1;
+    const evs = Physics.step(w, its, DT);
+    return { evs, carrier: w.ball.carrier, fire: w.ball.fireUntil > w.t, vx: w.ball.vx };
+  };
+  const hot = atKeeper(true), cold = atKeeper(false);
+  ok('a keeper catches a ball that is not burning', cold.carrier === 4, String(cold.carrier));
+  ok('a keeper cannot hold a burning one', hot.carrier === null, String(hot.carrier));
+  ok('it is beaten back out instead', hot.vx < 0 && hot.evs.some(e => e.type === 'parry'),
+     hot.vx.toFixed(0));
+  ok('and the parry puts the fire out', !hot.fire);
+}
+{
+  /* A kickoff must not leave the ball alight from the goal that caused it. */
+  const w = Physics.createWorld();
+  w.ball.fireUntil = w.t + 5;
+  Physics.kickoff(w, 0);
+  ok('a kickoff puts the ball out', !(w.ball.fireUntil > w.t), String(w.ball.fireUntil));
+}
 
 console.log('\n-- the keeper on its line --');
 {

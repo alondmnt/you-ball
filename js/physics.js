@@ -105,6 +105,10 @@ const Physics = (() => {
         stealLockUntil: 0,   /* the carrier cannot be robbed before this */
         pickupLockUntil: 0,  /* a loose ball cannot be collected before this */
         lastTouch: null,
+        /* A fully wound kick leaves the ball burning until this. A keeper
+           cannot hold a burning ball, so it is a fact about the world and not
+           about the picture - render reads it, it does not own it. */
+        fireUntil: -99,
         /* Set the instant a goal is detected. The ball then keeps flying into
            the net for the slow-motion beat instead of re-scoring every step. */
         scored: false,
@@ -144,6 +148,7 @@ const Physics = (() => {
     b.stealLockUntil = world.t + CONFIG.stealImmunityMs / 1000;
     b.pickupLockUntil = 0;
     b.lastTouch = taker ? taker.id : null;
+    b.fireUntil = -99;
     b.scored = false;
   }
 
@@ -216,7 +221,10 @@ const Physics = (() => {
       /* charge rides along untouched: physics has no use for it, but it is the
          only thing that tells a wound-up kick from an AI clearance, and both
          arrive here at the same power. */
-      events.push({ type: 'kick', id: p.id, power, x: b.x, y: b.y, charge: s.charge || 0 });
+      /* A kick wound all the way up sets the ball alight. */
+      const charge = s.charge || 0;
+      if (charge >= 1) b.fireUntil = world.t + CONFIG.ballFireMs / 1000;
+      events.push({ type: 'kick', id: p.id, power, x: b.x, y: b.y, charge });
       return;
     }
 
@@ -453,6 +461,38 @@ const Physics = (() => {
 
   /* ─── Possession ─── */
 
+  /**
+   * A keeper beats a burning ball away instead of catching it.
+   *
+   * This is what a wound-up kick actually buys. Speed alone bought almost
+   * nothing - measured over a grid of distances and angles, going from 770 to
+   * 1400 units/s moved the goals from 30% to 33%, because the keeper predicts
+   * the crossing point exactly and the mouth is small enough that it always
+   * gets there. A parry does not beat the keeper either; it leaves the ball
+   * live in front of an open goal, which is a chance rather than a certainty.
+   *
+   * The parry puts the fire out. Otherwise the rebound is still burning, the
+   * keeper cannot hold that either, and the ball pings off it forever.
+   * @param {object} world
+   * @param {object} gk - the keeper
+   * @param {Array<object>} events - appended to
+   */
+  function _parry(world, gk, events) {
+    const b = world.ball;
+    const speed = Math.hypot(b.vx, b.vy);
+    const out = attackDir(gk.team);                 /* away from the goal behind them */
+    const side = (b.y - gk.y) >= 0 ? 1 : -1;        /* spills the side it struck */
+    const v = Math.max(CONFIG.parryMinSpeed, speed * CONFIG.parryKeep);
+    b.vx = out * v * 0.78;
+    b.vy = side * v * 0.62;
+    b.lastTouch = gk.id;
+    b.pickupLockUntil = world.t + CONFIG.looseBallMs / 1000;
+    b.fireUntil = world.t;
+    gk.diveUntil = Math.max(gk.diveUntil, world.t + CONFIG.gkDiveMs / 1000);
+    gk.diveDir = side;
+    events.push({ type: 'parry', id: gk.id, team: gk.team, x: b.x, y: b.y });
+  }
+
   function _resolvePossession(world, events) {
     const b = world.ball;
     const holder = carrier(world);
@@ -466,6 +506,7 @@ const Physics = (() => {
       }
       if (!best) return;
       const speed = Math.hypot(b.vx, b.vy);
+      if (best.role === 'gk' && world.t < b.fireUntil) { _parry(world, best, events); return; }
       _take(world, best);
       events.push({
         type: 'pickup', id: best.id, team: best.team,

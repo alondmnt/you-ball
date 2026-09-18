@@ -122,11 +122,23 @@ a live sweep of the constant could not separate 500 from 900 over seventy-second
 
 the fields are not equal - a fireball is three times as likely in the pool as on the moon - and `holdMaxMs` is deliberately **not** a scene value. the difficulty of charging already tracks what a charge is worth: the pool has the ball dying on its way (`ballFriction` 0.968) and `shootRange` 560, so power is the scarce thing there, while the moon has `shootRange` 1100 and a ball that slides forever, so you can score without ever winding up. flattening it would cost four numbers to keep in sync and remove a difference the scenes exist to create.
 
+### what a power kick is for
+
+**a keeper cannot catch a burning ball.** it beats it away, and the rebound stays live.
+
+that rule exists because speed alone bought nothing. over a grid of distances and aim points, going from a tapped 770 units/s to a fully wound 1400 moved the goals from 30% to **33%** - noise. the keeper predicts where a loose ball will cross its line exactly (`aimY = b.y + b.vy * tt`, no error) and the mouth is small enough that it always gets there, so arriving sooner does not help. without the parry the wind-up was a meter, a flame and a sound attached to nothing.
+
+a parry is a chance, not a goal: at full charge the keeper holds 0% of shots where it used to hold 70%, and the rebound settles a median 450 units out, **all of them inside `shootRange`**. the parry puts the fire out, or the keeper cannot hold the rebound either and the ball pings off it forever.
+
+the AI never triggers it, because only a full wind-up lights the ball and the AI has no charge: 20 matches, 222 kicks, 0 parries, the ball never alight for a step.
+
+`ball.fireUntil` therefore lives in the **world**, not the renderer. it started in render.js as `_burnUntil`, which was right while fire was only a picture; the moment a keeper had to act on it, keeping it there would have meant two timers that must agree.
+
 ### the meter
 
 the ball is the meter. a ring round it fills as the wind-up goes, and at the top the ball catches fire and stays alight for `ballFireMs` after the kick. one mechanism says both how much you have and that you have all of it, which is the only way a child who cannot read a number knows the kick is ready, and it sits where their eyes already are.
 
-`Render.setCharge` is the only writer of the charge and `Render.ballFire` the only way to light it after the kick. while nothing is winding up the whole thing costs one comparison a frame. the fill is a custom property, which repaints, so it is only written when it has moved 2% - at 6x CPU throttle the ramp costs 0.8ms a frame for as long as it lasts, and the flame, being a transform animation, costs nothing measurable at all.
+`Render.setCharge` is the only writer of the charge; the fire comes from the world. while nothing is winding up the whole thing costs one comparison a frame. the fill is a custom property, which repaints, so it is only written when it has moved 2% - at 6x CPU throttle the ramp costs 0.8ms a frame for as long as it lasts, and the flame, being a transform animation, costs nothing measurable at all.
 
 the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
 

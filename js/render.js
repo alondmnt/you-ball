@@ -38,8 +38,6 @@ const Render = (() => {
   let _charge = 0;      /* 0..1, how far a human has wound the current kick up */
   let _fill = -1;       /* the fill last written to the ring, to skip repaints */
   let _heatOn = false;  /* whether the ring/flames are currently drawn at all */
-  let _burnUntil = -99; /* world time the ball stops burning after a kick */
-  let _t = 0;           /* world time at the last frame, so ballFire() has a clock */
   let _lastBallZ = 0;   /* the ball's depth this frame; the fire shares it */
   let _teams = null;    /* [{ colour, chars: [record x4] }, …] */
   let _urls = {};
@@ -112,7 +110,7 @@ const Render = (() => {
     layer.appendChild(heat);
     layer.appendChild(el);
     _ball = { el, shadow, heat };
-    _charge = 0; _fill = -1; _heatOn = false; _burnUntil = -99; _lastBallZ = 0;
+    _charge = 0; _fill = -1; _heatOn = false; _lastBallZ = 0;
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
@@ -249,13 +247,13 @@ const Render = (() => {
     _setZ(_ball.shadow, q.z);
     _lastBallZ = q.z + 1;
 
-    _heat(q.sx, cy, k, world.t);
+    _heat(q.sx, cy, k, world.t, b.fireUntil);
 
     /* A trail on a hard shot - a few fading clones behind the ball. */
     const speed = Math.hypot(b.vx, b.vy);
     if (speed > CONFIG.trailMinSpeed && world.t - _trailAt > 0.03) {
       _trailAt = world.t;
-      _spawnTrail(q.sx, q.sy - size * 0.92, size, world.t < _burnUntil);
+      _spawnTrail(q.sx, q.sy - size * 0.92, size, world.t < b.fireUntil);
     }
 
     _scoreBar(match);
@@ -271,16 +269,6 @@ const Render = (() => {
   function setCharge(v) { _charge = Math.max(0, Math.min(1, v || 0)); }
 
   /**
-   * Keep the ball alight for ballFireMs - a fully wound kick has just left.
-   *
-   * The fire is not a property of how fast the ball is going. The AI shoots at
-   * near-full power as a matter of course, so anything keyed on speed would
-   * have every clearance in the game burning, and the one thing the child
-   * actually did would stop meaning anything.
-   */
-  function ballFire() { _burnUntil = _t + CONFIG.ballFireMs / 1000; }
-
-  /**
    * Draw the charge ring and the fire, both centred on the ball.
    *
    * Costs nothing while nobody is winding up: the element keeps its last
@@ -291,10 +279,11 @@ const Render = (() => {
    * @param {number} cy - ball centre, screen px
    * @param {number} k - the ball's depth scale
    * @param {number} t - world time
+   * @param {number} fireUntil - world time the ball stops burning. Physics owns
+   *   it, because a keeper cannot catch a burning ball; this only draws it.
    */
-  function _heat(cx, cy, k, t) {
-    _t = t;
-    const alight = _charge >= 1 || t < _burnUntil;
+  function _heat(cx, cy, k, t, fireUntil) {
+    const alight = _charge >= 1 || t < fireUntil;
     if (!_charge && !alight) {
       if (_heatOn) {
         _heatOn = false;
@@ -779,7 +768,7 @@ const Render = (() => {
   }
 
   return {
-    mount, unmount, frame, animFor, sceneFx, tackleBurst, setCharge, ballFire,
+    mount, unmount, frame, animFor, sceneFx, tackleBurst, setCharge,
     banner, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();

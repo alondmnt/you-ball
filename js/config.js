@@ -76,7 +76,14 @@ const CONFIG = {
   wallBounce: 0.7,
   bounceScatter: 0,      // radians of random deflection off a wall. 0 is a
                          // clean reflection; the ball pool scene turns it up
+  // A fully wound kick sets the ball alight, and a keeper cannot catch what is
+  // burning - it beats it away and the rebound stays live. That is the whole
+  // point of winding up: measured, speed alone bought three percentage points
+  // against a keeper, because it predicts the crossing point exactly.
   ballFireMs: 1100,      // how long a fully wound kick leaves the ball alight
+  parryKeep: 0.35,       // how much of its speed a beaten-away ball keeps - low,
+                         // so the rebound drops near the box and is a real chance
+  parryMinSpeed: 380,    // …but never a ball that just sits on the line
   stealImmunityMs: 500,  // a fresh carrier cannot be robbed for this long
   looseBallMs: 180,      // after a shot/pass, nobody can pick the ball up
   carrierSpeedMult: 0.93,// carrying the ball slows you slightly, so a chase is

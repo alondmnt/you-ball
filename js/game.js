@@ -432,9 +432,6 @@ const Game = (() => {
         case 'kick':
           Audio.play('kick', e.power / CONFIG.shootPowerMax);
           Render.sceneFx('kick', e.x, e.y, e.power / CONFIG.shootPowerMax);
-          /* Only a kick the player wound all the way up burns on. The AI shoots
-             at near-full power constantly, so speed is no guide at all. */
-          if (e.charge >= 1) Render.ballFire();
           break;
         case 'pass':
           Audio.play('pass');
@@ -456,6 +453,12 @@ const Game = (() => {
         case 'pickup':
           Audio.play(e.save ? 'save' : 'pickup');
           if (e.save) Pitch.shake(CONFIG.shakePx * 0.7);
+          break;
+        case 'parry':
+          /* Beaten away rather than caught. It is a save, and a bigger one. */
+          Audio.play('save');
+          Pitch.shake(CONFIG.shakePx);
+          Render.tackleBurst(e.x, e.y);
           break;
         default:
           break;
