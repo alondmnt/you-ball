@@ -229,6 +229,31 @@ const Game = (() => {
   /* ─── Control ─── */
 
   /**
+   * Turn a lean into a shot at the goal.
+   *
+   * A shot always travels toward the goal being attacked; the input only
+   * chooses where in the mouth. Aiming by compass could not work on a
+   * keyboard: the direction came from the held keys, so only multiples of 45
+   * degrees existed, and the whole goal spans 44 degrees from 400 units out.
+   * Exactly one of the eight was on target, and it was dead centre - which is
+   * where the keeper is standing, and where a shot scores 0% of the time.
+   *
+   * Up is always the far touchline and down always the near one, whichever end
+   * you are attacking, so the control never reverses under a child's hands.
+   * @param {object} p - the player shooting
+   * @param {number} bias - -1..1, from the held or flicked y
+   * @returns {{dx: number, dy: number}} a unit vector at the goal
+   */
+  function _aimAt(p, bias) {
+    const b = Math.max(-1, Math.min(1, bias || 0));
+    const gx = Physics.targetGoalX(p.team);
+    const gy = CONFIG.pitchH / 2 + b * (CONFIG.goalMouth / 2) * CONFIG.aimReach;
+    const dx = gx - p.x, dy = gy - p.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return { dx: dx / len, dy: dy / len };
+  }
+
+  /**
    * Where each live seat is playing: true for in goal, one entry per seat.
    *
    * Reads _progress rather than CONFIG, because the camera has to know before
@@ -334,9 +359,9 @@ const Game = (() => {
       }
 
       if (s.shootRequest && hasBall) {
-        let { dx, dy, power, charge } = s.shootRequest;
-        if (!dx && !dy) { dx = p.facing; dy = 0; }   /* no direction held - shoot ahead */
-        it.shoot = { dx, dy, power, charge: charge || 0 };
+        const { power, charge, dy } = s.shootRequest;
+        const at = _aimAt(p, dy);
+        it.shoot = { dx: at.dx, dy: at.dy, power, charge: charge || 0 };
       }
       Input.clearRequests(i);
     }

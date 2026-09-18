@@ -293,6 +293,12 @@ const CONFIG = {
   // tap-to-pass survives a child who is slow letting go. It belongs to the
   // finger alone and is no part of the ramp: a shoot key has nothing to
   // disambiguate, so the meter moves from the first frame you press it.
+  // A shot goes at the goal, and the held or flicked direction picks where in
+  // the mouth. Aiming by compass could not work: shot direction came from the
+  // held keys, so only multiples of 45 degrees existed, while the whole goal
+  // spans 44 degrees from 400 units out. One of the eight directions was on
+  // target and it was dead centre, which is exactly where the keeper stands.
+  aimReach: 0.85,        // how near the post a full lean can place it, 0..1
   windUpMs: 240,         // touch: held this long before it counts as a wind-up
   holdMaxMs: 650,        // …and this long, from first contact, for full power.
                          // Has to stay clear of stealImmunityMs (500) or a

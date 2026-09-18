@@ -126,9 +126,11 @@ the fields are not equal - a fireball is three times as likely in the pool as on
 
 **a keeper cannot catch a burning ball.** it beats it away, and the rebound stays live.
 
-that rule exists because speed alone bought nothing. over a grid of distances and aim points, going from a tapped 770 units/s to a fully wound 1400 moved the goals from 30% to **33%** - noise. the keeper predicts where a loose ball will cross its line exactly (`aimY = b.y + b.vy * tt`, no error) and the mouth is small enough that it always gets there, so arriving sooner does not help. without the parry the wind-up was a meter, a flame and a sound attached to nothing.
+that rule was introduced on a measurement that turned out to be wrong, and the record is worth keeping straight. the first harness put the keeper at the centre of its goal and found that going from a tapped 770 units/s to a fully wound 1400 moved the goals from 30% to 33% - noise. but a keeper never stands in the centre: `_keeper` tracks the carrier, so when you shoot it is on **your** line. start it where it actually starts and the shot has to travel across it, arrival time decides, and the same comparison is 0% against 35%. speed was doing plenty; the harness was measuring a keeper that had already lost its position.
 
-a parry is a chance, not a goal: at full charge the keeper holds 0% of shots where it used to hold 70%, and the rebound settles a median 450 units out, **all of them inside `shootRange`**. the parry puts the fire out, or the keeper cannot hold the rebound either and the ball pings off it forever.
+the parry earns its place anyway, for a different reason than the one it was built on: it turns a saved rocket into a live rebound in front of an open goal rather than a catch and a punt upfield.
+
+a parry is a chance, not a goal: the keeper holds none of them, and the rebound settles a median 450 units out, **all of them inside `shootRange`**. the parry puts the fire out, or the keeper cannot hold the rebound either and the ball pings off it forever.
 
 the AI never triggers it, because only a full wind-up lights the ball and the AI has no charge: 20 matches, 222 kicks, 0 parries, the ball never alight for a step.
 
@@ -173,6 +175,22 @@ a dive with nothing held carries the direction it launched in, so a tap is enoug
 **a keeper holding the ball cannot be tackled.** their immunity runs out at `stealImmunityMs` but their own AI holds for 300ms longer before punting, and that gap was the safest goal in the game: stand next to them, take it off their hands the instant immunity lapses, and the steal knocks them clear of their own goal and stuns them for `tackleStunMs`. measured at **21 goals from 21 attempts, 617ms after every save**, from as far as 160 units out. it beat every honest tactic, and on a keyboard it was very nearly the only one that worked at all - see the aim note below. an outfield player is still robbable; there would be no tackling otherwise.
 
 the keeper's line is a **wall from the inside, not a leash**. it lets go entirely while the keeper is carrying, so a child who collects the ball can charge upfield and leave the goal empty, and it only bites on a player who was on the right side of it a moment ago, so coming home from midfield is a run rather than a teleport. the AI keeper never leaves its area, so none of this changes how it plays.
+
+## aiming
+
+a shot goes **at the goal**, and the held or flicked direction only picks where in the mouth. up is always the far touchline and down the near one, whichever end you are attacking, so the control never reverses under a child's hands.
+
+aiming by compass could not work. the shot direction came from the held keys, so the only angles that existed were multiples of 45 degrees, and the whole goal spans **44 degrees** from 400 units out. exactly one of the eight directions was on target and it was dead centre - which is where the keeper is standing, because it tracks the carrier, and where a shot scores **0%**. a keyboard player had no aim at all, which is most of why camping the keeper was the best tactic available: it was nearly the only one that worked.
+
+what it is worth now, on normal, from a grid of positions and distances:
+
+| player | tapped | wound up |
+|---|---|---|
+| never leans | 0% | 35% |
+| leans at random | 0% | 25% |
+| shoots across the keeper | 30% | 65% |
+
+leaning at random is **worse than not leaning**, which is the sign that it is a skill and not a dice roll: the keeper is on your line, so a lean toward it is worse than none and a lean across it is much better. `aimReach` (0.85) is how near the post a full lean can place it - short of the post, so committing fully is not a miss.
 
 ## music
 
