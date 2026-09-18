@@ -467,7 +467,11 @@ what makes them affordable is that a ball at rest is skipped entirely, no maths 
 
 **every scene has a crowd**, because that strip bounces when a goal is scored. `.crowd--cheer` is a crowd behaviour, and three of the four scenes used to have something in the crowd slot that could not do it: a starfield, poolside floats, netting. the fix was not to drop the scene's own idea but to put its spectators **in front of** it - astronauts over the stars and Earth, swimmers along the poolside, parents and children behind the ballpit netting, which is drawn over their faces because that is where netting is.
 
-they are all the same shape, a dome of shoulders with a head above, so a crowd reads as a crowd wherever you are; only the palette and the headgear change. grass was four tiled radial gradients before, which drew four loose dots per tile: at that size a dot is not a person, and a grid of them is not a crowd.
+they are all the same shape, a dome of shoulders with a head above, so a crowd reads as a crowd wherever you are; only the palette and the headgear change.
+
+**everything inside the tile is free.** the browser rasterises an SVG once at the tile size however much is drawn in it, unlike a gradient, where every extra person is another pass over the whole strip. the first version missed that and rationed itself to three evenly spaced figures a tile, which still read as wallpaper - mismatched tile sizes fix the alignment between the rows but not the repetition along one. the tiles now carry eight figures at irregular spacings, in three sizes and eight colours, at identical runtime cost.
+
+raised arms were tried and dropped: at twenty pixels an arm is a detached stick beside a head, not a gesture. grass was four tiled radial gradients before, which drew four loose dots per tile: at that size a dot is not a person, and a grid of them is not a crowd.
 
 the pool floats are the one thing that did get dropped rather than moved behind. bright discs the size of a person read as neither, and with swimmers in front of them the strip was just noise.
 
