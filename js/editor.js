@@ -502,7 +502,11 @@ const Editor = (() => {
     keys.innerHTML =
       `<div class="ed__keyrow"><span class="who">1</span>${Input.legendHtml(0, places[0])}</div>` +
       `<div class="ed__keyrow${_progress.twoPlayer ? '' : ' ed__keyrow--off'}">` +
-      `<span class="who who--2">2</span>${Input.legendHtml(1, places[1])}</div>`;
+      `<span class="who who--2">2</span>${Input.legendHtml(1, places[1])}</div>` +
+      /* The keys are half the story on a tablet, where there are none. */
+      (_progress.twoPlayer
+        ? '<div class="ed__keyrow">\u261d\ufe0f or on a screen: left half is 1, right half is 2</div>'
+        : '');
     keysGroup.appendChild(keys);
     host.appendChild(keysGroup);
 

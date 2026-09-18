@@ -1,12 +1,18 @@
 /**
  * Input - turns a finger or a keyboard into intents.
  *
- * A "seat" is a human player, not a pitch player: seat 0 is touch and the arrow
- * keys, seat 1 is WASD for the two-player game. Which pitch player a seat is
+ * A "seat" is a human player, not a pitch player: seat 0 is the arrow keys,
+ * seat 1 is WASD, and both can be played by hand. Which pitch player a seat is
  * driving is decided by game.js (auto-switch), so nothing here needs to know
  * about teams or possession.
  *
- * Touch, one finger:
+ * On glass, one player owns the whole surface and two players share it down
+ * the middle - left seat one, right seat two, which is where two children sit
+ * at a tablet. Every gesture below is written against the seat's own finger,
+ * so both halves get all of them. A seat that already has a finger down
+ * ignores a second, so a stray hand cannot take a player off someone mid-run.
+ *
+ * Touch, one finger per player:
  *   drag  -> relative joystick from wherever the finger went down
  *   flick -> shoot along the flick, power from how fast it left
  *   tap   -> pass if you have the ball, otherwise switch to whoever is nearest it
@@ -44,6 +50,15 @@ const Input = (() => {
       shootDownAt: 0,       /* timeStamp the shoot key went down, 0 when up */
       canCharge: false,     /* whether a wind-up may accumulate at all */
       chargeFrom: 0,        /* timeStamp it was last allowed to start */
+      /* This seat's finger. Per seat rather than module-wide, so two children
+         can share one screen - and so the charge accessor does not need to
+         know that only one of them had a finger. */
+      pointerId: null,
+      origin: null,         /* {x, y, t} where the finger went down */
+      samples: [],          /* recent {x, y, t} for flick detection */
+      dragged: false,
+      stillSince: null,     /* timeStamp the finger last settled in the dead
+                               zone, null while it is out steering */
     };
   }
 
@@ -91,21 +106,42 @@ const Input = (() => {
   }
 
   const seats = [_seat(), _seat()];
-
-  /* Touch state for seat 0. */
-  let _pointerId = null;
-  let _origin = null;         /* {x, y, t} where the finger went down */
-  let _samples = [];          /* recent {x, y, t} for flick detection */
-  let _dragged = false;
-  let _stillSince = null;     /* timeStamp the finger last settled in the dead
-                                 zone, null while it is out steering */
   let _enabled = true;
+  let _surface = null;        /* the element the gestures are bound to */
+
+  /**
+   * Which seat a new finger belongs to.
+   *
+   * One player owns the whole surface. Two players share it down the middle,
+   * left seat one and right seat two, because that is where two children sit
+   * at a tablet. A seat that already has a finger down ignores a second, so a
+   * stray hand cannot take over a player mid-run.
+   * @param {number} clientX
+   * @returns {object|null} the seat, or null if it is not free
+   */
+  function _seatFor(clientX) {
+    let i = 0;
+    if (CONFIG.twoPlayer && _surface) {
+      const r = _surface.getBoundingClientRect();
+      /* A hidden element measures zero, and then every touch is "past the
+         middle" of nothing and lands on seat two. Cannot happen while a match
+         is on screen, but it is one comparison to not depend on that. */
+      if (r.width > 0) i = clientX >= r.left + r.width / 2 ? 1 : 0;
+    }
+    return seats[i].pointerId === null ? seats[i] : null;
+  }
+
+  /** The seat a live pointer belongs to, or null. */
+  function _seatOf(pointerId) {
+    return seats.find(s => s.pointerId === pointerId) || null;
+  }
 
   /**
    * Bind listeners.
    * @param {HTMLElement} surface - the element that receives the gestures
    */
   function init(surface) {
+    _surface = surface;
     surface.addEventListener('pointerdown', _onDown);
     surface.addEventListener('pointermove', _onMove);
     surface.addEventListener('pointerup', _onUp);
@@ -124,9 +160,9 @@ const Input = (() => {
 
   /** Drop all held state. */
   function reset() {
-    _pointerId = null; _origin = null; _samples = []; _dragged = false;
-    _stillSince = null;
     for (const s of seats) {
+      s.pointerId = null; s.origin = null; s.samples = [];
+      s.dragged = false; s.stillSince = null;
       s.mx = 0; s.my = 0;
       s.shootRequest = null; s.shootPressed = false;
       s.passRequest = false; s.tapRequest = false;
@@ -139,52 +175,67 @@ const Input = (() => {
   /* ─── Touch / mouse ─── */
 
   function _onDown(e) {
-    if (!_enabled || _pointerId !== null) return;
-    _pointerId = e.pointerId;
-    _origin = { x: e.clientX, y: e.clientY, t: e.timeStamp };
-    _samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
-    _dragged = false;
-    _stillSince = e.timeStamp;
+    if (!_enabled) return;
+    /*
+     * Mark the surface the first time a real finger lands, so the two-player
+     * seam is drawn for people who are actually touching. Capability is the
+     * wrong test: a laptop with a touchscreen can do both, and two children on
+     * one keyboard do not want a line down the middle of the pitch. Behaviour
+     * is not ambiguous. The class says touch is in use; game.js says whether
+     * there are two players; the CSS needs both.
+     */
+    if (e.pointerType === 'touch' && _surface) _surface.classList.add('touched');
+    const s = _seatFor(e.clientX);
+    if (!s) return;
+    s.pointerId = e.pointerId;
+    s.origin = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+    s.samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
+    s.dragged = false;
+    s.stillSince = e.timeStamp;
+    /* Capture is per pointer, not per element, so capturing this finger does
+       not touch the other player's. Without it a thumb dragged off the surface
+       stops reporting and the seat is stranded holding a finger that has gone. */
     if (e.currentTarget.setPointerCapture) {
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     }
   }
 
   function _onMove(e) {
-    if (e.pointerId !== _pointerId || !_origin) return;
-    _samples.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
-    while (_samples.length > 2 && e.timeStamp - _samples[0].t > SAMPLE_MS) _samples.shift();
+    const s = _seatOf(e.pointerId);
+    if (!s || !s.origin) return;
+    s.samples.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+    while (s.samples.length > 2 && e.timeStamp - s.samples[0].t > SAMPLE_MS) s.samples.shift();
 
-    const dx = e.clientX - _origin.x;
-    const dy = e.clientY - _origin.y;
+    const dx = e.clientX - s.origin.x;
+    const dy = e.clientY - s.origin.y;
     const px = Math.hypot(dx, dy);
     if (px < CONFIG.dragDeadZonePx) {
-      seats[0].mx = 0; seats[0].my = 0;
+      s.mx = 0; s.my = 0;
       /* Back in the dead zone: the wind-up starts now, not when the finger
          first went down, so steering away from a charge really does drop it. */
-      if (_stillSince == null) _stillSince = e.timeStamp;
+      if (s.stillSince == null) s.stillSince = e.timeStamp;
       return;
     }
 
-    _dragged = true;
-    _stillSince = null;
+    s.dragged = true;
+    s.stillSince = null;
     const tilt = Math.min(1, px / JOY_RADIUS);
     const w = Pitch.screenToWorldDelta(dx, dy);
     const wlen = Math.hypot(w.dx, w.dy) || 1;
-    seats[0].mx = w.dx / wlen * tilt;
-    seats[0].my = w.dy / wlen * tilt;
+    s.mx = w.dx / wlen * tilt;
+    s.my = w.dy / wlen * tilt;
   }
 
   function _onUp(e) {
-    if (e.pointerId !== _pointerId) return;
-    const s = seats[0];
-    const first = _samples[0];
+    const s = _seatOf(e.pointerId);
+    if (!s) return;
+    const first = s.samples[0];
     const dt = e.timeStamp - (first ? first.t : e.timeStamp);
     const dx = e.clientX - (first ? first.x : e.clientX);
     const dy = e.clientY - (first ? first.y : e.clientY);
     const px = Math.hypot(dx, dy);
 
-    if (_dragged && dt > 0 && dt < CONFIG.flickMaxMs && px > CONFIG.flickMinPx) {
+    if (s.dragged && dt > 0 && dt < CONFIG.flickMaxMs && px > CONFIG.flickMinPx) {
       /* A flick: shoot along it, power from how fast the finger left. */
       const speed = px / (dt / 1000);
       const w = Pitch.screenToWorldDelta(dx, dy);
@@ -194,27 +245,32 @@ const Input = (() => {
         dy: w.dy / wlen,
         power: Math.max(0.25, Math.min(1, (speed - 380) / 2400)),
       };
-    } else if (_stillSince != null && e.timeStamp - _stillSince >= CONFIG.windUpMs) {
+    } else if (s.stillSince != null && e.timeStamp - s.stillSince >= CONFIG.windUpMs) {
       /* A wind-up: held still long enough to mean it. Direction comes from
          nothing, because a still finger is not pointing anywhere - game.js
          falls back to the player's facing. */
-      const c = _chargeAt(s, _stillSince, e.timeStamp);
+      const c = _chargeAt(s, s.stillSince, e.timeStamp);
       s.shootRequest = { dx: 0, dy: 0, power: _holdPower(c), charge: c, held: true };
-    } else if (!_dragged) {
+    } else if (!s.dragged) {
       s.tapRequest = true;
     }
 
-    _pointerId = null; _origin = null; _samples = []; _dragged = false;
-    _stillSince = null;
+    _release(s);
     /* Fall back to whatever keys are still held rather than zeroing outright. */
     _syncKeyAxes(s);
   }
 
   function _onCancel(e) {
-    if (e.pointerId !== _pointerId) return;
-    _pointerId = null; _origin = null; _samples = []; _dragged = false;
-    _stillSince = null;
-    _syncKeyAxes(seats[0]);
+    const s = _seatOf(e.pointerId);
+    if (!s) return;
+    _release(s);
+    _syncKeyAxes(s);
+  }
+
+  /** Let go of a seat's finger. */
+  function _release(s) {
+    s.pointerId = null; s.origin = null; s.samples = [];
+    s.dragged = false; s.stillSince = null;
   }
 
   /* ─── Keyboard ─── */
@@ -310,7 +366,7 @@ const Input = (() => {
     if (x || y) {
       const len = Math.hypot(x, y);
       s.mx = x / len; s.my = y / len;
-    } else if (_pointerId === null) {
+    } else if (s.pointerId === null) {
       /* Nothing held and no finger down. Note pointerId 0 is a valid id, so
          this has to be an explicit null check. */
       s.mx = 0; s.my = 0;
@@ -340,13 +396,12 @@ const Input = (() => {
     const s = seats[i];
     if (!s) return 0;
     if (s.shootDownAt) return _chargeAt(s, s.shootDownAt, now);
-    /* Only seat 0 has a finger; seat 1 is keyboard by definition. A finger
-       that has not passed windUpMs might still be a tap, so there is no charge
-       to promise and the meter stays dark - it would be showing power the
-       player is about to not get. What the gesture shoots once it does commit
-       still counts from first contact; see _onUp. */
-    if (i === 0 && _pointerId !== null && _stillSince != null &&
-        now - _stillSince >= CONFIG.windUpMs) return _chargeAt(s, _stillSince, now);
+    /* A finger that has not passed windUpMs might still be a tap, so there is
+       no charge to promise and the meter stays dark - it would be showing
+       power the player is about to not get. What the gesture shoots once it
+       does commit still counts from first contact; see _onUp. */
+    if (s.pointerId !== null && s.stillSince != null &&
+        now - s.stillSince >= CONFIG.windUpMs) return _chargeAt(s, s.stillSince, now);
     return 0;
   }
 

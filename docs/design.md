@@ -144,6 +144,18 @@ the ball is the meter. a ring round it fills as the wind-up goes, and at the top
 
 the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
 
+## two players on one screen
+
+`Input` used to hold one pointer, module-wide, hardwired to seat 0, and player two was WASD. On a tablet that meant two-player did not exist: there is no second keyboard. The per-seat "your place" setting shipped before anyone noticed the seat it applies to could not be played by hand.
+
+the fix was not a second code path but moving the touch state where it belonged. `pointerId`, `origin`, `samples`, `dragged` and `stillSince` now live **on the seat**, next to `mx`, `keys` and `shootDownAt`, and every gesture is written against the seat's own finger. drag, flick, tap and the wind-up all work in both halves for free, and the special case that used to be threaded through the charge accessor - *only seat 0 has a finger* - is gone.
+
+one player owns the whole surface; two share it down the middle, left seat one and right seat two, which is where two children sit at a tablet. **a seat that already has a finger down ignores a second**, so a stray hand cannot take a player off someone mid-run. pointer capture is per pointer rather than per element, so capturing one child's finger does not touch the other's, and without it a thumb dragged off the surface strands a seat holding a finger that has gone.
+
+the seam needs **two** classes: `two-up`, which game.js sets for two-player, and `touched`, which input.js adds the first time a pointer of type `touch` arrives. capability is the wrong test - a laptop with a touchscreen can do both, and two children sharing one keyboard do not want a line down the middle of the pitch. behaviour is not ambiguous. measured: a finger in two-player shows it, a mouse does not, keys alone do not, and one player never does.
+
+the split reads the surface's width at the moment a finger lands. a hidden element measures **zero**, and then every touch is past the middle of nothing and lands on seat two - which cannot happen while a match is on screen, but it is one comparison to not depend on that, and it is exactly what made the first harness for this report the wrong answer.
+
 ## playing in goal
 
 `inGoal` is one entry a seat, and pins that seat to its team's keeper. `_autoSwitch` leaves a pinned seat alone and a tap will not switch off it, which is the whole point: you chose the position.

@@ -289,6 +289,28 @@ img { -webkit-user-drag: none; user-select: none; }
   overflow: hidden;
   background: #0d1b12;
 }
+/*
+ * Two players on one screen: the left half drives player one, the right half
+ * player two. A seam rather than a line - it fades out toward the top, so it
+ * says where the halves are down where the thumbs are without cutting the
+ * pitch in half where the football is.
+ *
+ * Needs both classes. two-up is two-player, set by game.js; touched means a
+ * finger has actually been used, set by input.js. Two children sharing one
+ * keyboard get no seam, because there is nothing to divide.
+ */
+#viewport.two-up.touched::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 2px; margin-left: -1px;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 45%,
+    rgba(255, 255, 255, 0.16) 100%);
+  pointer-events: none;
+  z-index: 40;
+}
 #pitch { position: absolute; inset: 0; will-change: transform; }
 #crowd, #pitch-markings, #world, #fx {
   position: absolute; left: 0; top: 0;

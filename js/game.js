@@ -155,6 +155,9 @@ const Game = (() => {
     Render.hideFullTime();
     Storage.revokeAll();
     _show('match');
+    /* The touch surface is split down the middle for two players, so say so. */
+    const vp = document.getElementById('viewport');
+    if (vp) vp.classList.toggle('two-up', !!_progress.twoPlayer);
     /* Before the resize, so the zoom is computed once at the width this match
        will actually use. */
     Pitch.setWideView(_places().some(Boolean));
