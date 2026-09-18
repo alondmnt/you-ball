@@ -170,6 +170,8 @@ a dive with nothing held carries the direction it launched in, so a tap is enoug
 
 `gkRecoverMs` is the cost. without it the dive is a free speed button and the answer is always to hold it down: a child is then simply a fast keeper, flopping about for half the match. 400ms at `gkRecoverMult` of keeper pace afterwards makes when to dive a decision, and it costs the AI keeper nothing (2.4 goals a minute conceded before and after).
 
+**a keeper holding the ball cannot be tackled.** their immunity runs out at `stealImmunityMs` but their own AI holds for 300ms longer before punting, and that gap was the safest goal in the game: stand next to them, take it off their hands the instant immunity lapses, and the steal knocks them clear of their own goal and stuns them for `tackleStunMs`. measured at **21 goals from 21 attempts, 617ms after every save**, from as far as 160 units out. it beat every honest tactic, and on a keyboard it was very nearly the only one that worked at all - see the aim note below. an outfield player is still robbable; there would be no tackling otherwise.
+
 the keeper's line is a **wall from the inside, not a leash**. it lets go entirely while the keeper is carrying, so a child who collects the ball can charge upfield and leave the goal empty, and it only bites on a player who was on the right side of it a moment ago, so coming home from midfield is a run rather than a teleport. the AI keeper never leaves its area, so none of this changes how it plays.
 
 ## music

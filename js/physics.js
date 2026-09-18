@@ -519,6 +519,16 @@ const Physics = (() => {
 
     /* Contact steals the ball. That is the whole tackle system - no fouls. */
     if (world.t < b.stealLockUntil) return;
+    /*
+     * Except from a keeper who has hold of it. Their immunity runs out at
+     * stealImmunityMs but their own AI holds the ball for 300ms longer before
+     * punting, and that gap was a free goal: stand next to them, take it off
+     * their hands the instant immunity lapses, and the steal knocks them clear
+     * of their own goal and stuns them. Measured at 21 goals from 21 attempts,
+     * 617ms after every save, from as far as 160 units away. It was the safest
+     * way to score in the game.
+     */
+    if (holder.role === 'gk') return;
     let thief = null, thiefD = CONFIG.stealDist;
     for (const p of world.players) {
       if (p.team === holder.team) continue;

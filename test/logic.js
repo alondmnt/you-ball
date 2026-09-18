@@ -217,6 +217,46 @@ console.log('\n-- the wind-up --');
   ok('a kickoff puts the ball out', !(w.ball.fireUntil > w.t), String(w.ball.fireUntil));
 }
 
+console.log('\n-- a keeper with the ball --');
+{
+  /* Standing on a keeper who has just caught it used to be the safest goal in
+     the game: their immunity lapses 300ms before their AI punts. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  for (const q of w.players) { q.x = 60; q.y = 40; }
+  const gk = w.players[4];
+  gk.x = CONFIG.pitchW - 30; gk.y = CONFIG.pitchH / 2;
+  const camper = w.players[3];
+  camper.x = gk.x - 40; camper.y = gk.y;
+  w.ball.carrier = gk.id; w.ball.x = gk.x; w.ball.y = gk.y;
+  w.ball.stealLockUntil = w.t + CONFIG.stealImmunityMs / 1000;
+
+  let stolen = false;
+  for (let i = 0; i < 90; i++) {                   /* well past immunity */
+    const dx = gk.x - camper.x, dy = gk.y - camper.y, d = Math.hypot(dx, dy) || 1;
+    its[camper.id].mx = dx / d; its[camper.id].my = dy / d;
+    if (Physics.step(w, its, DT).some(e => e.type === 'steal')) stolen = true;
+  }
+  ok('a keeper holding the ball cannot be tackled', !stolen);
+  ok('and keeps it until they choose to let go', w.ball.carrier === gk.id, String(w.ball.carrier));
+}
+{
+  /* An outfield player is still robbable, or there is no tackling at all. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  for (const q of w.players) { q.x = 60; q.y = 40; }
+  const holder = w.players[3], thief = w.players[7];
+  holder.x = 1200; holder.y = 450;
+  thief.x = 1200 + CONFIG.stealDist * 0.5; thief.y = 450;
+  w.ball.carrier = holder.id; w.ball.x = holder.x; w.ball.y = holder.y;
+  w.ball.stealLockUntil = w.t;
+  let stolen = false;
+  for (let i = 0; i < 30; i++) {
+    if (Physics.step(w, its, DT).some(e => e.type === 'steal')) stolen = true;
+  }
+  ok('an outfield player still is', stolen);
+}
+
 console.log('\n-- the keeper on its line --');
 {
   const setup = (carrying) => {
