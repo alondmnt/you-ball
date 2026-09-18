@@ -465,11 +465,15 @@ what makes them affordable is that a ball at rest is skipped entirely, no maths 
 
 ### the crowd
 
-grass is the only scene with an actual crowd - moon has a starfield, pool has floats and ballpit has netting overhead. it was four tiled radial gradients, which drew four loose dots per tile: at that size a dot is not a person, and a grid of them is not a crowd.
+**every scene has a crowd**, because that strip bounces when a goal is scored. `.crowd--cheer` is a crowd behaviour, and three of the four scenes used to have something in the crowd slot that could not do it: a starfield, poolside floats, netting. the fix was not to drop the scene's own idea but to put its spectators **in front of** it - astronauts over the stars and Earth, swimmers along the poolside, parents and children behind the ballpit netting, which is drawn over their faces because that is where netting is.
+
+they are all the same shape, a dome of shoulders with a head above, so a crowd reads as a crowd wherever you are; only the palette and the headgear change. grass was four tiled radial gradients before, which drew four loose dots per tile: at that size a dot is not a person, and a grid of them is not a crowd.
+
+the pool floats are the one thing that did get dropped rather than moved behind. bright discs the size of a person read as neither, and with swimmers in front of them the strip was just noise.
 
 it is now two tiled SVG rows of heads and shoulders. one tile is one row, so tiling it vertically stacks row behind row the way a stand does, and the back row is smaller, dimmer and on a **different tile size** - 71x19 against 93x24 - so the two never come back into step and the pattern stops reading as wallpaper. mismatched tile sizes are the whole trick; offsetting a matching tile does not work, because the columns still line up down the strip.
 
-it is also cheaper than what it replaced: three layers instead of five, and an SVG rasterises once however much is drawn inside it, where every extra gradient is another pass over the whole strip on each repaint. at 6x CPU throttle the frame costs 0.5ms with the crowd still and 0.7ms while it is bouncing, which is the only time the strip repaints at all.
+it is also cheaper than what it replaced: on grass, three layers instead of five, and an SVG rasterises once however much is drawn inside it, where every extra gradient is another pass over the whole strip on each repaint. at 6x CPU throttle the frame costs 0.5ms with the crowd still and 0.7ms while it is bouncing, which is the only time the strip repaints at all. moon carries the most - seven layers, two of them spectators over Earth and a starfield - and comes in at 1.2ms and 1.4ms.
 
 ### never animate a size
 
