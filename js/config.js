@@ -99,6 +99,18 @@ const CONFIG = {
   pressureDist: 160,
   aiJitter: 60,          // how far a formation slot wanders, world units
   aiReactionMs: 140,     // how often an AI player re-decides
+  // An AI lining a shot up shows the same target a human's wind-up does. It is
+  // free: the AI already has to carry the ball aiSettleMs before it may shoot,
+  // so the tell lives in a window that already existed and the shot is not
+  // delayed by a frame. Without it a human keeper has no information at all -
+  // the AI keeper it is up against is handed an exact prediction of the
+  // crossing point, and a person gets 457ms of ball in flight and a guess.
+  aiAimHoldMs: 150,      // the target stays up this long after it stops aiming
+  aiAimRange: 1.6,       // …and goes up this multiple of shootRange out. Only
+                         // inside shootRange gave no warning at all: an AI wins
+                         // the ball outside range, settles while running in,
+                         // and shoots the moment it arrives, so the tell and
+                         // the shot landed in the same frame.
   aiSettleMs: 350,       // an AI carrier runs with the ball this long before it
                          // will consider passing - without it, possession is a
                          // hot potato and nobody ever reaches shooting range

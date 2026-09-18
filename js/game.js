@@ -385,6 +385,22 @@ const Game = (() => {
       Input.clearRequests(i);
     }
 
+    /*
+     * Nobody of ours is winding up, so show the opposition's tell instead: an
+     * AI lining a shot up at a goal we are defending. Without it a human
+     * keeper has no information at all, while the AI keeper at the other end
+     * is handed an exact prediction of where the shot will cross.
+     */
+    if (!aimAt) {
+      const ours = new Set(_seats.map(x => x.team));
+      for (const q of _world.players) {
+        if (q.aimUntil > _world.t && !ours.has(q.team)) {
+          aimAt = { x: Physics.targetGoalX(q.team), y: q.aimY };
+          break;
+        }
+      }
+    }
+
     /* The ball is the meter and there is one of it, so two seats can never
        both be charging and the max above is a pick rather than a blend. */
     if (charge >= 1 && _charge < 1) Audio.play('ignite');

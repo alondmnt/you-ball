@@ -88,6 +88,8 @@ const AI = (() => {
     const chasers = _pickChasers(world, humans);
 
     for (const p of world.players) {
+      /* The tell belongs to the ball you are holding. */
+      if (world.ball.carrier !== p.id) p.aimUntil = -99;
       if (humans.has(p.id)) continue;
       const intent = intents[p.id] || (intents[p.id] = { mx: 0, my: 0, shoot: null, pass: false });
       intent.mx = 0; intent.my = 0; intent.shoot = null; intent.pass = false; intent.dive = false;
@@ -155,6 +157,24 @@ const AI = (() => {
 
     /* Time on the ball, read off the immunity window rather than stored. */
     const heldFor = world.t - (b.stealLockUntil - CONFIG.stealImmunityMs / 1000);
+
+    /*
+     * Show where this would go, while it is still deciding.
+     *
+     * A human keeper is otherwise flying blind: the AI keeper at the other end
+     * is handed an exact prediction of the crossing point the moment the ball
+     * comes loose, and a person gets 457ms of flight and a guess. The tell
+     * costs nothing, because it lives in a window that already existed - an AI
+     * carrier must hold the ball aiSettleMs before it is allowed to shoot, and
+     * that is exactly when a keeper needs to be moving. Delaying the shot
+     * instead was tried and is not affordable: 300ms of commitment took grass
+     * from 4.0 goals a match to 1.7 and emptied the pool scene entirely.
+     */
+    if (dist < CONFIG.shootRange * CONFIG.aiAimRange) {
+      p.aimY = _aimTarget(world, p, goalY);
+      p.aimUntil = world.t + CONFIG.aiAimHoldMs / 1000;
+    }
+
     if (heldFor < CONFIG.aiSettleMs / 1000) {
       _steer(p, goalX, goalY + p.ai.jy * 0.6, intent);
       return;
@@ -162,10 +182,7 @@ const AI = (() => {
 
     if (dist < CONFIG.shootRange &&
         (dist < CONFIG.aiPointBlank || _laneClear(world, p, goalX, goalY))) {
-      /* Aim away from the keeper's current side, then add difficulty noise. */
-      const gk = world.players.find(q => q.team !== p.team && q.role === 'gk');
-      const half = CONFIG.goalMouth / 2 - CONFIG.ballRadius * 2;
-      const aimY = gk ? goalY - Math.sign(gk.y - goalY || 1) * half * 0.7 : goalY;
+      const aimY = _aimTarget(world, p, goalY);
       let dx = goalX - b.x, dy = aimY - b.y;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
@@ -262,6 +279,22 @@ const AI = (() => {
     const ballDist = Math.abs(b.x - goalX);
     const advance = ballDist < 620 ? CONFIG.gkReach * 0.75 : CONFIG.gkReach * 0.25;
     _steer(p, goalX + Physics.attackDir(p.team) * advance, aimY, intent);
+  }
+
+  /**
+   * Where in the goal an AI carrier would put it: away from the keeper's
+   * current side. Shared by the shot and the tell that precedes it, so the
+   * target a keeper reads is the one the shot is actually aimed at - the
+   * difficulty's aim noise is added at release, not here.
+   * @param {object} world
+   * @param {object} p - the carrier
+   * @param {number} goalY - the centre of the goal being attacked
+   * @returns {number} world y
+   */
+  function _aimTarget(world, p, goalY) {
+    const gk = world.players.find(q => q.team !== p.team && q.role === 'gk');
+    const half = CONFIG.goalMouth / 2 - CONFIG.ballRadius * 2;
+    return gk ? goalY - Math.sign(gk.y - goalY || 1) * half * 0.7 : goalY;
   }
 
   /**

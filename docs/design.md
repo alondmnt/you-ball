@@ -190,6 +190,10 @@ what it is worth now, on normal, from a grid of positions and distances:
 | leans at random | 0% | 25% |
 | shoots across the keeper | 30% | 65% |
 
+**the opposition is telegraphed too.** an AI lining a shot up shows the same target, at any goal a human is defending. without it a keeper played blind: the AI keeper at the other end is handed an exact prediction of where the shot will cross the moment the ball comes loose, and a person got 457ms of flight and a guess. measured in goal, the tell is up for **800ms** before the shot arrives, on 100% of them.
+
+it costs the AI nothing, because it lives in a window that already existed - a carrier must hold the ball `aiSettleMs` before it may shoot. goals a match are identical to the baseline, to the decimal, in all four scenes. **delaying** the shot instead was tried and is not affordable: 300ms of commitment took grass from 4.0 a match to 1.7 and emptied the pool scene entirely. and the tell has to start further out than `shootRange` (`aiAimRange`, 1.6x), because an AI wins the ball outside range and settles while running in - gated on range alone, the tell and the shot landed in the same frame and the warning was 0ms.
+
 while a shot is being wound up, a target sits on the goal line where it would cross, and moves as you lean. a child cannot learn to place a shot they cannot see themselves placing. it is only up during a wind-up, so it is never scenery, and it is always on screen when it matters: the camera shows 750 world units either side of the ball and `shootRange` is 700, so the goal is in frame whenever you are close enough to shoot at it.
 
 leaning at random is **worse than not leaning**, which is the sign that it is a skill and not a dice roll: the keeper is on your line, so a lean toward it is worse than none and a lean across it is much better. `aimReach` (0.85) is how near the post a full lean can place it - short of the post, so committing fully is not a miss.

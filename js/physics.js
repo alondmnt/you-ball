@@ -90,6 +90,12 @@ const Physics = (() => {
           stunUntil: -99,     /* just been tackled - cannot steer */
           diveUntil: -99,     /* keepers only */
           diveDir: 1,
+          /* An AI lining a shot up: world time the tell expires, and the point
+             on the goal line it is aimed at. Physics reads neither - they are
+             here so a human keeper can be shown what a human shooter gives
+             away for free by winding up. */
+          aimUntil: -99,
+          aimY: 0,
           human: false,
           speedMult: 1,
         });
@@ -134,6 +140,7 @@ const Physics = (() => {
       p.tackleAt = -99;
       p.stunUntil = -99;
       p.diveUntil = -99;
+      p.aimUntil = -99;
     }
     /* The kicking team's forward stands over the ball. */
     const taker = world.players.find(p => p.team === kickingTeam && p.index === 3);

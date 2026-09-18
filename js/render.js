@@ -296,7 +296,9 @@ const Render = (() => {
    * @param {object} L - the current layout
    */
   function _aim(L) {
-    const on = _charge > 0 && _aimX != null;
+    /* Not gated on the charge: an AI lining a shot up shows a target without
+       any ring, because it is not accumulating power, only choosing a corner. */
+    const on = _aimX != null;
     if (!on) {
       if (_aimOn) { _aimOn = false; _ball.aim.classList.remove('aim-spot--on'); }
       return;
