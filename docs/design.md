@@ -59,13 +59,18 @@ world = {
   players: [ { id, team, index, role, x, y, vx, vy, facing,
                kickAt, stunUntil, diveUntil, diveDir,
                human, speedMult, ai } ],
-  ball:    { x, y, vx, vy, carrier, stealLockUntil, pickupLockUntil, lastTouch, scored },
+  balls:   [ { x, y, vx, vy, carrier, stealLockUntil, pickupLockUntil, lastTouch, fireUntil, scored } ],
+  star:    null | { x, y, until },       // a star match, while one is out
+  starAt,                                // world.t the star is due, -1 for never
+  multiUntil,                            // world.t the extra balls go away
 }
 
-match = { phase, phaseLeft, score, clock, scorer, winner, restartTeam }
+match = { phase, phaseLeft, score, clock, scorer, goalX, winner, restartTeam }
 ```
 
 player ids are array indices, assigned in `Physics.createWorld`.
+
+`balls[0]` is the match ball and is always there; a star match adds more and a kickoff drops them. **there is deliberately no `world.ball`.** an alias for `balls[0]` would have made the multi-ball change a tenth the size and would have made the wrong thing the easy thing - every later edit reaching for "the ball" and silently ignoring the others. the questions are named instead: `mainBall(world)`, `carrierOf(world, ball)`, `ballOf(world, id)`, `nearestBall(world, x, y)`.
 
 the pure modules mutate `world` in place and return an events array rather than returning a new world. reallocating eight players sixty times a second buys nothing, and the property the seam needs - no rendering in there - is unaffected. plan.md says "take state, return state"; this is the same seam with less garbage.
 
@@ -100,6 +105,8 @@ it was in the ramp to begin with, which meant the first 240ms of every hold - ov
 `holdMaxMs` is time-to-full measured from first contact, whichever hand you are playing with, so one number tunes both and the same hold buys the same shot either way.
 
 a wind-up that finds no ball to kick falls back to being a tap, and taps switch players. without that, holding still a beat too long would leave you stuck on the wrong player with nothing to show for it.
+
+**the meter is per ball**, because in a star match two seats really can be winding up at once on two different balls. the aim spot and the ignite sound stay single and follow whichever is furthest along: there is one of each, and a blend of two charges is not a number that means anything.
 
 **the charge only runs while you have the ball.** without that gate the whole thing is defeated by holding the key down: you walk onto the ball already at full power and the meter never means anything. measured, leaning on the shoot key for seventy seconds: twelve fireballs before the gate, one after. `Input.setCharging(i, on, now)` is how game.js says so, and it restarts the clock, so gaining the ball mid-hold starts you at zero. input still knows nothing about teams or possession - only that this seat may charge now, which is the same shape as `setEnabled`.
 
@@ -143,6 +150,64 @@ the ball is the meter. a ring round it fills as the wind-up goes, and at the top
 `Render.setCharge` is the only writer of the charge; the fire comes from the world. while nothing is winding up the whole thing costs one comparison a frame. the fill is a custom property, which repaints, so it is only written when it has moved 2% - at 6x CPU throttle the ramp costs 0.8ms a frame for as long as it lasts, and the flame, being a transform animation, costs nothing measurable at all.
 
 the charge (0..1) rides on the shoot intent and out again on the kick event. physics has no use for it and never reads it. it is carried because it is the only thing that separates a wound-up kick from an AI clearance, and **the two arrive at exactly the same power**: the AI shoots at 0.99 of the range as a matter of course, measured over 40 matches, so anything keyed on shot speed would fire on every clearance in the game.
+
+## the star match
+
+three matches in four have no star in them at all. that is the feature: a thing
+that happens every time is a mechanic, a thing that happens now and then is a
+story, and the point is that a child can say afterwards which match was the
+star match.
+
+the roll happens once, in `Match.begin`, off the same seeded stream as the
+bounces - so a seed replays a match exactly, star and all. it costs one draw
+from that stream whether or not a star comes of it, which is why a star-match
+build does not reproduce an older build's bounces.
+
+| dial | what it decides |
+|---|---|
+| `starChance` | matches that get one at all (0.25) |
+| `starEarliest` / `starLatest` | where in the clock it lands, as a fraction |
+| `starLifeMs` | how long it waits before giving up |
+| `starRetryMs` | a goal cleared one nobody reached: it comes back |
+| `starReach` | how close you have to run |
+| `multiBallCount` | extra balls it bursts into (2) |
+| `multiBallMs` | how long they last if nobody scores |
+
+**only a player a person is driving can collect one.** an AI teammate blundering
+into it would hand the child the whole thing for nothing, and this is meant to
+be the first reason in the game to deliberately leave the ball. physics reads
+`p.human`, which `AI.applyDifficulty` keeps current every time control moves.
+
+a keeper cannot reach one: the line clamp holds them near their goal and the
+star spawns in the middle third. a seat in goal sits the star out.
+
+the extras burst out of the star's own position rather than the centre spot, so
+the thing a child ran across the pitch for visibly becomes the thing that
+happens. they last until a goal or `multiBallMs`; the kickoff after a goal takes
+them away either way.
+
+**the camera pulls back to the whole pitch while they are out** - the same view a
+seat in goal already uses. it answers "which ball does the camera follow" by not
+having to, and the pull-back doubles as the announcement.
+
+**the AI contests every loose ball, not one.** this is the difference between a
+special match and an ordinary one with scenery. with a single chaser per team,
+two of the three balls simply rolled about and a star match measured x1.1 goals
+a minute against normal play. contesting them all, capped so one field player
+always holds the shape, it measures x1.8 to x2.9 and nine bursts in ten end in a
+goal. single-ball play is untouched: 48 whole matches across every scene,
+difficulty and three seeds hash identically either way.
+
+it is not a gift. across 240 bursts the goals split 38-61% toward the side that
+took the star, depending on difficulty - near enough a coin toss. (AI vs AI after
+the burst, so a child who plays it well would tilt that; the point is that the
+mechanic itself does not.)
+
+the faces on the extra balls come from the whole roster, not just the eight on
+the pitch, so a character a child made and never picked for a team still turns
+up - a second reason to make one. they are chosen in `render.js`, because
+physics has no business knowing the gallery exists and the face changes nothing
+about where a ball goes. an empty gallery gets ordinary balls.
 
 ## two players on one screen
 
@@ -403,7 +468,9 @@ layers are all tested in `test/logic.js` rather than judged by ear.
 
 ## AI
 
-four behaviours, picked per player per step: keeper, carrier, chaser (one field player per team, the nearest to the ball), and everyone else holding a formation slot that slides with the ball.
+four behaviours, picked per player per step: keeper, carrier, chaser, and everyone else holding a formation slot that slides with the ball.
+
+chasers are the closest player-and-ball pairings, taken greedily, skipping any ball a teammate already has. with one ball that is exactly "the nearest player chases, unless we already have it". with several it is several, capped at one short of the team's field players so somebody always holds the shape - see the star match above for why that cap matters more than it looks. the keeper goes to whichever ball reaches their goal soonest, and the formation slides with the balls' average x, so the shape stays one shape instead of tearing.
 
 the carrier order is **settle, then shoot, then pass**, and a pass must gain `aiMinPassGain` up the pitch. checking pressure first - which is how plan.md words it - means passing on every touch, because a chaser is always inside `pressureDist`. the ball went round in a circle and no one ever reached shooting range.
 
@@ -538,8 +605,8 @@ a standing consequence: **every formation slot sits in its own defensive half**,
 | `assets.js` | CONFIG, canvas | characters, teams |
 | `character.js` | Assets, Storage | the pitch, the match |
 | `pitch.js` | CONFIG | players, the ball, the score |
-| `physics.js` | CONFIG | the DOM, the match phase |
-| `ai.js` | CONFIG, Physics | the DOM, who is human |
+| `physics.js` | CONFIG, `p.human` (for the star alone) | the DOM, the match phase |
+| `ai.js` | CONFIG, Physics, who is human | the DOM |
 | `input.js` | CONFIG, Pitch | players, teams, possession, whether a charge has a ball to kick |
 | `match.js` | CONFIG, Physics | the DOM |
 | `audio.js` | CONFIG | the world, the score bar, who is human |
@@ -567,9 +634,11 @@ a standing consequence: **every formation slot sits in its own defensive half**,
 | `test/logic.js` | cashes the plan's claim that the logic is testable in a plain script |
 | music the plan never asked for | the plan listed effects only; both sibling games have a loop and this felt bare without one |
 | the music reacts to possession | asked for during the build: the arrangement is the feature, not the loop |
+| the world holds a list of balls | the star match needs several, and an alias for "the ball" would have let every later edit ignore them |
+| the star can only be collected by hand | an AI teammate picking it up hands the child the rare thing for nothing |
 
 ## not built
 
-stage 5 is partly done: the scenes above exist and the music does, weather does not. still open: weather, power shots and items, export/import a character or team as a file. an ocean scene is the natural home for weather, because a current that pushes the ball only makes sense somewhere without edges.
+stage 5 is mostly done: the scenes exist, the music does, power shots are the wind-up and items are the star match. still open: weather, and export/import a character or team as a file. an ocean scene is the natural home for weather, because a current that pushes the ball only makes sense somewhere without edges.
 
 also outstanding from the plan's own risk list: the drag-and-flick controls are still a proposal that has not met the child's hands. dead zones (`dragDeadZonePx`), flick thresholds (`flickMaxMs`, `flickMinPx`) and the joystick radius are the dials. the fallback, if it does not survive contact, is an on-screen joystick and one big shoot button.
