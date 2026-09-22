@@ -176,6 +176,18 @@ const Physics = (() => {
   function _star(world, events) {
     if (!world.star) {
       if (world.starAt < 0 || world.t < world.starAt) return;
+      /*
+       * Nobody out there who could fetch it, so there is no star.
+       *
+       * A keeper is held near their own goal by the line clamp and the star
+       * lands in the middle third: measured, two keepers sprinting at a centre
+       * star for its whole life get no closer than 1010 units of the 80 they
+       * need. With both seats in goal - which is a way the children do play,
+       * because it needs no running - the star would appear, expire, come back
+       * after the next kickoff and appear again, none of it ever reachable.
+       * A prize on screen that cannot be won is worse than no prize.
+       */
+      if (!_canFetch(world)) { world.starAt = -1; return; }
       /* Out in the middle somewhere: never tucked in a goalmouth, where it
          would be either a gift or unreachable depending on the end. */
       const x = CONFIG.pitchW * (0.25 + _rand() * 0.5);
@@ -200,6 +212,12 @@ const Physics = (() => {
       world.star = null;
       events.push({ type: 'starGone', x: s.x, y: s.y });
     }
+  }
+
+  /** Is there a human-driven player on the pitch who could reach a star? */
+  function _canFetch(world) {
+    for (const p of world.players) if (p.human && p.role !== 'gk') return true;
+    return false;
   }
 
   /**

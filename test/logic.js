@@ -327,9 +327,11 @@ console.log('\n-- the star match --');
      `${earliest.toFixed(1)}..${latest.toFixed(1)}s of ${CONFIG.matchSeconds}`);
 }
 {
-  /* Out, collected, gone. */
+  /* Out, collected, gone. Somebody outfield is being driven, or there would
+     be nothing to come out for - see the next block. */
   const w = Physics.createWorld();
   const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  w.players[3].human = true;
   w.starAt = w.t + 0.5;
   let out = null;
   for (let i = 0; i < 60 && !out; i++) {
@@ -344,6 +346,7 @@ console.log('\n-- the star match --');
      the child did, not something that happened to them. */
   const bot = w.players[2];
   bot.human = false;
+  w.players[3].human = false;   /* and the one who was driving has stepped away */
   bot.x = w.star.x; bot.y = w.star.y;
   for (let i = 0; i < 10; i++) Physics.step(w, its, DT);
   ok('an AI standing on it does not collect it', !!w.star);
@@ -355,6 +358,41 @@ console.log('\n-- the star match --');
     for (const e of Physics.step(w, its, DT)) if (e.type === 'starGot') got = e;
   }
   ok('the player a person is driving does', !!got && !w.star, got ? String(got.id) : 'never');
+}
+{
+  /*
+   * Nobody out there who could fetch it, so no star is offered at all.
+   *
+   * Both children in goal is a real way to play - it needs no running - and a
+   * keeper cannot leave their line. Without this the star would appear, expire,
+   * come back after the next kickoff and appear again, none of it reachable.
+   */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  for (const p of w.players) p.human = p.role === 'gk';   /* both seats in goal */
+  w.starAt = w.t + 0.2;
+  let out = false;
+  for (let i = 0; i < 60; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'star') out = true;
+  }
+  ok('no star when only keepers are being driven', !out && !w.star);
+  ok('and it is not left hanging to try again', w.starAt < 0, String(w.starAt));
+
+  /* Two keepers cannot reach the middle of the pitch, which is why. */
+  const v = Physics.createWorld();
+  const vi = v.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  const keepers = v.players.filter(p => p.role === 'gk');
+  const sx = CONFIG.pitchW / 2, sy = CONFIG.pitchH / 2;
+  for (let i = 0; i < CONFIG.starLifeMs / 1000 / DT; i++) {
+    for (const p of keepers) {
+      const dx = sx - p.x, dy = sy - p.y, d = Math.hypot(dx, dy) || 1;
+      vi[p.id].mx = dx / d; vi[p.id].my = dy / d;
+    }
+    Physics.step(v, vi, DT);
+  }
+  const closest = Math.min(...keepers.map(p => Math.hypot(p.x - sx, p.y - sy)));
+  ok('a keeper cannot reach the middle however hard they run',
+     closest > CONFIG.starReach, closest.toFixed(0) + ' units, needs ' + CONFIG.starReach);
 }
 {
   /* Nobody goes near it: it gives up and the match carries on. */

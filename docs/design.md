@@ -178,8 +178,19 @@ into it would hand the child the whole thing for nothing, and this is meant to
 be the first reason in the game to deliberately leave the ball. physics reads
 `p.human`, which `AI.applyDifficulty` keeps current every time control moves.
 
-a keeper cannot reach one: the line clamp holds them near their goal and the
-star spawns in the middle third. a seat in goal sits the star out.
+**a star is only offered if somebody could go and get it.** a keeper is held near
+their own goal by the line clamp and the star lands in the middle third:
+measured, two keepers sprinting at a centre star for its whole life get no
+closer than 1010 units of the 80 they need. so with every seat in goal - which
+is a way the children do play, because it needs no running - there is no star at
+all, rather than one appearing, expiring, coming back after the next kickoff and
+appearing again, none of it reachable. a prize on screen that cannot be won is
+worse than no prize.
+
+for anyone who can leave their line it is a comfortable run: a clear 1200 units
+takes 2.9s of the star's 7s, and a player who goes straight for it collects
+100% of the time at every difficulty. what `starReach` and `starLifeMs` have not
+met is a child's hands.
 
 the extras burst out of the star's own position rather than the centre spot, so
 the thing a child ran across the pitch for visibly becomes the thing that
