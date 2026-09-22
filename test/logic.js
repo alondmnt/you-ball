@@ -321,7 +321,7 @@ console.log('\n-- the star match --');
     Physics.planStar(w);
     if (w.starAt >= 0) { earliest = Math.min(earliest, w.starAt); latest = Math.max(latest, w.starAt); }
   }
-  ok('and never in the first quarter or the last third',
+  ok('and never at the kickoff or too late to use',
      earliest >= CONFIG.matchSeconds * CONFIG.starEarliest &&
      latest <= CONFIG.matchSeconds * CONFIG.starLatest,
      `${earliest.toFixed(1)}..${latest.toFixed(1)}s of ${CONFIG.matchSeconds}`);

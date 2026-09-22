@@ -40,8 +40,15 @@ const CONFIG = {
      a story. The roll is made once at kick off, off the seeded stream, so the
      same seed always replays the same match. */
   starChance: 0.25,      // matches that get a star
-  starEarliest: 0.25,    // …and where in the clock it can turn up, as a
-  starLatest: 0.70,      // fraction, so it is never at the whistle either end
+  /* …and where in the clock it can turn up, as a fraction of it. Both numbers
+     are lower than the clock suggests because a match ends at goalsToWin, not
+     at the whistle: on normal and hard 95-98% of them do, with a median length
+     of 53-55 seconds. Scheduled out to 0.70 the star missed its own match
+     29-42% of the time, rarest on hard, which is backwards. At 0.15-0.40 it
+     lands in 95-100% of the matches that planned one, and still never at the
+     kickoff or so late there is no time left to use it. */
+  starEarliest: 0.15,
+  starLatest: 0.40,
   starLifeMs: 7000,      // how long it waits on the pitch before giving up
   starRetryMs: 2500,     // a goal cleared one nobody had reached: it comes back
   starReach: 80,         // run this close to collect it
@@ -353,6 +360,30 @@ const CONFIG = {
   ],
   formationBallPull: 0.42,  // how far a slot drifts toward the ball's x
 };
+
+/*
+ * ?believe - the sign over Ted's door.
+ *
+ * Every match gets a star instead of one in four, which is the thing a child
+ * asks for the moment they have seen one. ?believe=N also sets how many extra
+ * balls it bursts into, capped at eight: the point is a silly afternoon, not a
+ * frozen tablet.
+ *
+ * Read once at load, no UI, same shape as the sibling games' switches
+ * (car-doctor's ?sonicscrew, boo-boss's ?sandyclaws). It only turns dials that
+ * no scene overrides, so applyScene will not undo it.
+ *
+ * The guard is for the logic tests, which run this file in a plain node vm
+ * with no browser around it at all.
+ */
+(() => {
+  if (typeof location === 'undefined') return;
+  const params = new URLSearchParams(location.search);
+  if (!params.has('believe')) return;
+  CONFIG.starChance = 1;
+  const n = parseInt(params.get('believe'), 10);
+  if (Number.isFinite(n) && n > 0) CONFIG.multiBallCount = Math.min(n, 8);
+})();
 
 /**
  * Switch scene: restore every value any scene touches, then lay the chosen

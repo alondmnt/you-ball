@@ -173,6 +173,14 @@ build does not reproduce an older build's bounces.
 | `multiBallCount` | extra balls it bursts into (2) |
 | `multiBallMs` | how long they last if nobody scores |
 
+**the window is tuned to when matches actually end, not to the clock.** a match
+ends at `goalsToWin`, not at the whistle: on normal and hard 95-98% of them do,
+with a median length of 53-55 seconds of the 90 on the clock. scheduled out to
+0.70 of the clock the star missed its own match 29-42% of the time - rarest on
+hard, which is backwards - so a child saw one in 14-21% of matches rather than
+the 25% the dial says. at 0.15-0.40 it lands in 95-100% of the matches that
+planned one.
+
 **only a player a person is driving can collect one.** an AI teammate blundering
 into it would hand the child the whole thing for nothing, and this is meant to
 be the first reason in the game to deliberately leave the ball. physics reads
