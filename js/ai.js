@@ -88,8 +88,9 @@ const AI = (() => {
     const chasers = _pickChasers(world, humans);
 
     for (const p of world.players) {
+      const mine = Physics.ballOf(world, p.id);
       /* The tell belongs to the ball you are holding. */
-      if (world.ball.carrier !== p.id) p.aimUntil = -99;
+      if (!mine) p.aimUntil = -99;
       if (humans.has(p.id)) continue;
       const intent = intents[p.id] || (intents[p.id] = { mx: 0, my: 0, shoot: null, pass: false });
       intent.mx = 0; intent.my = 0; intent.shoot = null; intent.pass = false; intent.dive = false;
@@ -101,29 +102,36 @@ const AI = (() => {
         p.ai.jy = _jitter(CONFIG.aiJitter);
       }
 
-      if (p.role === 'gk') _keeper(world, p, intent);
-      else if (world.ball.carrier === p.id) _withBall(world, p, intent);
-      else if (chasers[p.team] === p.id) _chase(world, p, intent);
+      const chase = chasers[p.team];
+      if (p.role === 'gk') _keeper(world, p, mine, intent);
+      else if (mine) _withBall(world, p, mine, intent);
+      else if (chase && chase.id === p.id) _chase(world, p, chase.ball, intent);
       else _holdSlot(world, p, intent);
     }
   }
 
   /**
-   * One field player per team goes for the ball: the nearest to it, unless a
-   * teammate already has it, in which case nobody chases and everyone spreads.
-   * @returns {Array<number|null>} chaser id per team
+   * One field player per team goes for a ball: the closest player-and-ball
+   * pairing, skipping any ball a teammate already has. With a single ball
+   * that is exactly "the nearest player chases, unless we already have it".
+   *
+   * Deliberately still one chaser per team in a star match. Sending a second
+   * would empty the formation, and with three balls loose there is already
+   * more happening than anyone can mark.
+   * @returns {Array<{id: number, ball: object}|null>} per team
    */
   function _pickChasers(world, humans) {
-    const b = world.ball;
-    const holder = Physics.carrier(world);
     const out = [null, null];
     for (let team = 0; team < 2; team++) {
-      if (holder && holder.team === team) continue;
       let best = null, bestD = Infinity;
-      for (const p of world.players) {
-        if (p.team !== team || p.role === 'gk' || humans.has(p.id)) continue;
-        const d = Math.hypot(p.x - b.x, p.y - b.y);
-        if (d < bestD) { bestD = d; best = p.id; }
+      for (const b of world.balls) {
+        const holder = Physics.carrierOf(world, b);
+        if (holder && holder.team === team) continue;   /* ours already */
+        for (const p of world.players) {
+          if (p.team !== team || p.role === 'gk' || humans.has(p.id)) continue;
+          const d = Math.hypot(p.x - b.x, p.y - b.y);
+          if (d < bestD) { bestD = d; best = { id: p.id, ball: b }; }
+        }
       }
       out[team] = best;
     }
@@ -148,8 +156,7 @@ const AI = (() => {
    * round in circles and no one ever got within shooting range. So: settle
    * first, then shoot, then pass, and only forward.
    */
-  function _withBall(world, p, intent) {
-    const b = world.ball;
+  function _withBall(world, p, b, intent) {
     const goalX = Physics.targetGoalX(p.team);
     const goalY = CONFIG.pitchH / 2;
     const dir = Physics.attackDir(p.team);
@@ -214,9 +221,8 @@ const AI = (() => {
     _steer(p, goalX, goalY + p.ai.jy * 0.6, intent);
   }
 
-  /** Not carrying, nearest to the ball: go and get it. */
-  function _chase(world, p, intent) {
-    const b = world.ball;
+  /** Not carrying, nearest to a ball: go and get that one. */
+  function _chase(world, p, b, intent) {
     /* Lead a moving ball rather than running at where it was. */
     const lead = Math.min(0.4, Math.hypot(b.vx, b.vy) / 2200);
     _steer(p, b.x + b.vx * lead, b.y + b.vy * lead, intent);
@@ -226,7 +232,11 @@ const AI = (() => {
   function _holdSlot(world, p, intent) {
     const slot = CONFIG.formation[p.index];
     const baseX = p.team === 0 ? slot.x : CONFIG.pitchW - slot.x;
-    const pull = (world.ball.x - CONFIG.pitchW / 2) * CONFIG.formationBallPull;
+    /* The formation slides with where the play is. With several balls that is
+       their average, so the shape stays one shape instead of tearing. */
+    let sum = 0;
+    for (const b of world.balls) sum += b.x;
+    const pull = (sum / world.balls.length - CONFIG.pitchW / 2) * CONFIG.formationBallPull;
     const tx = Math.max(140, Math.min(CONFIG.pitchW - 140, baseX + pull + p.ai.jx));
     const ty = Math.max(80, Math.min(CONFIG.pitchH - 80, slot.y + p.ai.jy));
     _steer(p, tx, ty, intent);
@@ -237,12 +247,12 @@ const AI = (() => {
    * ball, dive at a fast inbound shot, and punt after collecting one.
    * How fast it tracks is the difficulty dial.
    */
-  function _keeper(world, p, intent) {
-    const b = world.ball;
+  function _keeper(world, p, mine, intent) {
     const goalX = Physics.ownGoalX(p.team);
     const centreY = CONFIG.pitchH / 2;
+    const b = mine || _threat(world, goalX);
 
-    if (b.carrier === p.id) {
+    if (mine) {
       /* Collected it - hold a beat, then punt to a teammate. */
       if (world.t > b.stealLockUntil + 0.3) intent.pass = true;
       else _steer(p, goalX + Physics.attackDir(p.team) * 60, centreY, intent);
@@ -279,6 +289,27 @@ const AI = (() => {
     const ballDist = Math.abs(b.x - goalX);
     const advance = ballDist < 620 ? CONFIG.gkReach * 0.75 : CONFIG.gkReach * 0.25;
     _steer(p, goalX + Physics.attackDir(p.team) * advance, aimY, intent);
+  }
+
+  /**
+   * The ball this keeper should be worrying about: whichever arrives at their
+   * goal soonest. One that is not coming at all is ranked behind every one
+   * that is, nearest first, so a keeper with nothing inbound still drifts
+   * toward the closest threat rather than freezing on the match ball.
+   * @param {object} world
+   * @param {number} goalX - the goal this keeper defends
+   * @returns {object} a ball, never null
+   */
+  function _threat(world, goalX) {
+    let best = world.balls[0], bestScore = Infinity;
+    for (const b of world.balls) {
+      if (b.scored) continue;
+      const dx = b.x - goalX;
+      const closing = dx * b.vx < 0 && Math.abs(b.vx) > 1;
+      const score = closing ? Math.abs(dx / b.vx) : 10 + Math.abs(dx) / CONFIG.pitchW;
+      if (score < bestScore) { bestScore = score; best = b; }
+    }
+    return best;
   }
 
   /**

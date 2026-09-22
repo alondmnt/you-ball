@@ -30,6 +30,9 @@ const ok = (name, cond, extra) => {
   else { fail++; console.log('  FAIL ' + name + (extra ? '  -> ' + extra : '')); }
 };
 const DT = 1 / 60;
+/* The match ball. The world holds a list now, and every test here is about
+   the one a kickoff puts on the centre spot. */
+const ball = w => w.balls[0];
 
 /**
  * Run a whole AI-vs-AI match and collect everything that happened.
@@ -60,7 +63,7 @@ function simulate(maxSeconds, scene, seed) {
     for (const e of worldEvents) log.push(e);
     for (const e of Match.update(match, world, DT, worldEvents)) log.push(e);
 
-    const b = world.ball;
+    const b = ball(world);
     if (!b.scored && (b.x < -1 || b.x > CONFIG.pitchW + 1 || b.y < -1 || b.y > CONFIG.pitchH + 1)) outOfBounds++;
     for (const p of world.players) {
       if (p.x < 0 || p.x > CONFIG.pitchW || p.y < 0 || p.y > CONFIG.pitchH) outOfBounds++;
@@ -82,7 +85,7 @@ ok('a win ends the match at goalsToWin',
    r.match.clock <= 0 || Math.max(...r.match.score) === CONFIG.goalsToWin,
    'clock=' + r.match.clock.toFixed(1) + ' score=' + r.match.score);
 ok('every kickoff clears the scored flag',
-   r.match.phase !== Match.PHASE.PLAY || r.world.ball.scored === false);
+   r.match.phase !== Match.PHASE.PLAY || ball(r.world).scored === false);
 ok('kicks and pickups both happen',
    r.log.some(e => e.type === 'kick') && r.log.some(e => e.type === 'pickup'));
 ok('exactly one goal event per goal (no re-scoring)',
@@ -94,8 +97,8 @@ console.log('\n-- goal detection and walls --');
   const w = Physics.createWorld();
   const noIntents = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
   for (const p of w.players) { p.x = 1200; p.y = 40; }        /* everyone out of the way */
-  w.ball.carrier = null; w.ball.x = 300; w.ball.y = CONFIG.pitchH / 2;
-  w.ball.vx = -1200; w.ball.vy = 0; w.ball.pickupLockUntil = 999;
+  ball(w).carrier = null; ball(w).x = 300; ball(w).y = CONFIG.pitchH / 2;
+  ball(w).vx = -1200; ball(w).vy = 0; ball(w).pickupLockUntil = 999;
   let got = null;
   for (let i = 0; i < 120 && !got; i++) got = Physics.step(w, noIntents, DT).find(e => e.type === 'goal');
   ok('a shot into the mouth scores', !!got && got.team === 1, got && got.team);
@@ -104,13 +107,13 @@ console.log('\n-- goal detection and walls --');
   const w = Physics.createWorld();
   const noIntents = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
   for (const p of w.players) { p.x = 1200; p.y = 40; }
-  w.ball.carrier = null; w.ball.x = 300; w.ball.y = 60;        /* well outside the mouth */
-  w.ball.vx = -1200; w.ball.vy = 0; w.ball.pickupLockUntil = 999;
+  ball(w).carrier = null; ball(w).x = 300; ball(w).y = 60;        /* well outside the mouth */
+  ball(w).vx = -1200; ball(w).vy = 0; ball(w).pickupLockUntil = 999;
   const seen = [];
   for (let i = 0; i < 120; i++) seen.push(...Physics.step(w, noIntents, DT));
   ok('a shot outside the mouth bounces, never scores',
      !seen.some(e => e.type === 'goal') && seen.some(e => e.type === 'wall'));
-  ok('the bounce reverses the ball', w.ball.vx > 0, w.ball.vx.toFixed(0));
+  ok('the bounce reverses the ball', ball(w).vx > 0, ball(w).vx.toFixed(0));
 }
 
 console.log('\n-- possession --');
@@ -121,12 +124,12 @@ console.log('\n-- possession --');
   holder.x = 1200; holder.y = 450;
   thief.x = 1200 + CONFIG.stealDist * 0.5; thief.y = 450;
   for (const p of w.players) if (p !== holder && p !== thief) { p.x = 100; p.y = 40; }
-  w.ball.carrier = holder.id; w.ball.stealLockUntil = w.t + CONFIG.stealImmunityMs / 1000;
+  ball(w).carrier = holder.id; ball(w).stealLockUntil = w.t + CONFIG.stealImmunityMs / 1000;
 
   let stolenAt = null, carrierAtSteal = null;
   for (let i = 0; i < 90; i++) {
     const evs = Physics.step(w, noIntents, DT);
-    if (!stolenAt && evs.some(e => e.type === 'steal')) { stolenAt = w.t; carrierAtSteal = w.ball.carrier; }
+    if (!stolenAt && evs.some(e => e.type === 'steal')) { stolenAt = w.t; carrierAtSteal = ball(w).carrier; }
   }
   ok('steal immunity holds for its full window',
      stolenAt !== null && stolenAt >= CONFIG.stealImmunityMs / 1000,
@@ -139,15 +142,15 @@ console.log('\n-- possession --');
   const p = w.players[3];
   p.x = 1200; p.y = 450; p.facing = 1;
   for (const q of w.players) if (q !== p) { q.x = 100; q.y = 40; }
-  w.ball.carrier = p.id;
+  ball(w).carrier = p.id;
   intents[p.id].shoot = { dx: 1, dy: 0, power: 1 };
   const evs = Physics.step(w, intents, DT);
-  ok('shooting releases the ball', w.ball.carrier === null && evs.some(e => e.type === 'kick'));
+  ok('shooting releases the ball', ball(w).carrier === null && evs.some(e => e.type === 'kick'));
   ok('full power uses shootPowerMax',
-     Math.abs(w.ball.vx) > CONFIG.shootPowerMax * 0.9, w.ball.vx.toFixed(0));
+     Math.abs(ball(w).vx) > CONFIG.shootPowerMax * 0.9, ball(w).vx.toFixed(0));
   intents[p.id].shoot = null;
   let reclaimed = -1;
-  for (let i = 0; i < 60; i++) { Physics.step(w, intents, DT); if (w.ball.carrier !== null && reclaimed < 0) reclaimed = w.t; }
+  for (let i = 0; i < 60; i++) { Physics.step(w, intents, DT); if (ball(w).carrier !== null && reclaimed < 0) reclaimed = w.t; }
   ok('the shooter cannot instantly re-collect', reclaimed === -1 || reclaimed >= CONFIG.looseBallMs / 1000);
 }
 
@@ -160,7 +163,7 @@ console.log('\n-- the wind-up --');
     const w = Physics.createWorld();
     const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
     const p = w.players[3];
-    w.ball.carrier = p.id; w.ball.x = p.x; w.ball.y = p.y;
+    ball(w).carrier = p.id; ball(w).x = p.x; ball(w).y = p.y;
     its[p.id].shoot = { dx: 1, dy: 0, power: 1, charge };
     return Physics.step(w, its, DT).find(e => e.type === 'kick');
   };
@@ -180,10 +183,10 @@ console.log('\n-- the wind-up --');
     const w = Physics.createWorld();
     const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
     const p = w.players[3];
-    w.ball.carrier = p.id; w.ball.x = p.x; w.ball.y = p.y;
+    ball(w).carrier = p.id; ball(w).x = p.x; ball(w).y = p.y;
     its[p.id].shoot = { dx: 1, dy: 0, power: 1, charge };
     Physics.step(w, its, DT);
-    return w.ball.fireUntil > w.t;
+    return ball(w).fireUntil > w.t;
   };
   ok('a full wind-up sets the ball alight', lit(1));
   ok('anything less does not', !lit(0.99) && !lit(0.5) && !lit(0));
@@ -195,12 +198,12 @@ console.log('\n-- the wind-up --');
     for (const q of w.players) { q.x = 60; q.y = 40; }
     const gk = w.players[4];
     gk.x = CONFIG.pitchW - 20; gk.y = CONFIG.pitchH / 2;
-    const b = w.ball;
+    const b = ball(w);
     b.carrier = null; b.x = gk.x - 40; b.y = gk.y;
     b.vx = 1400; b.vy = 0; b.pickupLockUntil = 0;
     if (burning) b.fireUntil = w.t + 1;
     const evs = Physics.step(w, its, DT);
-    return { evs, carrier: w.ball.carrier, fire: w.ball.fireUntil > w.t, vx: w.ball.vx };
+    return { evs, carrier: ball(w).carrier, fire: ball(w).fireUntil > w.t, vx: ball(w).vx };
   };
   const hot = atKeeper(true), cold = atKeeper(false);
   ok('a keeper catches a ball that is not burning', cold.carrier === 4, String(cold.carrier));
@@ -212,9 +215,9 @@ console.log('\n-- the wind-up --');
 {
   /* A kickoff must not leave the ball alight from the goal that caused it. */
   const w = Physics.createWorld();
-  w.ball.fireUntil = w.t + 5;
+  ball(w).fireUntil = w.t + 5;
   Physics.kickoff(w, 0);
-  ok('a kickoff puts the ball out', !(w.ball.fireUntil > w.t), String(w.ball.fireUntil));
+  ok('a kickoff puts the ball out', !(ball(w).fireUntil > w.t), String(ball(w).fireUntil));
 }
 
 console.log('\n-- a keeper with the ball --');
@@ -228,8 +231,8 @@ console.log('\n-- a keeper with the ball --');
   gk.x = CONFIG.pitchW - 30; gk.y = CONFIG.pitchH / 2;
   const camper = w.players[3];
   camper.x = gk.x - 40; camper.y = gk.y;
-  w.ball.carrier = gk.id; w.ball.x = gk.x; w.ball.y = gk.y;
-  w.ball.stealLockUntil = w.t + CONFIG.stealImmunityMs / 1000;
+  ball(w).carrier = gk.id; ball(w).x = gk.x; ball(w).y = gk.y;
+  ball(w).stealLockUntil = w.t + CONFIG.stealImmunityMs / 1000;
 
   let stolen = false;
   for (let i = 0; i < 90; i++) {                   /* well past immunity */
@@ -238,7 +241,7 @@ console.log('\n-- a keeper with the ball --');
     if (Physics.step(w, its, DT).some(e => e.type === 'steal')) stolen = true;
   }
   ok('a keeper holding the ball cannot be tackled', !stolen);
-  ok('and keeps it until they choose to let go', w.ball.carrier === gk.id, String(w.ball.carrier));
+  ok('and keeps it until they choose to let go', ball(w).carrier === gk.id, String(ball(w).carrier));
 }
 {
   /* An outfield player is still robbable, or there is no tackling at all. */
@@ -248,8 +251,8 @@ console.log('\n-- a keeper with the ball --');
   const holder = w.players[3], thief = w.players[7];
   holder.x = 1200; holder.y = 450;
   thief.x = 1200 + CONFIG.stealDist * 0.5; thief.y = 450;
-  w.ball.carrier = holder.id; w.ball.x = holder.x; w.ball.y = holder.y;
-  w.ball.stealLockUntil = w.t;
+  ball(w).carrier = holder.id; ball(w).x = holder.x; ball(w).y = holder.y;
+  ball(w).stealLockUntil = w.t;
   let stolen = false;
   for (let i = 0; i < 30; i++) {
     if (Physics.step(w, its, DT).some(e => e.type === 'steal')) stolen = true;
@@ -263,8 +266,8 @@ console.log('\n-- the keeper on its line --');
     const w = Physics.createWorld();
     const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
     const gk = w.players[0];
-    if (carrying) { w.ball.carrier = gk.id; w.ball.x = gk.x; w.ball.y = gk.y; }
-    else w.ball.carrier = null;
+    if (carrying) { ball(w).carrier = gk.id; ball(w).x = gk.x; ball(w).y = gk.y; }
+    else ball(w).carrier = null;
     its[gk.id].mx = 1;                      /* run flat out up the pitch */
     for (let i = 0; i < 180; i++) Physics.step(w, its, DT);
     return w.players[0].x;
@@ -282,7 +285,7 @@ console.log('\n-- the keeper on its line --');
   const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
   const gk = w.players[0];
   gk.x = CONFIG.pitchW / 2;
-  w.ball.carrier = null; w.ball.x = 50; w.ball.y = 50;
+  ball(w).carrier = null; ball(w).x = 50; ball(w).y = 50;
   const before = gk.x;
   Physics.step(w, its, DT);
   ok('a keeper caught upfield is not snapped home',

@@ -192,7 +192,7 @@ const Game = (() => {
 
     Render.mount(_world, _teams, _urls, _ballSrc);
     Render.banner('kick off', 'panel');
-    Pitch.follow(_world.ball.x, true);
+    Pitch.follow(Physics.mainBall(_world).x, true);
     Input.reset();
     Input.setEnabled(false);
     Audio.startMusic();
@@ -292,18 +292,23 @@ const Game = (() => {
   /**
    * Keep each seat on the right player.
    *
-   * If your team has the ball you control whoever has it. Otherwise control
-   * jumps to your field player nearest the ball, so the kid never has to think
+   * If your team has a ball you control whoever has it. Otherwise control
+   * jumps to your field player nearest a ball, so the kid never has to think
    * about who they are.
    *
-   * @param {boolean} reconsider - also re-pick when the ball is not ours
+   * @param {boolean} reconsider - also re-pick when no ball is ours
    */
   function _autoSwitch(reconsider) {
-    const holder = Physics.carrier(_world);
     const taken = new Set();
     for (const seat of _seats) {
       if (seat.keeper) { taken.add(seat.playerId); continue; }
-      if (holder && holder.team === seat.team && holder.role !== 'gk') {
+      /* Whoever on your side has a ball and is not already another seat's. */
+      let holder = null;
+      for (const b of _world.balls) {
+        const h = Physics.carrierOf(_world, b);
+        if (h && h.team === seat.team && h.role !== 'gk' && !taken.has(h.id)) { holder = h; break; }
+      }
+      if (holder) {
         seat.playerId = holder.id;
       } else if (reconsider) {
         const pick = _nearestField(seat.team, taken);
@@ -313,12 +318,16 @@ const Game = (() => {
     }
   }
 
-  /** A team's field player nearest the ball, skipping ones another seat has. */
+  /**
+   * A team's field player nearest a ball, skipping ones another seat has.
+   * Nearest to any ball, so in a star match control goes to whoever is closest
+   * to being useful rather than to whoever happens to be near the match ball.
+   */
   function _nearestField(team, taken) {
-    const b = _world.ball;
     let best = null, bestD = Infinity;
     for (const p of _world.players) {
       if (p.team !== team || p.role === 'gk' || taken.has(p.id)) continue;
+      const b = Physics.nearestBall(_world, p.x, p.y);
       const d = Math.hypot(p.x - b.x, p.y - b.y);
       if (d < bestD) { bestD = d; best = p; }
     }
@@ -342,7 +351,7 @@ const Game = (() => {
       const s = Input.seat(i);
       const p = _world.players[seat.playerId];
       const it = _intents[seat.playerId];
-      const hasBall = _world.ball.carrier === seat.playerId;
+      const hasBall = !!Physics.ballOf(_world, seat.playerId);
 
       /* You can only wind a kick up round a ball you actually have. */
       Input.setCharging(i, hasBall, now);
@@ -441,7 +450,7 @@ const Game = (() => {
     /* Too far behind to catch up - drop the backlog rather than spiral. */
     if (steps >= MAX_STEPS) _acc = 0;
 
-    Pitch.follow(_world.ball.x);
+    Pitch.follow(Physics.mainBall(_world).x);
     Pitch.stepFeel(elapsed);
     Render.frame(_world, _match, _humanIds(), elapsed);
     _feedMusic(elapsed);
@@ -459,7 +468,9 @@ const Game = (() => {
    * @param {number} elapsed - real seconds since the previous frame
    */
   function _feedMusic(elapsed) {
-    const holder = Physics.carrier(_world);
+    /* The match ball decides the mood. Reading "anyone carrying anything"
+       would flip the theme every time a star-match extra changed hands. */
+    const holder = Physics.carrierOf(_world, Physics.mainBall(_world));
     Audio.updateMusic({
       carrierTeam: holder ? holder.team : null,
       phase: _match.phase,
@@ -540,11 +551,11 @@ const Game = (() => {
           Input.reset();
           break;
         case 'celebrate':
-          Render.fireworks(_world.ball.x);
+          Render.fireworks(Physics.mainBall(_world).x);
           break;
         case 'kickoff':
           Render.banner('kick off', 'panel');
-          Pitch.follow(_world.ball.x, true);
+          Pitch.follow(Physics.mainBall(_world).x, true);
           break;
         case 'whistle':
           Render.banner(null);

@@ -34,21 +34,22 @@ const Render = (() => {
   }
 
   let _rigs = [];       /* one per player id */
-  let _ball = null;     /* { el, shadow, heat } */
+  /* One entry per ball in the world, in the same order. Each carries its own
+     ring state, because in a star match two of them can be alight at once. */
+  let _balls = [];      /* { el, shadow, heat, heatOn, fill, z, trailAt } */
+  let _ballSrc = null;  /* the child's own ball picture, for the match ball */
+  let _aimEl = null;    /* the target on the goal line - one, whoever is aiming */
   let _charge = 0;      /* 0..1, how far a human has wound the current kick up */
+  let _chargeBall = 0;  /* which ball the ring belongs to */
   let _aimX = null;     /* where that shot would cross the goal line, world units */
   let _aimY = 0;
-  let _fill = -1;       /* the fill last written to the ring, to skip repaints */
-  let _heatOn = false;  /* whether the ring/flames are currently drawn at all */
-  let _aimOn = false;   /* …and whether the target on the goal line is */
-  let _lastBallZ = 0;   /* the ball's depth this frame; the fire shares it */
+  let _aimOn = false;   /* whether the target on the goal line is drawn */
   let _teams = null;    /* [{ colour, chars: [record x4] }, …] */
   let _urls = {};
   let _els = {};        /* cached UI elements */
   let _faceChar = [];   /* which character speaks for each team in the score bar */
   let _lastScore = [-1, -1];
   let _lastClock = '';
-  let _trailAt = 0;
   const _runFxAt = [];   /* per player, world.t of their last run effect */
 
   /* Scene effects are decoration; someone who asked for less motion gets none. */
@@ -93,32 +94,14 @@ const Render = (() => {
       _rigs[p.id] = rig;
     }
 
-    const el = document.createElement('img');
-    el.className = 'ball';
-    el.src = ballSrc || Assets.defaultBall();
-    el.alt = '';
-    el.style.width = BALL_BASE + 'px';
-    el.style.height = BALL_BASE + 'px';
-    const shadow = document.createElement('div');
-    shadow.className = 'ball__shadow';
-    shadow.style.width = SHADOW_W + 'px';
-    shadow.style.height = SHADOW_H + 'px';
-    /* Behind the ball in DOM order and at the same z, so the child's own ball
-       picture stays readable with the fire around it rather than over it. */
-    const heat = document.createElement('div');
-    heat.className = 'ball-heat';
-    heat.style.width = HEAT_BASE + 'px';
-    heat.style.height = HEAT_BASE + 'px';
     /* The target on the goal line. In the world layer so the camera carries it,
        but above everything: it is an instruction, not part of the scene. */
-    const aim = document.createElement('div');
-    aim.className = 'aim-spot';
-    layer.appendChild(shadow);
-    layer.appendChild(heat);
-    layer.appendChild(el);
-    layer.appendChild(aim);
-    _ball = { el, shadow, heat, aim };
-    _charge = 0; _aimX = null; _fill = -1; _heatOn = false; _aimOn = false; _lastBallZ = 0;
+    _aimEl = document.createElement('div');
+    _aimEl.className = 'aim-spot';
+    layer.appendChild(_aimEl);
+    _ballSrc = ballSrc || null;
+    _syncBalls(world.balls.length);
+    _charge = 0; _chargeBall = 0; _aimX = null; _aimOn = false;
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
@@ -148,6 +131,49 @@ const Render = (() => {
     return team.chars.find(c => c && c.slots && c.slots.head_idle) || team.chars[1] || team.chars[0];
   }
 
+  /**
+   * Keep one set of ball elements per ball in the world.
+   *
+   * A star match adds balls partway through and a kickoff takes them away, so
+   * the pool is built and torn down mid-play rather than once at mount. Only
+   * the difference is touched: a frame where the count has not changed does
+   * nothing here at all.
+   * @param {number} n - how many balls are in play
+   */
+  function _syncBalls(n) {
+    const layer = Pitch.worldLayer();
+    if (!layer) return;
+    while (_balls.length > n) _dropBall(_balls.pop());
+    while (_balls.length < n) {
+      const i = _balls.length;
+      const el = document.createElement('img');
+      el.className = 'ball';
+      el.src = (i === 0 && _ballSrc) || Assets.defaultBall();
+      el.alt = '';
+      el.style.width = BALL_BASE + 'px';
+      el.style.height = BALL_BASE + 'px';
+      const shadow = document.createElement('div');
+      shadow.className = 'ball__shadow';
+      shadow.style.width = SHADOW_W + 'px';
+      shadow.style.height = SHADOW_H + 'px';
+      /* Behind the ball in DOM order and at the same z, so the child's own ball
+         picture stays readable with the fire around it rather than over it. */
+      const heat = document.createElement('div');
+      heat.className = 'ball-heat';
+      heat.style.width = HEAT_BASE + 'px';
+      heat.style.height = HEAT_BASE + 'px';
+      layer.appendChild(shadow);
+      layer.appendChild(heat);
+      layer.appendChild(el);
+      _balls.push({ el, shadow, heat, heatOn: false, fill: -1, z: 0, trailAt: 0 });
+    }
+  }
+
+  /** Take one ball's elements out of the document. */
+  function _dropBall(e) {
+    e.el.remove(); e.shadow.remove(); e.heat.remove();
+  }
+
   /** Tear the match DOM down. */
   function unmount() {
     for (const rig of _rigs) if (rig) rig.destroy();
@@ -155,10 +181,9 @@ const Render = (() => {
     for (const b of _pit) b.el.remove();
     _pit = [];
     _pitWatch = null;
-    if (_ball) {
-      _ball.el.remove(); _ball.shadow.remove(); _ball.heat.remove(); _ball.aim.remove();
-      _ball = null;
-    }
+    for (const e of _balls) _dropBall(e);
+    _balls = [];
+    if (_aimEl) { _aimEl.remove(); _aimEl = null; }
     const fx = Pitch.fxLayer();
     if (fx) fx.innerHTML = '';
   }
@@ -201,7 +226,8 @@ const Render = (() => {
    * @param {number} [dt] - seconds since the last frame, for the loose balls
    */
   function frame(world, match, controlled, dt) {
-    if (!_ball) return;   /* unmounted between a frame being queued and run */
+    if (!_aimEl) return;   /* unmounted between a frame being queued and run */
+    _syncBalls(world.balls.length);
     const L = Pitch.layout();
     if (_pit.length) {
       _watchPitCost(dt || 1 / 60, match.phase === Match.PHASE.PLAY);
@@ -235,7 +261,20 @@ const Render = (() => {
       rig.el.classList.toggle('ch--mine', !!controlled && controlled.has(p.id));
     }
 
-    const b = world.ball;
+    for (let i = 0; i < world.balls.length; i++) _drawBall(world, world.balls[i], _balls[i], i, L);
+    _aim(L);
+    _scoreBar(match);
+  }
+
+  /**
+   * Draw one ball, its shadow, its fire and its trail.
+   * @param {object} world
+   * @param {object} b - the ball in the world
+   * @param {object} e - its elements
+   * @param {number} i - its index, which decides whether it wears the ring
+   * @param {object} L - the pitch layout
+   */
+  function _drawBall(world, b, e, i, L) {
     const q = Pitch.project(b.x, b.y);
     /*
      * Depth is a scale in the transform, never a width and height.
@@ -250,25 +289,23 @@ const Render = (() => {
       ? Math.sin(world.t * 4.2) * CONFIG.fx.ballBob * L.zoom * q.scale : 0;
     /* Scale is about the element's centre, so place the centre and let it be. */
     const cy = q.sy - size * 0.42 - bob;
-    _ball.el.style.transform =
+    e.el.style.transform =
       `translate3d(${q.sx - BALL_BASE / 2}px,${cy - BALL_BASE / 2}px,0) scale(${k}) rotate(${b.x * 0.6}deg)`;
-    _ball.shadow.style.transform =
+    e.shadow.style.transform =
       `translate3d(${q.sx - SHADOW_W / 2}px,${q.sy - SHADOW_H / 2}px,0) scale(${k})`;
-    _setZ(_ball.el, q.z + 1);
-    _setZ(_ball.shadow, q.z);
-    _lastBallZ = q.z + 1;
+    _setZ(e.el, q.z + 1);
+    _setZ(e.shadow, q.z);
+    e.z = q.z + 1;
 
-    _heat(q.sx, cy, k, world.t, b.fireUntil);
-    _aim(L);
+    _heat(e, q.sx, cy, k, world.t, b.fireUntil, i === _chargeBall ? _charge : 0);
 
-    /* A trail on a hard shot - a few fading clones behind the ball. */
+    /* A trail on a hard shot - a few fading clones behind the ball. Rationed
+       per ball, so three of them in flight do not each starve the others. */
     const speed = Math.hypot(b.vx, b.vy);
-    if (speed > CONFIG.trailMinSpeed && world.t - _trailAt > 0.03) {
-      _trailAt = world.t;
+    if (speed > CONFIG.trailMinSpeed && world.t - e.trailAt > 0.03) {
+      e.trailAt = world.t;
       _spawnTrail(q.sx, q.sy - size * 0.92, size, world.t < b.fireUntil);
     }
-
-    _scoreBar(match);
   }
 
   /**
@@ -281,11 +318,14 @@ const Render = (() => {
    * @param {number} v - charge, 0..1
    * @param {number|null} [ax] - aim point, world units, or null for none
    * @param {number} [ay]
+   * @param {number} [ball] - which ball is being wound up, default the match
+   *   ball. Two seats can now both be charging, on two different balls.
    */
-  function setWindUp(v, ax, ay) {
+  function setWindUp(v, ax, ay, ball) {
     _charge = Math.max(0, Math.min(1, v || 0));
     _aimX = ax == null ? null : ax;
     _aimY = ay || 0;
+    _chargeBall = ball || 0;
   }
 
   /**
@@ -300,14 +340,14 @@ const Render = (() => {
        any ring, because it is not accumulating power, only choosing a corner. */
     const on = _aimX != null;
     if (!on) {
-      if (_aimOn) { _aimOn = false; _ball.aim.classList.remove('aim-spot--on'); }
+      if (_aimOn) { _aimOn = false; _aimEl.classList.remove('aim-spot--on'); }
       return;
     }
-    if (!_aimOn) { _aimOn = true; _ball.aim.classList.add('aim-spot--on'); }
+    if (!_aimOn) { _aimOn = true; _aimEl.classList.add('aim-spot--on'); }
     const q = Pitch.project(_aimX, _aimY);
-    _ball.aim.style.transform =
+    _aimEl.style.transform =
       `translate3d(${q.sx}px,${q.sy}px,0) scale(${L.zoom * q.scale})`;
-    _setZ(_ball.aim, q.z + 2);
+    _setZ(_aimEl, q.z + 2);
   }
 
   /**
@@ -317,33 +357,35 @@ const Render = (() => {
    * transform and the function leaves after one comparison. The ring's fill is
    * a custom property, which repaints, so it is only written when it has moved
    * far enough to see.
+   * @param {object} e - this ball's elements and ring state
    * @param {number} cx - ball centre, screen px
    * @param {number} cy - ball centre, screen px
    * @param {number} k - the ball's depth scale
    * @param {number} t - world time
    * @param {number} fireUntil - world time the ball stops burning. Physics owns
    *   it, because a keeper cannot catch a burning ball; this only draws it.
+   * @param {number} charge - the wind-up on this ball, 0 for every other one
    */
-  function _heat(cx, cy, k, t, fireUntil) {
-    const alight = _charge >= 1 || t < fireUntil;
-    if (!_charge && !alight) {
-      if (_heatOn) {
-        _heatOn = false;
-        _ball.heat.classList.remove('ball-heat--on', 'ball-heat--fire');
+  function _heat(e, cx, cy, k, t, fireUntil, charge) {
+    const alight = charge >= 1 || t < fireUntil;
+    if (!charge && !alight) {
+      if (e.heatOn) {
+        e.heatOn = false;
+        e.heat.classList.remove('ball-heat--on', 'ball-heat--fire');
       }
       return;
     }
-    if (!_heatOn) { _heatOn = true; _ball.heat.classList.add('ball-heat--on'); }
-    _ball.heat.classList.toggle('ball-heat--fire', alight);
-    _ball.heat.style.transform =
+    if (!e.heatOn) { e.heatOn = true; e.heat.classList.add('ball-heat--on'); }
+    e.heat.classList.toggle('ball-heat--fire', alight);
+    e.heat.style.transform =
       `translate3d(${cx - HEAT_BASE / 2}px,${cy - HEAT_BASE / 2}px,0) scale(${k})`;
-    _setZ(_ball.heat, _lastBallZ);
+    _setZ(e.heat, e.z);
     /* Once alight the ring is full and stays full, so a burning ball in flight
        never shows a meter draining back down. */
-    const fill = alight ? 1 : _charge;
-    if (Math.abs(fill - _fill) >= FILL_STEP || fill === 1 || fill === 0) {
-      _fill = fill;
-      _ball.heat.style.setProperty('--fill', fill.toFixed(2));
+    const fill = alight ? 1 : charge;
+    if (Math.abs(fill - e.fill) >= FILL_STEP || fill === 1 || fill === 0) {
+      e.fill = fill;
+      e.heat.style.setProperty('--fill', fill.toFixed(2));
     }
   }
 
@@ -503,8 +545,6 @@ const Render = (() => {
     const ballReach = (PIT_R + CONFIG.ballRadius) * PIT_WAKE;
     const near = PIT_NEIGHBOUR_R;
     const damp = Math.pow(PIT_DAMP, dt * 60);
-    const mb = world.ball;
-
     /* Pass one: what the players and the match ball disturb directly. */
     for (const b of _pit) {
       b.touched = false;
@@ -520,10 +560,11 @@ const Render = (() => {
         b.touched = true;
       }
 
-      /* The match ball ploughs a line through them, which is the best of it. */
-      const bx = b.x - mb.x, by = b.y - mb.y;
-      const bd2 = bx * bx + by * by;
-      if (bd2 < ballReach * ballReach) {
+      /* The balls plough lines through them, which is the best of it. */
+      for (const mb of world.balls) {
+        const bx = b.x - mb.x, by = b.y - mb.y;
+        const bd2 = bx * bx + by * by;
+        if (bd2 >= ballReach * ballReach) continue;
         const bd = Math.sqrt(bd2) || 0.01;
         const push = (ballReach - bd) / ballReach;
         b.vx += (bx / bd) * push * PIT_BALL_PUSH * dt;

@@ -104,21 +104,41 @@ const Physics = (() => {
     return {
       t: 0,
       players,
-      ball: {
-        x: CONFIG.pitchW / 2, y: CONFIG.pitchH / 2,
-        vx: 0, vy: 0,
-        carrier: null,
-        stealLockUntil: 0,   /* the carrier cannot be robbed before this */
-        pickupLockUntil: 0,  /* a loose ball cannot be collected before this */
-        lastTouch: null,
-        /* A fully wound kick leaves the ball burning until this. A keeper
-           cannot hold a burning ball, so it is a fact about the world and not
-           about the picture - render reads it, it does not own it. */
-        fireUntil: -99,
-        /* Set the instant a goal is detected. The ball then keeps flying into
-           the net for the slow-motion beat instead of re-scoring every step. */
-        scored: false,
-      },
+      /*
+       * Every ball in play. balls[0] is the match ball and is always there;
+       * a star match adds more and a kickoff drops them again. There is
+       * deliberately no `world.ball`: with more than one in play, code that
+       * reaches for "the ball" is almost always asking the wrong question,
+       * and an alias for balls[0] would let it do so silently.
+       */
+      balls: [newBall(CONFIG.pitchW / 2, CONFIG.pitchH / 2)],
+    };
+  }
+
+  /**
+   * A ball sitting still at a point, owned by nobody.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} [face] - which gallery face it wears, or -1 for the plain
+   *   ball. Physics only carries the number; render decides what it looks like.
+   * @returns {object}
+   */
+  function newBall(x, y, face) {
+    return {
+      x, y,
+      vx: 0, vy: 0,
+      carrier: null,
+      stealLockUntil: 0,   /* the carrier cannot be robbed before this */
+      pickupLockUntil: 0,  /* a loose ball cannot be collected before this */
+      lastTouch: null,
+      /* A fully wound kick leaves the ball burning until this. A keeper
+         cannot hold a burning ball, so it is a fact about the world and not
+         about the picture - render reads it, it does not own it. */
+      fireUntil: -99,
+      /* Set the instant a goal is detected. The ball then keeps flying into
+         the net for the slow-motion beat instead of re-scoring every step. */
+      scored: false,
+      face: face == null ? -1 : face,
     };
   }
 
@@ -148,7 +168,9 @@ const Physics = (() => {
       taker.x = CONFIG.pitchW / 2 - attackDir(kickingTeam) * CONFIG.carryOffset;
       taker.y = CONFIG.pitchH / 2;
     }
-    const b = world.ball;
+    /* Whatever a star match added is gone; a kickoff is always one ball. */
+    world.balls.length = 1;
+    const b = world.balls[0];
     b.x = CONFIG.pitchW / 2; b.y = CONFIG.pitchH / 2;
     b.vx = 0; b.vy = 0;
     b.carrier = taker ? taker.id : null;
@@ -164,8 +186,39 @@ const Physics = (() => {
     return id == null ? null : world.players[id] || null;
   }
 
-  /** The player currently carrying the ball, or null. */
-  function carrier(world) { return byId(world, world.ball.carrier); }
+  /** The match ball, the one a kickoff puts on the centre spot. */
+  function mainBall(world) { return world.balls[0]; }
+
+  /** The player carrying a given ball, or null. */
+  function carrierOf(world, ball) { return byId(world, ball.carrier); }
+
+  /**
+   * The ball a player is carrying, or null. Nobody can hold two at once, so
+   * this is the question most callers actually mean by "has the ball".
+   * @param {object} world
+   * @param {number} id - player id
+   * @returns {object|null}
+   */
+  function ballOf(world, id) {
+    for (const b of world.balls) if (b.carrier === id) return b;
+    return null;
+  }
+
+  /**
+   * The ball closest to a point.
+   * @param {object} world
+   * @param {number} x
+   * @param {number} y
+   * @returns {object} never null - there is always a match ball
+   */
+  function nearestBall(world, x, y) {
+    let best = world.balls[0], bestD = Infinity;
+    for (const b of world.balls) {
+      const d = Math.hypot(b.x - x, b.y - y);
+      if (d < bestD) { bestD = d; best = b; }
+    }
+    return best;
+  }
 
   /**
    * The teammate best placed to receive a pass: nearest in the attacking half
@@ -202,9 +255,8 @@ const Physics = (() => {
     _applyDives(world, intents, events);
     _movePlayers(world, intents, dt);
     _separatePlayers(world);
-    _moveBall(world, dt, events);
-    /* After a goal nobody may collect the ball - it is flying into the net. */
-    if (!world.ball.scored) _resolvePossession(world, events);
+    _moveBalls(world, dt, events);
+    _resolvePossession(world, events);
 
     return events;
   }
@@ -212,8 +264,12 @@ const Physics = (() => {
   /* ─── Intents that release the ball ─── */
 
   function _applyBallIntents(world, intents, dt, events) {
-    const b = world.ball;
-    const p = carrier(world);
+    for (const b of world.balls) _ballIntent(world, b, intents, events);
+  }
+
+  /** Apply whatever this ball's carrier asked for. */
+  function _ballIntent(world, b, intents, events) {
+    const p = carrierOf(world, b);
     if (!p) return;
     const intent = intents[p.id];
     if (!intent) return;
@@ -223,7 +279,7 @@ const Physics = (() => {
       const len = Math.hypot(s.dx, s.dy) || 1;
       const power = CONFIG.shootPowerMin +
         (CONFIG.shootPowerMax - CONFIG.shootPowerMin) * Math.max(0, Math.min(1, s.power));
-      _release(world, p, s.dx / len * power, s.dy / len * power);
+      _release(world, b, p, s.dx / len * power, s.dy / len * power);
       p.kickAt = world.t;
       /* charge rides along untouched: physics has no use for it, but it is the
          only thing that tells a wound-up kick from an AI clearance, and both
@@ -246,7 +302,7 @@ const Physics = (() => {
         const len = Math.hypot(dx, dy) || 1;
         dx /= len; dy /= len;
       }
-      _release(world, p, dx * CONFIG.passPower, dy * CONFIG.passPower);
+      _release(world, b, p, dx * CONFIG.passPower, dy * CONFIG.passPower);
       p.kickAt = world.t;
       events.push({ type: 'pass', id: p.id, to: mate ? mate.id : null, x: b.x, y: b.y });
     }
@@ -271,15 +327,14 @@ const Physics = (() => {
       p.diveUntil = world.t + CONFIG.gkDiveMs / 1000;
       /* Nothing held: go at the ball. Pressing dive has to do something or a
          child stops pressing it, and on a screen there is no stick to hold. */
-      const dy = intent.my || (world.ball.y - p.y);
+      const dy = intent.my || (nearestBall(world, p.x, p.y).y - p.y);
       p.diveDir = dy >= 0 ? 1 : -1;
       events.push({ type: 'dive', id: p.id, x: p.x, y: p.y });
     }
   }
 
   /** Let go of the ball with a velocity, and stop anyone re-collecting it at once. */
-  function _release(world, p, vx, vy) {
-    const b = world.ball;
+  function _release(world, b, p, vx, vy) {
     b.carrier = null;
     b.lastTouch = p.id;
     b.vx = vx; b.vy = vy;
@@ -307,7 +362,7 @@ const Physics = (() => {
           base = CONFIG.gkTrackSpeed * CONFIG.gkRecoverMult;
         } else base = CONFIG.gkTrackSpeed;
       }
-      if (world.ball.carrier === p.id) base *= CONFIG.carrierSpeedMult;
+      if (ballOf(world, p.id)) base *= CONFIG.carrierSpeedMult;
       const speed = base * (p.speedMult || 1);
 
       const stunned = p.stunUntil > world.t;
@@ -360,7 +415,7 @@ const Physics = (() => {
        * ago, so a keeper coming home from midfield runs back rather than being
        * snapped there. The AI keeper never leaves, so for it nothing changed.
        */
-      if (p.role === 'gk' && world.ball.carrier !== p.id) {
+      if (p.role === 'gk' && !ballOf(world, p.id)) {
         const goal = ownGoalX(p.team);
         const lo = Math.max(R, Math.min(goal + CONFIG.gkReach, goal - CONFIG.gkReach));
         const hi = Math.min(CONFIG.pitchW - R, Math.max(goal + CONFIG.gkReach, goal - CONFIG.gkReach));
@@ -397,10 +452,13 @@ const Physics = (() => {
 
   /* ─── Ball ─── */
 
-  function _moveBall(world, dt, events) {
-    const b = world.ball;
+  function _moveBalls(world, dt, events) {
+    for (const b of world.balls) _moveOne(world, b, dt, events);
+  }
+
+  function _moveOne(world, b, dt, events) {
     const R = CONFIG.ballRadius;
-    const p = carrier(world);
+    const p = carrierOf(world, b);
 
     if (p) {
       /* Glued to the carrier's foot, on the side they are turning towards. */
@@ -484,8 +542,7 @@ const Physics = (() => {
    * @param {object} gk - the keeper
    * @param {Array<object>} events - appended to
    */
-  function _parry(world, gk, events) {
-    const b = world.ball;
+  function _parry(world, b, gk, events) {
     const speed = Math.hypot(b.vx, b.vy);
     const out = attackDir(gk.team);                 /* away from the goal behind them */
     const side = (b.y - gk.y) >= 0 ? 1 : -1;        /* spills the side it struck */
@@ -501,20 +558,28 @@ const Physics = (() => {
   }
 
   function _resolvePossession(world, events) {
-    const b = world.ball;
-    const holder = carrier(world);
+    /* After a goal nobody may collect that ball - it is flying into the net.
+       The others carry on: in a star match the rest of the pitch is still
+       live while one of them sails in. */
+    for (const b of world.balls) if (!b.scored) _resolveOne(world, b, events);
+  }
+
+  function _resolveOne(world, b, events) {
+    const holder = carrierOf(world, b);
 
     if (!holder) {
       if (world.t < b.pickupLockUntil) return;
       let best = null, bestD = CONFIG.pickupDist;
       for (const p of world.players) {
+        /* Hands full: nobody dribbles two balls at once. */
+        if (ballOf(world, p.id)) continue;
         const d = Math.hypot(p.x - b.x, p.y - b.y);
         if (d < bestD) { bestD = d; best = p; }
       }
       if (!best) return;
       const speed = Math.hypot(b.vx, b.vy);
-      if (best.role === 'gk' && world.t < b.fireUntil) { _parry(world, best, events); return; }
-      _take(world, best);
+      if (best.role === 'gk' && world.t < b.fireUntil) { _parry(world, b, best, events); return; }
+      _take(world, b, best);
       events.push({
         type: 'pickup', id: best.id, team: best.team,
         /* A keeper collecting a fast ball is a save, and sounds like one. */
@@ -539,11 +604,12 @@ const Physics = (() => {
     let thief = null, thiefD = CONFIG.stealDist;
     for (const p of world.players) {
       if (p.team === holder.team) continue;
+      if (ballOf(world, p.id)) continue;   /* already has one of their own */
       const d = Math.hypot(p.x - holder.x, p.y - holder.y);
       if (d < thiefD) { thiefD = d; thief = p; }
     }
     if (!thief) return;
-    _take(world, thief);
+    _take(world, b, thief);
     thief.tackleAt = world.t;
 
     /* Knock the dispossessed player clear and stun them briefly. This is what
@@ -562,8 +628,7 @@ const Physics = (() => {
   }
 
   /** Give the ball to a player and start their immunity window. */
-  function _take(world, p) {
-    const b = world.ball;
+  function _take(world, b, p) {
     b.carrier = p.id;
     b.lastTouch = p.id;
     b.vx = 0; b.vy = 0;
@@ -571,9 +636,9 @@ const Physics = (() => {
   }
 
   return {
-    seed, createWorld, kickoff, step,
+    seed, createWorld, newBall, kickoff, step,
     attackDir, ownGoalX, targetGoalX, inGoalMouth,
-    byId, carrier, passTarget,
+    byId, mainBall, carrierOf, ballOf, nearestBall, passTarget,
   };
 })();
 

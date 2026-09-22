@@ -106,7 +106,7 @@ const Match = (() => {
         /* The ball is in. Freeze it and let everybody dance. */
         match.phase = PHASE.GOAL;
         match.phaseLeft = CONFIG.goalPauseMs / 1000;
-        world.ball.vx = 0; world.ball.vy = 0;
+        for (const b of world.balls) { b.vx = 0; b.vy = 0; }
         out.push({ type: 'celebrate', team: match.scorer });
         break;
 
