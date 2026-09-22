@@ -116,6 +116,8 @@ python3 -m http.server 8000 --bind 0.0.0.0
 
 save data lives in localStorage under `youBall_progress`; pictures live in IndexedDB under `youBall_assets`.
 
+dev cheat via URL query: `?believe` gives every match a star instead of one in four, and `?believe=5` also sets how many extra balls it bursts into.
+
 ## tuning
 
 `js/config.js` is every number in one place - speeds, match length, goals to win, how hard the computer is, colours, how big the zoom punch is, the size images are stored at. plain values, safe to edit.

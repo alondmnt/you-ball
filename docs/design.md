@@ -173,6 +173,11 @@ build does not reproduce an older build's bounces.
 | `multiBallCount` | extra balls it bursts into (2) |
 | `multiBallMs` | how long they last if nobody scores |
 
+`?believe` - the sign over Ted's door - gives every match a star, and
+`?believe=5` sets the extra balls too. read once at load in config.js, no UI,
+the same shape as car-doctor's `?sonicscrew` and boo-boss's `?sandyclaws`. it
+only moves dials no scene overrides, so `applyScene` will not undo it.
+
 **the window is tuned to when matches actually end, not to the clock.** a match
 ends at `goalsToWin`, not at the whistle: on normal and hard 95-98% of them do,
 with a median length of 53-55 seconds of the 90 on the clock. scheduled out to
