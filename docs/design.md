@@ -186,6 +186,20 @@ hard, which is backwards - so a child saw one in 14-21% of matches rather than
 the 25% the dial says. at 0.15-0.40 it lands in 95-100% of the matches that
 planned one.
 
+**control sticks to the player who has a ball.** the rule is: if you are
+carrying, you keep it; else whichever teammate is carrying and is nearest the
+player you are on; else, every 0.3s, your field player nearest any ball, and
+only if they are `SWITCH_MARGIN` nearer than the one you are on.
+
+the first clause and the margin both exist because of multi-ball. taking the
+first carrier in ball order meant the match ball at index 0 always won, so a
+teammate collecting an extra ball pulled a child off a ball they were dribbling
+themselves. and with three balls out everybody is near something, so without the
+margin the marker flapped between two players a stride from a different ball
+each. measured off the marker the child actually sees: 1.1 switches a second
+during multi-ball, against 0.4 in ordinary play; sticky carry took it to 0.9 and
+the margin to 0.7, with ordinary play settling to 0.3.
+
 **only a player a person is driving can collect one.** an AI teammate blundering
 into it would hand the child the whole thing for nothing, and this is meant to
 be the first reason in the game to deliberately leave the ball. physics reads

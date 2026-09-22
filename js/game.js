@@ -14,6 +14,12 @@ const Game = (() => {
   const STEP = 1 / 60;
   const MAX_STEPS = 5;          /* at most ~83ms of catch-up in one frame */
   const SWITCH_EVERY = 0.3;     /* how often auto-switch reconsiders, seconds */
+  /* How much nearer a ball a teammate has to be before control leaves the
+     player you are on. With one ball this almost never bites; with three,
+     everybody is near something and without it the marker flaps between two
+     players who are each a stride from a different ball. Same reasoning as the
+     two thresholds on the run animation. */
+  const SWITCH_MARGIN = 90;
 
   let _progress = null;
   let _world = null, _match = null, _teams = null;
@@ -320,16 +326,11 @@ const Game = (() => {
     const taken = new Set();
     for (const seat of _seats) {
       if (seat.keeper) { taken.add(seat.playerId); continue; }
-      /* Whoever on your side has a ball and is not already another seat's. */
-      let holder = null;
-      for (const b of _world.balls) {
-        const h = Physics.carrierOf(_world, b);
-        if (h && h.team === seat.team && h.role !== 'gk' && !taken.has(h.id)) { holder = h; break; }
-      }
+      const holder = _ourCarrier(seat, taken);
       if (holder) {
         seat.playerId = holder.id;
       } else if (reconsider) {
-        const pick = _nearestField(seat.team, taken);
+        const pick = _nearestField(seat.team, taken, _world.players[seat.playerId]);
         if (pick) seat.playerId = pick.id;
       }
       taken.add(seat.playerId);
@@ -337,19 +338,60 @@ const Game = (() => {
   }
 
   /**
+   * The player this seat should be on, if anyone on its team is carrying.
+   *
+   * The player already being driven comes first. With several balls out, a
+   * teammate collecting one must never pull a child off a ball they are
+   * dribbling themselves - which is exactly what taking the first carrier in
+   * ball order did, because the match ball sits at index 0 and always won.
+   *
+   * After that it is the carrier nearest the player the seat is on, so the
+   * jump is the smallest one available rather than whichever ball happens to
+   * be first in the list. With one ball there is only ever one candidate, so
+   * none of this changes ordinary play.
+   * @param {object} seat
+   * @param {Set<number>} taken - players another seat already holds
+   * @returns {object|null}
+   */
+  function _ourCarrier(seat, taken) {
+    const cur = _world.players[seat.playerId];
+    if (cur && cur.role !== 'gk' && Physics.ballOf(_world, seat.playerId)) return cur;
+    let best = null, bestD = Infinity;
+    for (const b of _world.balls) {
+      const h = Physics.carrierOf(_world, b);
+      if (!h || h.team !== seat.team || h.role === 'gk' || taken.has(h.id)) continue;
+      const d = cur ? Math.hypot(h.x - cur.x, h.y - cur.y) : 0;
+      if (d < bestD) { bestD = d; best = h; }
+    }
+    return best;
+  }
+
+  /**
    * A team's field player nearest a ball, skipping ones another seat has.
+   *
    * Nearest to any ball, so in a star match control goes to whoever is closest
    * to being useful rather than to whoever happens to be near the match ball.
+   * The player already being driven keeps it unless someone is SWITCH_MARGIN
+   * nearer, or the marker flaps between two players a stride from a ball each.
+   * @param {number} team
+   * @param {Set<number>} taken - players another seat already holds
+   * @param {object} [cur] - the player this seat is on now
+   * @returns {object|null}
    */
-  function _nearestField(team, taken) {
+  function _nearestField(team, taken, cur) {
+    const near = p => {
+      const b = Physics.nearestBall(_world, p.x, p.y);
+      return Math.hypot(p.x - b.x, p.y - b.y);
+    };
+    const hold = cur && cur.team === team && cur.role !== 'gk' ? near(cur) : Infinity;
     let best = null, bestD = Infinity;
     for (const p of _world.players) {
       if (p.team !== team || p.role === 'gk' || taken.has(p.id)) continue;
-      const b = Physics.nearestBall(_world, p.x, p.y);
-      const d = Math.hypot(p.x - b.x, p.y - b.y);
+      const d = near(p);
       if (d < bestD) { bestD = d; best = p; }
     }
-    return best;
+    if (!best) return null;
+    return bestD < hold - SWITCH_MARGIN ? best : (cur || best);
   }
 
   /** Fill the intents array: AI for everyone, then the humans on top. */
