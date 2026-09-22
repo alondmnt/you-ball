@@ -45,9 +45,10 @@ const Render = (() => {
   let _faceFrom = 0;    /* where in it this burst started, so two balls differ */
   let _aimEl = null;    /* the target on the goal line - one, whoever is aiming */
   let _starEl = null;   /* the star, while a star match has one out */
-  /* How far each ball has been wound up, indexed like world.balls. Owned by
-     game.js and read here, so a frame allocates nothing to draw two rings. */
-  let _charges = [];
+  /* How far each ball has been wound up, indexed like world.balls. Copied in
+     rather than held by reference: what is drawn this frame should not depend
+     on when another module last touched an array of its own. */
+  const _charges = [];
   let _aimX = null;     /* where that shot would cross the goal line, world units */
   let _aimY = 0;
   let _aimOn = false;   /* whether the target on the goal line is drawn */
@@ -111,7 +112,7 @@ const Render = (() => {
     _ballSrc = ballSrc || null;
     _roster = (roster || []).slice();
     _syncBalls(world.balls.length);
-    _charges = []; _aimX = null; _aimOn = false;
+    _charges.length = 0; _aimX = null; _aimOn = false;
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
@@ -294,7 +295,10 @@ const Render = (() => {
       rig.el.classList.toggle('ch--mine', !!controlled && controlled.has(p.id));
     }
 
-    for (let i = 0; i < world.balls.length; i++) _drawBall(world, world.balls[i], _balls[i], i, L);
+    /* _balls, not world.balls: if _syncBalls could not reach the world layer
+       there are fewer elements than balls, and drawing what exists beats
+       indexing past the end of the pool. */
+    for (let i = 0; i < _balls.length; i++) _drawBall(world, world.balls[i], _balls[i], i, L);
     _drawStar(world, L);
     _aim(L);
     _scoreBar(match);
@@ -433,7 +437,8 @@ const Render = (() => {
    * @param {number} [ay]
    */
   function setWindUp(charges, ax, ay) {
-    _charges = charges || _charges;
+    _charges.length = 0;
+    if (charges) for (let i = 0; i < charges.length; i++) _charges[i] = charges[i] || 0;
     _aimX = ax == null ? null : ax;
     _aimY = ay || 0;
   }

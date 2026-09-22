@@ -395,6 +395,33 @@ console.log('\n-- the star match --');
      closest > CONFIG.starReach, closest.toFixed(0) + ' units, needs ' + CONFIG.starReach);
 }
 {
+  /*
+   * A goal is in flight, so the star is held until the restart.
+   *
+   * Physics keeps stepping through the slow-motion beat, so without this a
+   * child running at the star reaches it while the ball sails in, it bursts,
+   * and the kickoff a second later sweeps the extras up - the only star of the
+   * match spent on nothing.
+   */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  const me = w.players[3];
+  me.human = true;
+  w.star = { x: me.x, y: me.y, until: w.t + 9 };
+  ball(w).scored = true;                       /* a goal is on its way in */
+  let got = false;
+  for (let i = 0; i < 60; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'starGot') got = true;
+  }
+  ok('a star cannot be taken while a goal is in flight', !got && !!w.star);
+  ok('and no extra balls came of it', w.balls.length === 1, String(w.balls.length));
+
+  /* The restart hands it back rather than spending it. */
+  Physics.kickoff(w, 0);
+  ok('the restart puts it back for another go', !w.star && w.starAt > w.t,
+     w.starAt.toFixed(1));
+}
+{
   /* Nobody goes near it: it gives up and the match carries on. */
   const w = Physics.createWorld();
   const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));

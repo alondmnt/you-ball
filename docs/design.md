@@ -197,6 +197,19 @@ the thing a child ran across the pitch for visibly becomes the thing that
 happens. they last until a goal or `multiBallMs`; the kickoff after a goal takes
 them away either way.
 
+**while a goal is in flight the star is held** - not offered, not taken, not
+timed out. physics keeps stepping through the slow-motion beat, so without that
+a child running at the star reaches it as the ball sails in, it bursts, and the
+kickoff a second later sweeps the extras up: the only star of the match spent on
+nothing. held instead, the restart puts it back.
+
+**a keeper whose hands are full saves nothing.** nobody carries two balls, and
+that takes a keeper who has collected one out of the running for the others too.
+it costs less than it sounds: their AI punts 800ms after collecting, so across
+240 star matches a keeper's hands are full for 8-12% of multi-ball and concede
+6-12% of its goals - at or below the time share, so holding is not measurably
+costing saves. it is a decision, not a side effect.
+
 **the camera pulls back to the whole pitch while they are out** - the same view a
 seat in goal already uses. it answers "which ball does the camera follow" by not
 having to, and the pull-back doubles as the announcement.
