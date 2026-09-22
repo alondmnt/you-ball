@@ -386,6 +386,14 @@ img { -webkit-user-drag: none; user-select: none; }
   pointer-events: none;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
+/* An extra ball in a star match wears somebody's face. The head crop is a
+   square with transparent corners, so it needs the white disc and the rim to
+   read as a ball with a face on it rather than a head rolling about. */
+.ball--face {
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 2.5px rgba(20, 30, 25, 0.35);
+}
 .ball__shadow {
   position: absolute; left: 0; top: 0;
   border-radius: 50%;

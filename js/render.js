@@ -41,6 +41,8 @@ const Render = (() => {
      ring state, because in a star match two of them can be alight at once. */
   let _balls = [];      /* { el, shadow, heat, heatOn, fill, z, trailAt } */
   let _ballSrc = null;  /* the child's own ball picture, for the match ball */
+  let _roster = [];     /* the gallery, for the faces on a star match's balls */
+  let _faceFrom = 0;    /* where in it this burst started, so two balls differ */
   let _aimEl = null;    /* the target on the goal line - one, whoever is aiming */
   let _starEl = null;   /* the star, while a star match has one out */
   /* How far each ball has been wound up, indexed like world.balls. Owned by
@@ -71,8 +73,10 @@ const Render = (() => {
    * @param {Array<object>} teams - [{ colour, chars: [record, …] }, …]
    * @param {Object<string, string>} urls - part key -> object URL
    * @param {string} [ballSrc] - custom ball image, if there is one
+   * @param {Array<object>} [roster] - every character the children have made.
+   *   A star match puts their faces on the extra balls.
    */
-  function mount(world, teams, urls, ballSrc) {
+  function mount(world, teams, urls, ballSrc, roster) {
     unmount();
     _teams = teams;
     _urls = urls || {};
@@ -105,6 +109,7 @@ const Render = (() => {
     _aimEl.className = 'aim-spot';
     layer.appendChild(_aimEl);
     _ballSrc = ballSrc || null;
+    _roster = (roster || []).slice();
     _syncBalls(world.balls.length);
     _charges = []; _aimX = null; _aimOn = false;
 
@@ -149,11 +154,18 @@ const Render = (() => {
     const layer = Pitch.worldLayer();
     if (!layer) return;
     while (_balls.length > n) _dropBall(_balls.pop());
+    /* A fresh burst gets a fresh place in the gallery, so the same two faces
+       do not turn up every star match. */
+    if (n > 1 && _balls.length <= 1 && _roster.length) {
+      _faceFrom = Math.floor(Math.random() * _roster.length);
+    }
     while (_balls.length < n) {
       const i = _balls.length;
       const el = document.createElement('img');
       el.className = 'ball';
-      el.src = (i === 0 && _ballSrc) || Assets.defaultBall();
+      const face = i > 0 ? _faceFor(i) : null;
+      if (face) el.classList.add('ball--face');
+      el.src = face || (i === 0 && _ballSrc) || Assets.defaultBall();
       el.alt = '';
       el.style.width = BALL_BASE + 'px';
       el.style.height = BALL_BASE + 'px';
@@ -172,6 +184,21 @@ const Render = (() => {
       layer.appendChild(el);
       _balls.push({ el, shadow, heat, heatOn: false, fill: -1, z: 0, trailAt: 0 });
     }
+  }
+
+  /**
+   * The face an extra ball wears: somebody out of the gallery.
+   *
+   * Walks the roster from this burst's starting point, so with two or more
+   * characters made the balls never wear the same face as each other. An
+   * empty gallery gets a plain ball instead, which is the whole check.
+   * @param {number} i - which ball, 1 upward
+   * @returns {string|null} an image src, or null for the ordinary ball
+   */
+  function _faceFor(i) {
+    if (!_roster.length) return null;
+    const rec = _roster[(_faceFrom + i - 1) % _roster.length];
+    return Character.faceSrc(rec, 'idle', CONFIG.teamColours[i % 2], _urls);
   }
 
   /** Take one ball's elements out of the document. */

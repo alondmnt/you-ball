@@ -191,7 +191,7 @@ const Game = (() => {
     Physics.seed(s ^ 0x5bf03635);   /* a separate stream from the AI's */
     Match.begin(_match, _world, 0);
 
-    Render.mount(_world, _teams, _urls, _ballSrc);
+    Render.mount(_world, _teams, _urls, _ballSrc, _progress.roster);
     Render.banner('kick off', 'panel');
     Pitch.follow(Physics.mainBall(_world).x, true);
     Input.reset();
@@ -226,6 +226,9 @@ const Game = (() => {
         for (const slot of Assets.allSlotKeys()) keys.push(Storage.partKey(c.id, slot));
       }
     }
+    /* Every face in the gallery, not just the eight on the pitch: a star
+       match puts the others on the extra balls. One small image each. */
+    for (const c of _progress.roster || []) keys.push(Storage.partKey(c.id, 'head_idle'));
     keys.push(Storage.partKey(Editor.BALL_ID, 'ball'));
     return Storage.loadPartUrls(keys);
   }

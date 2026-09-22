@@ -126,11 +126,9 @@ const Physics = (() => {
    * A ball sitting still at a point, owned by nobody.
    * @param {number} x
    * @param {number} y
-   * @param {number} [face] - which gallery face it wears, or -1 for the plain
-   *   ball. Physics only carries the number; render decides what it looks like.
    * @returns {object}
    */
-  function newBall(x, y, face) {
+  function newBall(x, y) {
     return {
       x, y,
       vx: 0, vy: 0,
@@ -145,7 +143,6 @@ const Physics = (() => {
       /* Set the instant a goal is detected. The ball then keeps flying into
          the net for the slow-motion beat instead of re-scoring every step. */
       scored: false,
-      face: face == null ? -1 : face,
     };
   }
 
