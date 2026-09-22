@@ -227,6 +227,30 @@ took the star, depending on difficulty - near enough a coin toss. (AI vs AI afte
 the burst, so a child who plays it well would tilt that; the point is that the
 mechanic itself does not.)
 
+**it is a leveller, and a strong one.** there is no per-team difficulty - the
+dials apply to every AI on the pitch on purpose - so a gap has to be built by
+hand to measure this, one side on hard traits against the other on easy or
+normal. the stronger side's share of the goals, over 300 matches a row:
+
+| gap | normal play | while three balls are out |
+|---|---|---|
+| hard v easy | 98-99% | 78-81% |
+| hard v normal | 98-99% | 69-78% |
+
+who collects barely moves it; the drop happens either way, and if anything it is
+slightly larger for the side that did collect. the mechanism is that a lot of
+multi-ball goals are uncontested - a loose ball rolls in while the one keeper is
+at the other post - and skill counts for little against an open goal, so the
+extra goals go disproportionately to whoever was not earning them before.
+
+so a star match is the weaker player's best chance, and for the stronger one
+collecting it is a gamble rather than a reward. that is a sharper "it can help
+you score, but can also help you lose" than was designed on purpose.
+
+the usual caveat applies harder than usual here: this is AI against AI with a
+gap synthesised from the difficulty dials, and a slower player with worse aim is
+not the same thing as a younger child.
+
 the faces on the extra balls come from the whole roster, not just the eight on
 the pitch, so a character a child made and never picked for a team still turns
 up - a second reason to make one. they are chosen in `render.js`, because
