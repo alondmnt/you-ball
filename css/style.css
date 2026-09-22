@@ -507,6 +507,64 @@ img { -webkit-user-drag: none; user-select: none; }
 /* Behind a burning ball the clones are embers, not vapour. */
 .ball-trail--fire { background: rgba(255, 150, 40, 0.6); }
 
+/* ===== The star =====
+   Three matches in four never show one, so this is the whole look of the rare
+   ones. It has to read as a prize from across the pitch and never as a ball:
+   bigger, gold, pointed, and hovering clear of the grass.
+
+   The wrapper carries the camera transform the loop writes every frame, so
+   every animation lives on ::before - two transforms on one element would
+   fight, and the loop would win. */
+.star {
+  position: absolute;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(255, 224, 130, 0.62) 0%, rgba(255, 210, 90, 0.28) 38%, rgba(255, 200, 70, 0) 70%);
+}
+.star::before {
+  content: '';
+  position: absolute; inset: 12%;
+  background: linear-gradient(155deg, #fff6cf 0%, #ffd166 48%, #f0a032 100%);
+  clip-path: polygon(50% 0%, 61.8% 34.5%, 98% 34.5%, 69% 56%, 79.4% 90.5%,
+                     50% 69.5%, 20.6% 90.5%, 31% 56%, 2% 34.5%, 38.2% 34.5%);
+  animation: star-bob 1.9s ease-in-out infinite;
+}
+/* Nearly out of time. A coin about to go does exactly this. */
+.star--going::before { animation: star-bob 1.9s ease-in-out infinite, star-go 0.34s steps(2) infinite; }
+@keyframes star-bob {
+  0%, 100% { transform: scale(1) rotate(-7deg); }
+  50%      { transform: scale(1.14) rotate(7deg); }
+}
+@keyframes star-go { 0% { opacity: 1; } 100% { opacity: 0.3; } }
+
+/* The call-out. Not the match banner: that one belongs to goals and kickoffs
+   and is cleared by the events that follow them, and this has to take itself
+   back down in the middle of play. */
+.star-call {
+  position: fixed; top: 28%; left: 0; right: 0;
+  text-align: center;
+  z-index: 91;
+  pointer-events: none;
+  font-size: clamp(1.5rem, 6.5vw, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: #ffd977;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), 0 0 22px rgba(255, 190, 60, 0.55);
+  animation: star-call 2s cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+}
+@keyframes star-call {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  16%  { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  28%  { transform: scale(1) rotate(0deg); opacity: 1; }
+  70%  { transform: scale(1) translateY(0); opacity: 1; }
+  100% { transform: scale(1.04) translateY(-22px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .star::before, .star--going::before { animation: none; }
+  .star-call { animation: star-call-calm 2s linear forwards; }
+  @keyframes star-call-calm { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+}
+
 /* Fireworks: --dx/--dy carry each spark's direction. */
 .spark {
   position: absolute;

@@ -112,6 +112,11 @@ const Physics = (() => {
        * and an alias for balls[0] would let it do so silently.
        */
       balls: [newBall(CONFIG.pitchW / 2, CONFIG.pitchH / 2)],
+      /* The star sitting on the pitch right now, or null for almost always. */
+      star: null,
+      /* World time the star is due. -1 once it has been and gone, and in the
+         three matches out of four that never had one. */
+      starAt: -1,
     };
   }
 
@@ -143,6 +148,60 @@ const Physics = (() => {
   }
 
   /**
+   * Decide whether this is a star match, and when the star turns up.
+   *
+   * Rolled once, at the start of the match, off the same seeded stream as the
+   * bounces - so a seed replays a match exactly, star and all. Most matches
+   * roll no star, which is what makes the ones that do worth remembering.
+   * @param {object} world
+   */
+  function planStar(world) {
+    world.star = null;
+    if (_rand() >= CONFIG.starChance) { world.starAt = -1; return; }
+    const lo = CONFIG.matchSeconds * CONFIG.starEarliest;
+    const hi = CONFIG.matchSeconds * CONFIG.starLatest;
+    world.starAt = world.t + lo + _rand() * (hi - lo);
+  }
+
+  /**
+   * Put the star out, hand it to whoever runs into it, or take it away again.
+   *
+   * Only a player a person is actually driving can collect one. An AI
+   * teammate blundering into it would hand the child the whole thing for
+   * nothing, and this is meant to be the one moment in the game worth leaving
+   * the ball for. `p.human` is world state, kept current by AI.applyDifficulty
+   * every time control moves.
+   * @param {object} world
+   * @param {Array<object>} events - appended to
+   */
+  function _star(world, events) {
+    if (!world.star) {
+      if (world.starAt < 0 || world.t < world.starAt) return;
+      /* Out in the middle somewhere: never tucked in a goalmouth, where it
+         would be either a gift or unreachable depending on the end. */
+      const x = CONFIG.pitchW * (0.25 + _rand() * 0.5);
+      const y = CONFIG.pitchH * (0.18 + _rand() * 0.64);
+      world.star = { x, y, until: world.t + CONFIG.starLifeMs / 1000 };
+      world.starAt = -1;
+      events.push({ type: 'star', x, y });
+      return;
+    }
+
+    const s = world.star;
+    for (const p of world.players) {
+      if (!p.human) continue;
+      if (Math.hypot(p.x - s.x, p.y - s.y) > CONFIG.starReach) continue;
+      world.star = null;
+      events.push({ type: 'starGot', id: p.id, team: p.team, x: s.x, y: s.y });
+      return;
+    }
+    if (world.t > s.until) {
+      world.star = null;
+      events.push({ type: 'starGone', x: s.x, y: s.y });
+    }
+  }
+
+  /**
    * Reset positions for a kickoff. Players return to formation, the ball to
    * the centre spot, and the kicking team gets a player on it.
    * @param {object} world
@@ -168,6 +227,14 @@ const Physics = (() => {
       taker.x = CONFIG.pitchW / 2 - attackDir(kickingTeam) * CONFIG.carryOffset;
       taker.y = CONFIG.pitchH / 2;
     }
+    /* A star nobody reached comes back after the restart. Losing the only
+       star of the match to someone else's goal would make a rare thing rarer
+       for no reason anyone watching could name. */
+    if (world.star) {
+      world.star = null;
+      world.starAt = world.t + CONFIG.starRetryMs / 1000;
+    }
+
     /* Whatever a star match added is gone; a kickoff is always one ball. */
     world.balls.length = 1;
     const b = world.balls[0];
@@ -257,6 +324,7 @@ const Physics = (() => {
     _separatePlayers(world);
     _moveBalls(world, dt, events);
     _resolvePossession(world, events);
+    _star(world, events);
 
     return events;
   }
@@ -636,7 +704,7 @@ const Physics = (() => {
   }
 
   return {
-    seed, createWorld, newBall, kickoff, step,
+    seed, createWorld, newBall, planStar, kickoff, step,
     attackDir, ownGoalX, targetGoalX, inGoalMouth,
     byId, mainBall, carrierOf, ballOf, nearestBall, passTarget,
   };

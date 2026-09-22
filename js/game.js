@@ -528,6 +528,14 @@ const Game = (() => {
           Audio.play(e.save ? 'save' : 'pickup');
           if (e.save) Pitch.shake(CONFIG.shakePx * 0.7);
           break;
+        case 'star':
+          Audio.play('star');
+          Render.starCall();
+          break;
+        case 'starGot':
+          Audio.play('starGot');
+          Render.sceneFx('kick', e.x, e.y, 1);
+          break;
         case 'parry':
           /* Beaten away rather than caught. It is a save, and a bigger one. */
           Audio.play('save');

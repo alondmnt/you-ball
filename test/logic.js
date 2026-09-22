@@ -292,6 +292,99 @@ console.log('\n-- the keeper on its line --');
      Math.abs(w.players[0].x - before) < 5, w.players[0].x.toFixed(0));
 }
 
+console.log('\n-- the star match --');
+{
+  /* Most matches never show one. That rarity is the feature, so it is worth a
+     test: a drift here turns a story back into a mechanic. */
+  let starMatches = 0;
+  const TRIES = 400;
+  for (let i = 0; i < TRIES; i++) {
+    Physics.seed(i + 1);
+    const w = Physics.createWorld();
+    Physics.planStar(w);
+    if (w.starAt >= 0) starMatches++;
+  }
+  const rate = starMatches / TRIES;
+  ok('about a quarter of matches get a star',
+     Math.abs(rate - CONFIG.starChance) < 0.06, rate.toFixed(3));
+
+  /* And the same seed always gives the same match, star and all. */
+  const at = seed => { Physics.seed(seed); const w = Physics.createWorld(); Physics.planStar(w); return w.starAt; };
+  ok('the same seed plans the same star', at(4242) === at(4242), String(at(4242)));
+
+  /* Never at the whistle at either end: a star nobody has time to reach, or
+     one that lands in the kickoff, is a star wasted. */
+  let earliest = Infinity, latest = -Infinity;
+  for (let i = 0; i < 400; i++) {
+    Physics.seed(i + 1);
+    const w = Physics.createWorld();
+    Physics.planStar(w);
+    if (w.starAt >= 0) { earliest = Math.min(earliest, w.starAt); latest = Math.max(latest, w.starAt); }
+  }
+  ok('and never in the first quarter or the last third',
+     earliest >= CONFIG.matchSeconds * CONFIG.starEarliest &&
+     latest <= CONFIG.matchSeconds * CONFIG.starLatest,
+     `${earliest.toFixed(1)}..${latest.toFixed(1)}s of ${CONFIG.matchSeconds}`);
+}
+{
+  /* Out, collected, gone. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  w.starAt = w.t + 0.5;
+  let out = null;
+  for (let i = 0; i < 60 && !out; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'star') out = e;
+  }
+  ok('the star turns up when it is due', !!out && !!w.star);
+  ok('and it is out in the middle, not in a goalmouth',
+     !!w.star && w.star.x > CONFIG.pitchW * 0.2 && w.star.x < CONFIG.pitchW * 0.8,
+     w.star ? w.star.x.toFixed(0) : '-');
+
+  /* An AI standing right on it gets nothing. Collecting has to be something
+     the child did, not something that happened to them. */
+  const bot = w.players[2];
+  bot.human = false;
+  bot.x = w.star.x; bot.y = w.star.y;
+  for (let i = 0; i < 10; i++) Physics.step(w, its, DT);
+  ok('an AI standing on it does not collect it', !!w.star);
+
+  /* The player a person is driving does. */
+  bot.human = true;
+  let got = null;
+  for (let i = 0; i < 10 && !got; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'starGot') got = e;
+  }
+  ok('the player a person is driving does', !!got && !w.star, got ? String(got.id) : 'never');
+}
+{
+  /* Nobody goes near it: it gives up and the match carries on. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  w.star = { x: 40, y: 40, until: w.t + 0.2 };
+  let gone = null;
+  for (let i = 0; i < 60 && !gone; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'starGone') gone = e;
+  }
+  ok('an uncollected star gives up', !!gone && !w.star);
+}
+{
+  /* A goal while it is out must not spend the only star of the match. */
+  const w = Physics.createWorld();
+  w.t = 30;
+  w.star = { x: 1200, y: 400, until: w.t + 5 };
+  w.starAt = -1;
+  Physics.kickoff(w, 0);
+  ok('a kickoff takes the star off the pitch', !w.star);
+  ok('but gives an uncollected one another go', w.starAt > w.t, String(w.starAt));
+}
+{
+  /* …and one that was collected is spent, so a match never gets two. */
+  const w = Physics.createWorld();
+  w.t = 30; w.star = null; w.starAt = -1;
+  Physics.kickoff(w, 0);
+  ok('a collected star is not handed back', w.starAt < 0, String(w.starAt));
+}
+
 console.log('\n-- clock --');
 {
   const w = Physics.createWorld();

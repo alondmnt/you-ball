@@ -17,6 +17,9 @@ const Render = (() => {
    * only, so nothing in the per-frame loop can trigger a layout.
    */
   const BALL_BASE = CONFIG.ballDrawD;
+  const STAR_BASE = Math.round(CONFIG.ballDrawD * 2.2);   /* about half a player
+                                               tall. At ball size it read as a
+                                               trinket rather than a prize. */
   const SHADOW_W = CONFIG.ballDrawD * 0.8;
   const SHADOW_H = CONFIG.ballDrawD * 0.26;
   const HEAT_BASE = CONFIG.ballDrawD * 2;   /* the ring and the flames are drawn
@@ -39,6 +42,7 @@ const Render = (() => {
   let _balls = [];      /* { el, shadow, heat, heatOn, fill, z, trailAt } */
   let _ballSrc = null;  /* the child's own ball picture, for the match ball */
   let _aimEl = null;    /* the target on the goal line - one, whoever is aiming */
+  let _starEl = null;   /* the star, while a star match has one out */
   let _charge = 0;      /* 0..1, how far a human has wound the current kick up */
   let _chargeBall = 0;  /* which ball the ring belongs to */
   let _aimX = null;     /* where that shot would cross the goal line, world units */
@@ -183,6 +187,7 @@ const Render = (() => {
     _pitWatch = null;
     for (const e of _balls) _dropBall(e);
     _balls = [];
+    if (_starEl) { _starEl.remove(); _starEl = null; }
     if (_aimEl) { _aimEl.remove(); _aimEl = null; }
     const fx = Pitch.fxLayer();
     if (fx) fx.innerHTML = '';
@@ -262,8 +267,60 @@ const Render = (() => {
     }
 
     for (let i = 0; i < world.balls.length; i++) _drawBall(world, world.balls[i], _balls[i], i, L);
+    _drawStar(world, L);
     _aim(L);
     _scoreBar(match);
+  }
+
+  /**
+   * Draw the star, if a star match has one out.
+   *
+   * Built when one appears and taken out when it goes, rather than kept
+   * hidden: three matches in four never show one at all, and an element that
+   * is not there costs nothing to not draw.
+   * @param {object} world
+   * @param {object} L - the pitch layout
+   */
+  function _drawStar(world, L) {
+    const s = world.star;
+    if (!s) {
+      if (_starEl) { _starEl.remove(); _starEl = null; }
+      return;
+    }
+    if (!_starEl) {
+      const layer = Pitch.worldLayer();
+      if (!layer) return;
+      _starEl = document.createElement('div');
+      _starEl.className = 'star';
+      _starEl.style.width = STAR_BASE + 'px';
+      _starEl.style.height = STAR_BASE + 'px';
+      layer.appendChild(_starEl);
+    }
+    const q = Pitch.project(s.x, s.y);
+    const k = L.zoom * q.scale;
+    /* It floats clear of the grass, so it reads as something to collect
+       rather than a marking someone painted on. */
+    const lift = STAR_BASE * 0.55 + Math.sin(world.t * 3.2) * 6;
+    _starEl.style.transform =
+      `translate3d(${q.sx - STAR_BASE / 2}px,${q.sy - STAR_BASE / 2 - lift * k}px,0) scale(${k})`;
+    _setZ(_starEl, q.z + 2);
+    /* Running out: it starts blinking, the way a coin does before it goes. */
+    _starEl.classList.toggle('star--going', s.until - world.t < 1.8);
+  }
+
+  /**
+   * Call the star out, so a child watching the ball knows to look up.
+   *
+   * Its own element on top of everything rather than the match banner, which
+   * belongs to goals and kickoffs and would have to be taken back down on a
+   * timer this module does not otherwise need.
+   */
+  function starCall() {
+    const el = document.createElement('div');
+    el.className = 'star-call';
+    el.textContent = 'a star!';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
   }
 
   /**
@@ -852,6 +909,6 @@ const Render = (() => {
 
   return {
     mount, unmount, frame, animFor, sceneFx, tackleBurst, setWindUp,
-    banner, goalBurst, fireworks, showFullTime, hideFullTime,
+    banner, starCall, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();

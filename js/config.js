@@ -34,6 +34,18 @@ const CONFIG = {
   goalPauseMs: 2800,     // celebration length before the next kickoff
   kickoffPauseMs: 1200,  // "KICK OFF" beat before play resumes
 
+  /* ─── Star match ─── */
+  /* Most matches have no star in them at all. That is the point: a thing that
+     happens every time is a mechanic, and a thing that happens now and then is
+     a story. The roll is made once at kick off, off the seeded stream, so the
+     same seed always replays the same match. */
+  starChance: 0.25,      // matches that get a star
+  starEarliest: 0.25,    // …and where in the clock it can turn up, as a
+  starLatest: 0.70,      // fraction, so it is never at the whistle either end
+  starLifeMs: 7000,      // how long it waits on the pitch before giving up
+  starRetryMs: 2500,     // a goal cleared one nobody had reached: it comes back
+  starReach: 80,         // run this close to collect it
+
   /* ─── Sizes (world units) ─── */
   ballRadius: 16,
   playerRadius: 42,

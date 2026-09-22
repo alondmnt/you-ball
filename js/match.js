@@ -48,6 +48,8 @@ const Match = (() => {
     match.phase = PHASE.KICKOFF;
     match.phaseLeft = CONFIG.kickoffPauseMs / 1000;
     match.restartTeam = firstTeam || 0;
+    /* Once per match, before the first kickoff: is there a star in this one? */
+    Physics.planStar(world);
     Physics.kickoff(world, match.restartTeam);
   }
 

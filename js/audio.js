@@ -149,6 +149,26 @@ const Audio = (() => {
       _note(520, 0.03, 0.08, 'sine', 0.07, 780);
     },
 
+    /**
+     * A star has appeared. An arpeggio up the tonic chord with a shimmer over
+     * it - the anthem is in E minor, and the one moment the child has to stop
+     * watching the ball for should sound like it belongs to the same tune.
+     */
+    star() {
+      _note(659, 0, 0.14, 'sine', 0.07, 988);
+      _note(988, 0.08, 0.18, 'sine', 0.055);
+      _noise(0, 0.42, 5200, 0.03, 'bandpass', 9000);
+    },
+
+    /** Somebody got it. The same chord, but a fanfare rather than a hint. */
+    starGot() {
+      _note(330, 0, 0.1, 'triangle', 0.09);
+      _note(392, 0.07, 0.1, 'triangle', 0.09);
+      _note(494, 0.14, 0.1, 'triangle', 0.09);
+      _note(659, 0.21, 0.34, 'triangle', 0.12, 988);
+      _noise(0.21, 0.36, 3000, 0.05, 'bandpass', 8000);
+    },
+
     /** Collecting a loose ball - a soft tick. */
     pickup() {
       _note(520, 0, 0.05, 'sine', 0.05);
