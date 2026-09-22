@@ -102,38 +102,57 @@ const AI = (() => {
         p.ai.jy = _jitter(CONFIG.aiJitter);
       }
 
-      const chase = chasers[p.team];
+      const chase = chasers.get(p.id);
       if (p.role === 'gk') _keeper(world, p, mine, intent);
       else if (mine) _withBall(world, p, mine, intent);
-      else if (chase && chase.id === p.id) _chase(world, p, chase.ball, intent);
+      else if (chase) _chase(world, p, chase, intent);
       else _holdSlot(world, p, intent);
     }
   }
 
   /**
-   * One field player per team goes for a ball: the closest player-and-ball
-   * pairing, skipping any ball a teammate already has. With a single ball
-   * that is exactly "the nearest player chases, unless we already have it".
+   * Who goes for which ball: the closest player-and-ball pairings, taken
+   * greedily, skipping any ball a teammate already has.
    *
-   * Deliberately still one chaser per team in a star match. Sending a second
-   * would empty the formation, and with three balls loose there is already
-   * more happening than anyone can mark.
-   * @returns {Array<{id: number, ball: object}|null>} per team
+   * One ball means one chaser, exactly as before - "the nearest player
+   * chases, unless we already have it". Several means several, capped so one
+   * field player always stays in the shape.
+   *
+   * The cap matters more than it looks. With one chaser per team a star match
+   * measured x1.1 goals a minute against normal play: two of the three balls
+   * were uncontested and simply rolled about, so the rare match played like
+   * the ordinary one with scenery. Contesting them is what makes it chaos.
+   * @param {object} world
+   * @param {Set<number>} humans
+   * @returns {Map<number, object>} player id -> the ball they are going for
    */
   function _pickChasers(world, humans) {
-    const out = [null, null];
+    const out = new Map();
     for (let team = 0; team < 2; team++) {
-      let best = null, bestD = Infinity;
+      const free = [];
+      for (const p of world.players) {
+        if (p.team === team && p.role !== 'gk' && !humans.has(p.id)) free.push(p);
+      }
+      const want = [];
       for (const b of world.balls) {
         const holder = Physics.carrierOf(world, b);
-        if (holder && holder.team === team) continue;   /* ours already */
-        for (const p of world.players) {
-          if (p.team !== team || p.role === 'gk' || humans.has(p.id)) continue;
-          const d = Math.hypot(p.x - b.x, p.y - b.y);
-          if (d < bestD) { bestD = d; best = { id: p.id, ball: b }; }
-        }
+        if (!(holder && holder.team === team)) want.push(b);
       }
-      out[team] = best;
+      /* Never the whole team: somebody has to hold the shape, or a cleared
+         ball drops into an empty half. */
+      const cap = Math.min(want.length, Math.max(1, free.length - 1));
+      for (let n = 0; n < cap; n++) {
+        let pick = null, pickD = Infinity, pi = -1, bi = -1;
+        for (let i = 0; i < free.length; i++) {
+          for (let j = 0; j < want.length; j++) {
+            const d = Math.hypot(free[i].x - want[j].x, free[i].y - want[j].y);
+            if (d < pickD) { pickD = d; pick = free[i]; pi = i; bi = j; }
+          }
+        }
+        if (!pick) break;
+        out.set(pick.id, want[bi]);
+        free.splice(pi, 1); want.splice(bi, 1);
+      }
     }
     return out;
   }

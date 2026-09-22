@@ -32,6 +32,7 @@ const Match = (() => {
       score: [0, 0],
       clock: CONFIG.matchSeconds,   /* seconds remaining */
       scorer: null,                 /* team that scored the most recent goal */
+      goalX: 0,                     /* and where that goal crossed the line */
       winner: null,                 /* 0, 1, or null for a draw */
       restartTeam: 0,               /* who takes the next kickoff */
     };
@@ -82,6 +83,9 @@ const Match = (() => {
       match.restartTeam = goal.team === 0 ? 1 : 0;   /* the conceding team restarts */
       match.phase = PHASE.SLOWMO;
       match.phaseLeft = CONFIG.slowMoMs / 1000;
+      /* Where it went in. With several balls on the pitch that is not the
+         match ball's position, and the celebration is drawn around it. */
+      match.goalX = goal.x;
       out.push({ type: 'goal', team: goal.team, score: match.score.slice(), x: goal.x, y: goal.y });
       return out;
     }
@@ -109,7 +113,7 @@ const Match = (() => {
         match.phase = PHASE.GOAL;
         match.phaseLeft = CONFIG.goalPauseMs / 1000;
         for (const b of world.balls) { b.vx = 0; b.vy = 0; }
-        out.push({ type: 'celebrate', team: match.scorer });
+        out.push({ type: 'celebrate', team: match.scorer, x: match.goalX });
         break;
 
       case PHASE.GOAL:

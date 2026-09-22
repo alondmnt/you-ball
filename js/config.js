@@ -45,6 +45,10 @@ const CONFIG = {
   starLifeMs: 7000,      // how long it waits on the pitch before giving up
   starRetryMs: 2500,     // a goal cleared one nobody had reached: it comes back
   starReach: 80,         // run this close to collect it
+  multiBallCount: 2,     // extra balls the star bursts into
+  multiBallMs: 16000,    // how long they last if nobody scores. A goal ends it
+                         // sooner - the kickoff that follows takes them away
+  multiBallBurst: 430,   // how hard they scatter out of the star
 
   /* ─── Sizes (world units) ─── */
   ballRadius: 16,

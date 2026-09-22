@@ -117,6 +117,8 @@ const Physics = (() => {
       /* World time the star is due. -1 once it has been and gone, and in the
          three matches out of four that never had one. */
       starAt: -1,
+      /* World time the extra balls go away again. 0 when there are none. */
+      multiUntil: 0,
     };
   }
 
@@ -192,13 +194,52 @@ const Physics = (() => {
       if (!p.human) continue;
       if (Math.hypot(p.x - s.x, p.y - s.y) > CONFIG.starReach) continue;
       world.star = null;
-      events.push({ type: 'starGot', id: p.id, team: p.team, x: s.x, y: s.y });
+      _burst(world, s.x, s.y);
+      events.push({ type: 'starGot', id: p.id, team: p.team, x: s.x, y: s.y,
+                    balls: world.balls.length });
       return;
     }
     if (world.t > s.until) {
       world.star = null;
       events.push({ type: 'starGone', x: s.x, y: s.y });
     }
+  }
+
+  /**
+   * The star breaks into balls.
+   *
+   * They come out of the star itself rather than off the centre spot, so the
+   * thing a child just ran across the pitch for visibly becomes the thing that
+   * happens. Spread evenly around a seeded starting angle, so a replay of the
+   * same seed scatters them the same way.
+   *
+   * They are loose for the usual moment after a release, which stops the
+   * collector from instantly owning all three.
+   * @param {object} world
+   * @param {number} x - where the star was
+   * @param {number} y
+   */
+  function _burst(world, x, y) {
+    const n = CONFIG.multiBallCount;
+    const from = _rand() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const a = from + (i / n) * Math.PI * 2;
+      const b = newBall(x, y);
+      b.vx = Math.cos(a) * CONFIG.multiBallBurst;
+      b.vy = Math.sin(a) * CONFIG.multiBallBurst;
+      b.pickupLockUntil = world.t + CONFIG.looseBallMs / 1000;
+      world.balls.push(b);
+    }
+    world.multiUntil = world.t + CONFIG.multiBallMs / 1000;
+  }
+
+  /** Take the extra balls away again when their time is up. */
+  function _expireExtras(world, events) {
+    if (!world.multiUntil || world.t < world.multiUntil) return;
+    world.multiUntil = 0;
+    if (world.balls.length < 2) return;
+    const gone = world.balls.splice(1).map(b => ({ x: b.x, y: b.y }));
+    events.push({ type: 'multiEnd', gone });
   }
 
   /**
@@ -237,6 +278,7 @@ const Physics = (() => {
 
     /* Whatever a star match added is gone; a kickoff is always one ball. */
     world.balls.length = 1;
+    world.multiUntil = 0;
     const b = world.balls[0];
     b.x = CONFIG.pitchW / 2; b.y = CONFIG.pitchH / 2;
     b.vx = 0; b.vy = 0;
@@ -325,6 +367,7 @@ const Physics = (() => {
     _moveBalls(world, dt, events);
     _resolvePossession(world, events);
     _star(world, events);
+    _expireExtras(world, events);
 
     return events;
   }

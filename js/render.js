@@ -43,8 +43,9 @@ const Render = (() => {
   let _ballSrc = null;  /* the child's own ball picture, for the match ball */
   let _aimEl = null;    /* the target on the goal line - one, whoever is aiming */
   let _starEl = null;   /* the star, while a star match has one out */
-  let _charge = 0;      /* 0..1, how far a human has wound the current kick up */
-  let _chargeBall = 0;  /* which ball the ring belongs to */
+  /* How far each ball has been wound up, indexed like world.balls. Owned by
+     game.js and read here, so a frame allocates nothing to draw two rings. */
+  let _charges = [];
   let _aimX = null;     /* where that shot would cross the goal line, world units */
   let _aimY = 0;
   let _aimOn = false;   /* whether the target on the goal line is drawn */
@@ -105,7 +106,7 @@ const Render = (() => {
     layer.appendChild(_aimEl);
     _ballSrc = ballSrc || null;
     _syncBalls(world.balls.length);
-    _charge = 0; _chargeBall = 0; _aimX = null; _aimOn = false;
+    _charges = []; _aimX = null; _aimOn = false;
 
     /* Each team's face in the score bar. */
     for (let t = 0; t < 2; t++) {
@@ -309,6 +310,32 @@ const Render = (() => {
   }
 
   /**
+   * Somebody got the star: gold everywhere, at the point they got it.
+   * @param {number} x - world units
+   * @param {number} y
+   */
+  function starBurst(x, y) {
+    const fx = Pitch.fxLayer();
+    if (!fx || _calmly) return;
+    const L = Pitch.layout();
+    const q = Pitch.project(x, y);
+    const gold = ['#fff3c4', '#ffd166', '#f0a032'];
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      const dist = 50 + Math.random() * 70;
+      const el = document.createElement('div');
+      el.className = 'spark';
+      el.style.left = q.sx + 'px';
+      el.style.top = (q.sy - STAR_BASE * L.zoom * q.scale * 0.5) + 'px';
+      el.style.background = gold[i % gold.length];
+      el.style.setProperty('--dx', Math.cos(a) * dist + 'px');
+      el.style.setProperty('--dy', Math.sin(a) * dist + 'px');
+      fx.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    }
+  }
+
+  /**
    * Call the star out, so a child watching the ball knows to look up.
    *
    * Its own element on top of everything rather than the match banner, which
@@ -354,7 +381,7 @@ const Render = (() => {
     _setZ(e.shadow, q.z);
     e.z = q.z + 1;
 
-    _heat(e, q.sx, cy, k, world.t, b.fireUntil, i === _chargeBall ? _charge : 0);
+    _heat(e, q.sx, cy, k, world.t, b.fireUntil, Math.max(0, Math.min(1, _charges[i] || 0)));
 
     /* A trail on a hard shot - a few fading clones behind the ball. Rationed
        per ball, so three of them in flight do not each starve the others. */
@@ -372,17 +399,16 @@ const Render = (() => {
    * exists. Render just draws the numbers. The aim is where the shot would
    * cross the goal line if it were let go now - a child cannot learn to place
    * a shot they cannot see themselves placing.
-   * @param {number} v - charge, 0..1
+   * @param {Array<number>} charges - wind-up per ball, indexed like
+   *   world.balls. In a star match two seats really can be charging at once,
+   *   on two different balls, and each wants its own ring.
    * @param {number|null} [ax] - aim point, world units, or null for none
    * @param {number} [ay]
-   * @param {number} [ball] - which ball is being wound up, default the match
-   *   ball. Two seats can now both be charging, on two different balls.
    */
-  function setWindUp(v, ax, ay, ball) {
-    _charge = Math.max(0, Math.min(1, v || 0));
+  function setWindUp(charges, ax, ay) {
+    _charges = charges || _charges;
     _aimX = ax == null ? null : ax;
     _aimY = ay || 0;
-    _chargeBall = ball || 0;
   }
 
   /**
@@ -909,6 +935,6 @@ const Render = (() => {
 
   return {
     mount, unmount, frame, animFor, sceneFx, tackleBurst, setWindUp,
-    banner, starCall, goalBurst, fireworks, showFullTime, hideFullTime,
+    banner, starCall, starBurst, goalBurst, fireworks, showFullTime, hideFullTime,
   };
 })();

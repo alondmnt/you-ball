@@ -385,6 +385,74 @@ console.log('\n-- the star match --');
   ok('a collected star is not handed back', w.starAt < 0, String(w.starAt));
 }
 
+console.log('\n-- the star bursts into balls --');
+{
+  /* Collect it, and the star becomes the balls. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  const me = w.players[3];
+  me.human = true;
+  w.star = { x: 1200, y: 450, until: w.t + 5 };
+  me.x = 1200; me.y = 450;
+  let got = null;
+  for (let i = 0; i < 10 && !got; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'starGot') got = e;
+  }
+  ok('the star bursts into extra balls',
+     w.balls.length === 1 + CONFIG.multiBallCount, String(w.balls.length));
+  ok('and they come out of where the star was',
+     w.balls.slice(1).every(b => Math.hypot(b.x - 1200, b.y - 450) < 120),
+     w.balls.slice(1).map(b => `${b.x.toFixed(0)},${b.y.toFixed(0)}`).join(' '));
+  ok('scattering, not sitting there',
+     w.balls.slice(1).every(b => Math.hypot(b.vx, b.vy) > 100));
+
+  /* Nobody dribbles two at once, however they pile up. */
+  for (let i = 0; i < 240; i++) Physics.step(w, its, DT);
+  const held = w.balls.filter(b => b.carrier !== null).map(b => b.carrier);
+  ok('nobody carries two balls at once', new Set(held).size === held.length, held.join(','));
+}
+{
+  /* They do not stay forever: the match has to come back to itself. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  const me = w.players[3];
+  me.human = true;
+  w.star = { x: 1200, y: 450, until: w.t + 5 };
+  me.x = 1200; me.y = 450;
+  for (let i = 0; i < 10; i++) Physics.step(w, its, DT);
+  const grew = w.balls.length;
+  let ended = null;
+  for (let i = 0; i < (CONFIG.multiBallMs / 1000 + 1) / DT && !ended; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'multiEnd') ended = e;
+  }
+  ok('the extras go away again', grew > 1 && !!ended && w.balls.length === 1,
+     `${grew} -> ${w.balls.length}`);
+}
+{
+  /* A goal takes them away early, via the kickoff that follows. */
+  const w = Physics.createWorld();
+  w.balls.push(Physics.newBall(600, 400), Physics.newBall(700, 400));
+  w.multiUntil = w.t + 99;
+  Physics.kickoff(w, 0);
+  ok('a kickoff clears the extras', w.balls.length === 1, String(w.balls.length));
+  ok('and forgets they were ever due to expire', w.multiUntil === 0);
+}
+{
+  /* An extra ball scores like any other, or the whole thing is decoration. */
+  const w = Physics.createWorld();
+  const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+  ball(w).carrier = null; ball(w).x = 60; ball(w).y = 60; ball(w).pickupLockUntil = 999;
+  const extra = Physics.newBall(300, CONFIG.pitchH / 2);
+  extra.vx = -1200; extra.pickupLockUntil = 999;
+  w.balls.push(extra);
+  let goal = null;
+  for (let i = 0; i < 60 && !goal; i++) {
+    for (const e of Physics.step(w, its, DT)) if (e.type === 'goal') goal = e;
+  }
+  ok('an extra ball scores like any other', !!goal && goal.team === 1,
+     goal ? String(goal.team) : 'never');
+}
+
 console.log('\n-- clock --');
 {
   const w = Physics.createWorld();

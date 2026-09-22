@@ -23,6 +23,7 @@ const Game = (() => {
   let _raf = null, _lastFrame = 0, _acc = 0, _paused = false;
   let _switchTimer = 0;
   let _humanKey = '';
+  const _charges = [];   /* wind-up per ball, handed to Render each step */
   let _charge = 0;      /* last wind-up reading, so the ignite sound fires once */
 
   /* ─── Bootstrap ─── */
@@ -286,6 +287,20 @@ const Game = (() => {
     return _progress.twoPlayer ? [!!g[0], !!g[1]] : [!!g[0]];
   }
 
+  /**
+   * Whether the camera should take in the whole pitch rather than chase.
+   *
+   * Two reasons it should: a seat is in goal, where a chasing camera leaves
+   * your own player off the side of the screen; or there are several balls,
+   * where a chasing camera has to pick one and the others happen off screen.
+   * Pitch.setWideView returns immediately when nothing has changed, so asking
+   * every frame costs one comparison.
+   * @returns {boolean}
+   */
+  function _wideView() {
+    return _places().some(Boolean) || _world.balls.length > 1;
+  }
+
   /** The player ids a human is driving right now. */
   function _humanIds() { return new Set(_seats.map(s => s.playerId)); }
 
@@ -345,18 +360,24 @@ const Game = (() => {
     AI.think(_world, humans, _intents);
 
     const now = performance.now();
+    /* Reused rather than rebuilt: this runs every step. */
+    _charges.length = 0;
     let charge = 0, aimAt = null;
     for (let i = 0; i < _seats.length; i++) {
       const seat = _seats[i];
       const s = Input.seat(i);
       const p = _world.players[seat.playerId];
       const it = _intents[seat.playerId];
-      const hasBall = !!Physics.ballOf(_world, seat.playerId);
+      const mine = Physics.ballOf(_world, seat.playerId);
+      const hasBall = !!mine;
 
       /* You can only wind a kick up round a ball you actually have. */
       Input.setCharging(i, hasBall, now);
       if (hasBall) {
         const c = Input.charge(i, now);
+        _charges[_world.balls.indexOf(mine)] = c;
+        /* The aim spot and the ignite are one each, so the furthest-along
+           wind-up speaks for both. The rings are per ball and all show. */
         if (c > charge) { charge = c; aimAt = _aimPoint(p, s.my); }
       }
 
@@ -413,11 +434,9 @@ const Game = (() => {
       }
     }
 
-    /* The ball is the meter and there is one of it, so two seats can never
-       both be charging and the max above is a pick rather than a blend. */
     if (charge >= 1 && _charge < 1) Audio.play('ignite');
     _charge = charge;
-    Render.setWindUp(charge, aimAt ? aimAt.x : null, aimAt ? aimAt.y : 0);
+    Render.setWindUp(_charges, aimAt ? aimAt.x : null, aimAt ? aimAt.y : 0);
   }
 
   /* ─── Loop ─── */
@@ -450,6 +469,7 @@ const Game = (() => {
     /* Too far behind to catch up - drop the backlog rather than spiral. */
     if (steps >= MAX_STEPS) _acc = 0;
 
+    Pitch.setWideView(_wideView());
     Pitch.follow(Physics.mainBall(_world).x);
     Pitch.stepFeel(elapsed);
     Render.frame(_world, _match, _humanIds(), elapsed);
@@ -534,7 +554,11 @@ const Game = (() => {
           break;
         case 'starGot':
           Audio.play('starGot');
-          Render.sceneFx('kick', e.x, e.y, 1);
+          Render.starBurst(e.x, e.y);
+          Pitch.punch(CONFIG.zoomPunch * 0.7, e.x, e.y);
+          break;
+        case 'multiEnd':
+          for (const g of e.gone) Render.tackleBurst(g.x, g.y);
           break;
         case 'parry':
           /* Beaten away rather than caught. It is a save, and a bigger one. */
@@ -559,7 +583,7 @@ const Game = (() => {
           Input.reset();
           break;
         case 'celebrate':
-          Render.fireworks(Physics.mainBall(_world).x);
+          Render.fireworks(e.x);
           break;
         case 'kickoff':
           Render.banner('kick off', 'panel');
