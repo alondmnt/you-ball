@@ -725,10 +725,38 @@ const Physics = (() => {
   function _parry(world, b, gk, events) {
     const speed = Math.hypot(b.vx, b.vy);
     const out = attackDir(gk.team);                 /* away from the goal behind them */
-    const side = (b.y - gk.y) >= 0 ? 1 : -1;        /* spills the side it struck */
+
+    /*
+     * It comes off the way it went on.
+     *
+     * The ball is reflected about the line from the keeper to it, the same as
+     * a wall bounce: struck at their middle it comes straight back, catching
+     * them on the edge it glances away. This used to send every parry out at
+     * one fixed angle whatever the ball did on the way in, which is what made
+     * it look as though the keeper had never touched it - the deflection bore
+     * no relation to the hit.
+     */
+    let nx = b.x - gk.x, ny = b.y - gk.y;
+    const d = Math.hypot(nx, ny) || 1;
+    nx /= d; ny /= d;
+    const dot = b.vx * nx + b.vy * ny;
+    let rx = b.vx - 2 * dot * nx;
+    let ry = b.vy - 2 * dot * ny;
+    /* Never off into the net behind them, whatever the geometry says. */
+    if (rx * out < 0) rx = -rx;
+    const rl = Math.hypot(rx, ry) || 1;
     const v = Math.max(CONFIG.parryMinSpeed, speed * CONFIG.parryKeep);
-    b.vx = out * v * 0.78;
-    b.vy = side * v * 0.62;
+    b.vx = rx / rl * v;
+    b.vy = ry / rl * v;
+
+    /* And it starts from the contact, not from wherever it happened to be
+       inside pickupDist, so the rebound visibly comes off the keeper. */
+    b.x = gk.x + nx * (CONFIG.playerRadius + CONFIG.ballRadius);
+    b.y = gk.y + ny * (CONFIG.playerRadius + CONFIG.ballRadius);
+    b.x = Math.max(CONFIG.ballRadius, Math.min(CONFIG.pitchW - CONFIG.ballRadius, b.x));
+    b.y = Math.max(CONFIG.ballRadius, Math.min(CONFIG.pitchH - CONFIG.ballRadius, b.y));
+
+    const side = ny >= 0 ? 1 : -1;                  /* which way they threw themselves */
     b.lastTouch = gk.id;
     b.pickupLockUntil = world.t + CONFIG.looseBallMs / 1000;
     b.fireUntil = world.t;

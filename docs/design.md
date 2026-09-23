@@ -334,6 +334,19 @@ window, which makes keeper mode meaningfully easier. that is a deliberate trade
 against a human keeper otherwise flying blind while the AI one is handed an
 exact prediction.
 
+## a parry comes off the keeper
+
+a parry reflects the ball about the line from the keeper to it, the same as a
+wall bounce, and starts it from the contact point rather than from wherever it
+was inside `pickupDist`. struck at the middle it comes straight back; catching
+the edge it glances away.
+
+it used to send every parry out at one fixed angle, whatever the ball did on the
+way in - measured over nine different impacts, two distinct exit angles, against
+nine after. that is what made it look as though the keeper had never touched it:
+the deflection bore no relation to the hit. the shot grid is unchanged either
+way, so this is how it looks, not how hard it is.
+
 ## two players on one screen
 
 `Input` used to hold one pointer, module-wide, hardwired to seat 0, and player two was WASD. On a tablet that meant two-player did not exist: there is no second keyboard. The per-seat "your place" setting shipped before anyone noticed the seat it applies to could not be played by hand.
