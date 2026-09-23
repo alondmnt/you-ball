@@ -57,6 +57,17 @@ const CONFIG = {
                          // sooner - the kickoff that follows takes them away
   multiBallBurst: 430,   // how hard they scatter out of the star
 
+  /* ─── The strike ─── */
+  /* A fireball on its way into the goal slows the world down for its flight.
+     Only a fireball: it is the hardest shot in the game, it is human-only
+     (the AI never charges), and a keeper cannot catch one - so it always ends
+     in a goal or a parry, never in a routine save. Slowing every long shot
+     was measured instead and fires 4.5 times a match, 82-100% of them caught,
+     which is a fifth of the match spent watching the same ending. */
+  strikeScale: 0.3,      // time runs at this while it is in the air
+  strikeMinFlight: 250,  // ms of flight under which there is nothing to watch
+  strikeTailMs: 220,     // and a beat after it arrives, to see what happened
+
   /* ─── Sizes (world units) ─── */
   ballRadius: 16,
   playerRadius: 42,

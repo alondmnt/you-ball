@@ -292,6 +292,135 @@ console.log('\n-- the keeper on its line --');
      Math.abs(w.players[0].x - before) < 5, w.players[0].x.toFixed(0));
 }
 
+console.log('\n-- slow motion on a fireball --');
+{
+  /* Physics works out, at the moment of release, whether a fireball is on
+     target and how long it will take. Only a fireball: an ordinary kick must
+     not pay for a look-ahead nobody asked for. */
+  const fire = (bias, charge, dist) => {
+    const w = Physics.createWorld();
+    const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+    for (const q of w.players) { q.x = 60; q.y = 40; }
+    const p = w.players[3];
+    p.x = CONFIG.pitchW - dist; p.y = CONFIG.pitchH / 2;
+    ball(w).carrier = p.id; ball(w).x = p.x; ball(w).y = p.y;
+    const gy = CONFIG.pitchH / 2 + bias * CONFIG.pitchH;
+    const dx = CONFIG.pitchW - p.x, dy = gy - p.y, len = Math.hypot(dx, dy) || 1;
+    its[p.id].shoot = { dx: dx / len, dy: dy / len, power: 1, charge };
+    const evs = Physics.step(w, its, DT);
+    return evs.find(e => e.type === 'kick');
+  };
+
+  const on = fire(0, 1, 600);
+  ok('a fireball on target reports its flight', on && on.flight > 0,
+     on ? String(on.flight) : 'no kick');
+  ok('and the flight is long enough to be worth slowing',
+     on.flight >= CONFIG.strikeMinFlight / 1000, on.flight.toFixed(2) + 's');
+
+  const wide = fire(0.9, 1, 600);
+  ok('one flying wide reports no flight', wide && wide.flight === null,
+     wide ? String(wide.flight) : 'no kick');
+
+  const tap = fire(0, 0, 600);
+  ok('an ordinary kick is never looked ahead for', tap && tap.flight === null,
+     tap ? String(tap.flight) : 'no kick');
+
+  const close = fire(0, 1, 120);
+  ok('a fireball from on top of the goal is too short to slow',
+     close.flight !== null && close.flight < CONFIG.strikeMinFlight / 1000,
+     close.flight == null ? 'null' : close.flight.toFixed(2) + 's');
+}
+{
+  /*
+   * Looking ahead must not change the match.
+   *
+   * The look-ahead runs the real integrator over a scratch ball, and in a
+   * scene that scatters bounces that integrator draws from the seeded stream.
+   * If the probe consumed it, every bounce after a fireball would land
+   * somewhere else. Same shot, same power, charged and not: the ball has to
+   * end up in exactly the same place.
+   */
+  const path = charge => {
+    CONFIG.applyScene('ballpit');
+    Physics.seed(20260923);
+    const w = Physics.createWorld();
+    const its = w.players.map(() => ({ mx: 0, my: 0, shoot: null, pass: false }));
+    for (const q of w.players) { q.x = 60; q.y = 40; }
+    const p = w.players[3];
+    p.x = 400; p.y = 120;
+    ball(w).carrier = p.id; ball(w).x = p.x; ball(w).y = p.y;
+    /* Straight at the near touchline, so it bounces and scatters. */
+    its[p.id].shoot = { dx: 0.2, dy: -1, power: 1, charge };
+    let out = '';
+    for (let i = 0; i < 180; i++) {
+      Physics.step(w, its, DT);
+      its[p.id].shoot = null;
+      out += `${ball(w).x.toFixed(2)},${ball(w).y.toFixed(2)};`;
+    }
+    return out;
+  };
+  const hot = path(1), cold = path(0);
+  ok('looking ahead does not disturb the bounces', hot === cold,
+     hot === cold ? '' : 'the ball diverged');
+  CONFIG.applyScene('grass');
+}
+{
+  /* The match phase: slow while it flies, back to full speed after. */
+  const m = Match.create();
+  m.phase = Match.PHASE.PLAY;
+  const w = Physics.createWorld();
+  ok('nothing slows without a fireball',
+     Match.update(m, w, DT, [{ type: 'kick', flight: null }]).length === 0 &&
+     m.phase === Match.PHASE.PLAY);
+
+  const evs = Match.update(m, w, DT, [{ type: 'kick', id: 3, x: 1800, y: 450, flight: 0.6 }]);
+  ok('a fireball on target slows the world', m.phase === Match.PHASE.STRIKE &&
+     evs.some(e => e.type === 'strike'), m.phase);
+  ok('and the world steps slowly while it does',
+     Match.timeScale(m) === CONFIG.strikeScale, String(Match.timeScale(m)));
+  ok('the children are still playing', Match.isLive(m));
+
+  /* The clock measures play, not the wall: a flight must not eat the match. */
+  const before = m.clock;
+  Match.update(m, w, 1, []);
+  ok('slow motion does not eat the clock',
+     Math.abs((before - m.clock) - CONFIG.strikeScale) < 1e-9,
+     (before - m.clock).toFixed(3) + 's of clock for 1s of real time');
+
+  for (let i = 0; i < 600 && m.phase === Match.PHASE.STRIKE; i++) Match.update(m, w, DT, []);
+  ok('and it goes back to full speed after',
+     m.phase === Match.PHASE.PLAY && Match.timeScale(m) === 1, m.phase);
+}
+{
+  /* Somebody gets a touch on it: the flight is over, so the slow motion is
+     too, bar a beat to see what happened. */
+  const m = Match.create();
+  const w = Physics.createWorld();
+  m.phase = Match.PHASE.PLAY;
+  Match.update(m, w, DT, [{ type: 'kick', id: 3, x: 1800, y: 450, flight: 1.2 }]);
+  const full = m.phaseLeft;
+  Match.update(m, w, DT, [{ type: 'pickup', id: 4, team: 1 }]);
+  const tail = CONFIG.strikeTailMs / 1000 / CONFIG.strikeScale;
+  ok('a ball that gets caught cuts the slow motion short',
+     m.phaseLeft <= tail && full > tail,
+     `${full.toFixed(2)}s -> ${m.phaseLeft.toFixed(2)}s`);
+  let n = 0;
+  while (m.phase === Match.PHASE.STRIKE && n < 600) { Match.update(m, w, DT, []); n++; }
+  ok('and full speed comes back a beat later',
+     m.phase === Match.PHASE.PLAY && n * DT <= tail + 0.05, (n * DT).toFixed(2) + 's');
+}
+{
+  /* A goal while the world is slow still counts. */
+  const m = Match.create();
+  m.phase = Match.PHASE.STRIKE;
+  m.phaseLeft = 9;
+  const w = Physics.createWorld();
+  const out = Match.update(m, w, DT, [{ type: 'goal', team: 0, x: CONFIG.pitchW, y: 450 }]);
+  ok('a goal during the slow flight still scores',
+     m.score[0] === 1 && m.phase === Match.PHASE.SLOWMO &&
+     out.some(e => e.type === 'goal'), m.phase);
+}
+
 console.log('\n-- the star match --');
 {
   /* Most matches never show one. That rarity is the feature, so it is worth a

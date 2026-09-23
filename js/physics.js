@@ -421,8 +421,16 @@ const Physics = (() => {
          arrive here at the same power. */
       /* A kick wound all the way up sets the ball alight. */
       const charge = s.charge || 0;
-      if (charge >= 1) b.fireUntil = world.t + CONFIG.ballFireMs / 1000;
-      events.push({ type: 'kick', id: p.id, power, x: b.x, y: b.y, charge });
+      /* Only a fireball is looked ahead for: the whole point of the look-ahead
+         is the one shot worth slowing the world down for, and doing it on
+         every kick would spend 300 steps of arithmetic several times a second
+         to answer a question nobody asked. */
+      let flight = null;
+      if (charge >= 1) {
+        b.fireUntil = world.t + CONFIG.ballFireMs / 1000;
+        flight = _lookAhead(world, b);
+      }
+      events.push({ type: 'kick', id: p.id, power, x: b.x, y: b.y, charge, flight });
       return;
     }
 
@@ -466,6 +474,43 @@ const Physics = (() => {
       p.diveDir = dy >= 0 ? 1 : -1;
       events.push({ type: 'dive', id: p.id, x: p.x, y: p.y });
     }
+  }
+
+  /* A scratch ball for looking ahead, so a prediction allocates nothing. */
+  const _probe = newBall(0, 0);
+  const _probeEvents = [];
+  const LOOK_DT = 1 / 60;
+  const LOOK_MAX = 300;      /* 5s, longer than any shot stays alive */
+
+  /**
+   * How long this ball would take to reach the goal it is heading for, with
+   * nobody touching it. null when it would not go in at all.
+   *
+   * Runs the real integrator over a scratch copy rather than a second copy of
+   * the arithmetic, so friction, the touchlines and the goal mouth can never
+   * drift apart from what actually happens on the pitch. The bounce generator
+   * is saved and put back around it, because looking ahead must not change the
+   * match - in a scene that scatters bounces, a prediction that consumed the
+   * stream would alter every bounce that followed it.
+   * @param {object} world
+   * @param {object} b - the ball; not modified
+   * @returns {number|null} seconds of flight, or null if it is off target
+   */
+  function _lookAhead(world, b) {
+    const seed = _seed;
+    Object.assign(_probe, b);
+    _probe.carrier = null;
+    _probe.scored = false;
+    let t = 0;
+    for (let i = 0; i < LOOK_MAX; i++) {
+      _probeEvents.length = 0;
+      _moveOne(world, _probe, LOOK_DT, _probeEvents);
+      t += LOOK_DT;
+      if (_probe.scored) { _seed = seed; return t; }
+      if (Math.hypot(_probe.vx, _probe.vy) < 40) break;
+    }
+    _seed = seed;
+    return null;
   }
 
   /** Let go of the ball with a velocity, and stop anyone re-collecting it at once. */

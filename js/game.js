@@ -627,6 +627,11 @@ const Game = (() => {
           Input.setEnabled(false);
           Input.reset();
           break;
+        case 'strike':
+          /* Mark the moment the world drops into slow motion, or it reads as
+             the game stuttering rather than as something big happening. */
+          Pitch.punch(CONFIG.zoomPunch * 0.5, e.x, e.y);
+          break;
         case 'celebrate':
           Render.fireworks(e.x);
           break;

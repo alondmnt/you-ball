@@ -264,7 +264,7 @@ const Render = (() => {
     _syncBalls(world.balls.length);
     const L = Pitch.layout();
     if (_pit.length) {
-      _watchPitCost(dt || 1 / 60, match.phase === Match.PHASE.PLAY);
+      _watchPitCost(dt || 1 / 60, Match.isLive(match));
       _stepPit(world, Math.min(0.05, dt || 1 / 60), L);
     }
     const runFx = _calmly ? null : EMITTERS[(CONFIG.fx || {}).run];

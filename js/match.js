@@ -16,6 +16,8 @@ const Match = (() => {
   const PHASE = {
     KICKOFF: 'kickoff',   /* frozen, the banner is up */
     PLAY: 'play',         /* the world steps at full speed */
+    STRIKE: 'strike',     /* a fireball is in the air; the world runs slowly
+                             and the children are still playing */
     SLOWMO: 'slowmo',     /* the world steps slowly, the ball sails in */
     GOAL: 'goal',         /* frozen, everybody dances */
     FULLTIME: 'fulltime', /* frozen, the card is up */
@@ -57,12 +59,13 @@ const Match = (() => {
   /** How fast the world should step in the current phase. 0 means frozen. */
   function timeScale(match) {
     if (match.phase === PHASE.PLAY) return 1;
+    if (match.phase === PHASE.STRIKE) return CONFIG.strikeScale;
     if (match.phase === PHASE.SLOWMO) return CONFIG.slowMoScale;
     return 0;
   }
 
   /** True while the human should be able to steer. */
-  function isLive(match) { return match.phase === PHASE.PLAY; }
+  function isLive(match) { return match.phase === PHASE.PLAY || match.phase === PHASE.STRIKE; }
 
   /**
    * Advance the match one step.
@@ -75,9 +78,13 @@ const Match = (() => {
   function update(match, world, dt, worldEvents) {
     const out = [];
 
+    /* Play is live at full speed, and live again slowly while a fireball is
+       in the air; everything below treats the two the same. */
+    const live = match.phase === PHASE.PLAY || match.phase === PHASE.STRIKE;
+
     /* A goal interrupts whatever phase we were in. */
     const goal = worldEvents && worldEvents.find(e => e.type === 'goal');
-    if (goal && match.phase === PHASE.PLAY) {
+    if (goal && live) {
       match.score[goal.team]++;
       match.scorer = goal.team;
       match.restartTeam = goal.team === 0 ? 1 : 0;   /* the conceding team restarts */
@@ -90,11 +97,53 @@ const Match = (() => {
       return out;
     }
 
-    if (match.phase === PHASE.PLAY) {
-      match.clock -= dt;
+    if (live) {
+      /*
+       * A fireball on its way in slows the world for its flight.
+       *
+       * physics has already worked out whether it is on target and how long it
+       * will take, because at the moment of release the path is settled -
+       * friction and the touchlines and nothing else until somebody touches
+       * it. A shot flying wide carries no flight and slows nothing, which is
+       * the whole reason this is worth doing: the boring ending is the one
+       * case that can be told apart in advance.
+       */
+      const strike = worldEvents && worldEvents.find(
+        e => e.type === 'kick' && e.flight != null &&
+             e.flight >= CONFIG.strikeMinFlight / 1000);
+      if (strike) {
+        match.phase = PHASE.STRIKE;
+        /* phaseLeft counts real seconds, the flight is in world seconds. */
+        match.phaseLeft = (strike.flight + CONFIG.strikeTailMs / 1000) / CONFIG.strikeScale;
+        out.push({ type: 'strike', id: strike.id, x: strike.x, y: strike.y });
+      }
+
+      /* The clock measures play, not the wall. Slow motion must not eat the
+         match: at full speed this is unchanged, because the scale is 1. */
+      match.clock -= dt * timeScale(match);
       if (match.clock <= 0) {
         match.clock = 0;
         _finish(match, out);
+        return out;
+      }
+
+      if (match.phase === PHASE.STRIKE) {
+        /*
+         * The flight is over the moment anybody gets a touch on it - caught by
+         * an outfielder, parried, or robbed. The schedule assumed a clear run
+         * to the goal, so without this the world stays slow for a second or
+         * two after the drama has already finished.
+         */
+        const done = worldEvents && worldEvents.some(
+          e => e.type === 'pickup' || e.type === 'parry' || e.type === 'steal');
+        if (done) {
+          const tail = CONFIG.strikeTailMs / 1000 / CONFIG.strikeScale;
+          if (match.phaseLeft > tail) match.phaseLeft = tail;
+        }
+        match.phaseLeft -= dt;
+        /* Nothing is emitted when it ends: full speed returning is the whole
+           of it, and an event nobody listens to is just a promise to break. */
+        if (match.phaseLeft <= 0) match.phase = PHASE.PLAY;
       }
       return out;
     }

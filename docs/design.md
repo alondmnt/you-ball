@@ -284,6 +284,56 @@ up - a second reason to make one. they are chosen in `render.js`, because
 physics has no business knowing the gallery exists and the face changes nothing
 about where a ball goes. an empty gallery gets ordinary balls.
 
+## slow motion on a fireball
+
+a kick wound all the way up sets the ball alight, and if that ball is on target
+the world drops to `strikeScale` for its flight. it is the only thing in the
+game that slows time while the children are still playing.
+
+**only a fireball, and only on target.** the reasoning is all in what was
+measured. predicting a goal in advance does not work: a keeper covers the whole
+mouth in about 0.22s, so a shot is only unreachable once it is already that
+close to the line. a conservative predictor was right 100% of the time but
+fired on 8-16% of goals with a median 0.09-0.17s of warning, and demanding 0.4s
+of warning fired zero times in 150 matches.
+
+slowing every long shot was measured too, and fails the other way:
+
+| min flight | fires/match | goal | save | blocked | fizzled |
+|---|---|---|---|---|---|
+| 350 (normal) | 5.3 | 15% | 85% | 0% | 0% |
+| 500 (normal) | 4.5 | 0% | 100% | 0% | 0% |
+| 500 (hard) | 4.6 | 18% | 82% | 0% | 0% |
+
+nothing is ever blocked and nothing fizzles - an on-target shot always arrives -
+but it is *caught* 82-100% of the time, four to eight times a match. that is a
+fifth of the match spent watching the same ending.
+
+a fireball escapes both problems. it is human-only, because `ai.js` never sets
+`charge`; it is hard, so it cannot flood the match; and **a keeper cannot catch
+one**, only parry it. so its flight never ends in the boring outcome - it is a
+goal, or a ball spilling loose in front of an open net.
+
+the look-ahead runs the *real* integrator over a scratch ball rather than a
+second copy of the arithmetic, so friction, the touchlines and the goal mouth
+can never drift apart from what actually happens. the bounce generator is saved
+and restored around it: in a scene that scatters bounces, a prediction that
+consumed the stream would move every bounce that followed it. it runs only on a
+fireball, so an ordinary kick pays nothing.
+
+**the clock measures play, not the wall** (`dt * timeScale`), so a slow flight
+does not eat the match. at full speed that is unchanged, because the scale is 1.
+
+**it ends when the flight does.** the schedule assumes a clear run at the goal,
+so any touch - caught by an outfielder, parried, robbed - cuts it to a beat.
+without that the world stayed slow for a second or two after the drama had
+finished, which is exactly how it felt in play.
+
+it is not only decoration: a *human* keeper gets four times the real reaction
+window, which makes keeper mode meaningfully easier. that is a deliberate trade
+against a human keeper otherwise flying blind while the AI one is handed an
+exact prediction.
+
 ## two players on one screen
 
 `Input` used to hold one pointer, module-wide, hardwired to seat 0, and player two was WASD. On a tablet that meant two-player did not exist: there is no second keyboard. The per-seat "your place" setting shipped before anyone noticed the seat it applies to could not be played by hand.
